@@ -69,37 +69,34 @@ function readStopsCSV() {
   });
 }
 
-// Fetch Realtime Data
-async function fetchRealtimeData() {
+// Sequential Processing Helper
+async function processFeed(url, regionPrefix, tempPositions, tempUpdates) {
   try {
-    const response = await axios.get(GTFS_RT_URL, {
-      responseType: 'arraybuffer'
+    const response = await axios.get(url, {
+      responseType: 'arraybuffer',
+      timeout: 15000 // Higher timeout for slow feeds
     });
     const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(response.data));
-
-    const positions = [];
-    const updates = {}; // trip_id -> { stop_id: { time, delay } }
 
     feed.entity.forEach(entity => {
       // Process Vehicle Positions
       if (entity.vehicle) {
-        const tripId = entity.vehicle.trip?.tripId;
-        // Fuzzy match for prefixed IDs
-        const trip = trips.find(t => t.trip_id === tripId || t.trip_id.endsWith('_' + tripId));
-        const routeId = trip ? trip.route_id : entity.vehicle.trip?.routeId;
-        // Fuzzy match for prefixed route IDs if looked up directly
-        const route = routes.find(r => r.route_id === routeId || r.route_id.endsWith('_' + routeId));
+        const rawTripId = entity.vehicle.trip?.tripId;
+        const fullTripId = regionPrefix + rawTripId;
+        const trip = trips.find(t => t.trip_id === fullTripId);
 
-        positions.push({
+        const rawRouteId = trip ? trip.route_id : (entity.vehicle.trip?.routeId ? regionPrefix + entity.vehicle.trip.routeId : null);
+        const route = routes.find(r => r.route_id === rawRouteId);
+
+        tempPositions.push({
           vehicle_id: entity.vehicle.vehicle?.id,
-          trip_id: trip ? trip.trip_id : tripId,
-          route_id: route ? route.route_id : routeId,
+          trip_id: fullTripId,
+          route_id: rawRouteId,
           lat: entity.vehicle.position?.latitude,
           lon: entity.vehicle.position?.longitude,
           bearing: entity.vehicle.position?.bearing,
           speed: entity.vehicle.position?.speed,
           timestamp: entity.vehicle.timestamp,
-          // Rich Data
           route_short_name: route ? route.short_name : '?',
           route_long_name: route ? route.long_name : '?',
           trip_headsign: trip ? trip.trip_headsign : '?',
@@ -110,29 +107,71 @@ async function fetchRealtimeData() {
 
       // Process Trip Updates (ETA)
       if (entity.tripUpdate) {
-        const tripId = entity.tripUpdate.trip.tripId;
-        if (!updates[tripId]) updates[tripId] = {};
+        const tripId = regionPrefix + entity.tripUpdate.trip.tripId;
+        if (!tempUpdates[tripId]) tempUpdates[tripId] = {};
 
         if (entity.tripUpdate.stopTimeUpdate) {
           entity.tripUpdate.stopTimeUpdate.forEach(stu => {
-            const stopId = stu.stopId;
-            const arrival = stu.arrival?.time; // Unix timestamp
-            const delay = stu.arrival?.delay; // Seconds
+            const stopId = regionPrefix + stu.stopId;
+            const arrival = stu.arrival?.time;
+            const delay = stu.arrival?.delay;
 
-            updates[tripId][stopId] = {
-              arrival_time: arrival ? arrival.low : null, // handle Long/int64
+            tempUpdates[tripId][stopId] = {
+              arrival_time: arrival ? (arrival.low || arrival) : null,
               delay: delay
             };
           });
         }
       }
     });
-
-    vehiclePositions = positions;
-    tripUpdates = updates; // Atomically update
-    // console.log(`Updated GTFS-RT: ${vehiclePositions.length} vehicles, ${Object.keys(tripUpdates).length} trip updates.`);
   } catch (error) {
-    console.error('Error fetching GTFS-RT:', error.message);
+    console.error(`Error fetching ${regionPrefix}:`, error.message);
+  }
+}
+
+// ✅ Safe Mode version (fetches one by one for memory stability)
+async function fetchData() {
+  console.log('--- Starting Update Cycle ---');
+  const tempPositions = [];
+  const tempUpdates = {};
+
+  try {
+    // 1. EMEL
+    console.log('Fetching EMEL RT...');
+    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Emel_Lemesos_GTFS-Realtime', 'emel_', tempPositions, tempUpdates);
+
+    // 2. Intercity (Wait 2 seconds to let memory cool down)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Fetching Intercity RT...');
+    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Intercity_Buses_GTFS-Realtime', 'intercity_buses_', tempPositions, tempUpdates);
+
+    // 3. LPT
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Fetching LPT RT...');
+    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/LPT_Larnaca_GTFS-Realtime', 'lpt_', tempPositions, tempUpdates);
+
+    // 4. Paphos (OsyPa)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Fetching Paphos RT...');
+    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OsyPa_Paphos_GTFS-Realtime', 'osypa_pafos_', tempPositions, tempUpdates);
+
+    // 5. Famagusta (OSEA)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Fetching OSEA RT...');
+    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OSEA_Famagusta_GTFS-Realtime', 'osea__famagusta__', tempPositions, tempUpdates);
+
+    // 6. Nicosia (CPT) - Usually the biggest, do it last
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    console.log('Fetching Nicosia RT...');
+    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/CPT_Lefkosia_GTFS-Realtime', 'npt_', tempPositions, tempUpdates);
+
+    // Atomically update global stores
+    vehiclePositions = tempPositions;
+    tripUpdates = tempUpdates;
+    console.log('--- Update Cycle Complete ---');
+
+  } catch (error) {
+    console.error('Error in update cycle:', error);
   }
 }
 
@@ -330,8 +369,8 @@ async function loadData() {
     console.log("All data loaded and merged!");
 
     // Start polling Realtime Data
-    fetchRealtimeData();
-    setInterval(fetchRealtimeData, 10000);
+    fetchData();
+    setInterval(fetchData, 40000);
 
   } catch (error) {
     console.error("Error loading GTFS data:", error);
