@@ -137,32 +137,32 @@ async function fetchData() {
 
   try {
     // 1. EMEL
-    console.log('Fetching EMEL RT...');
+    console.log('Fetching EMEL...');
     await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Emel_Lemesos_GTFS-Realtime', 'emel_', tempPositions, tempUpdates);
 
     // 2. Intercity (Wait 2 seconds to let memory cool down)
     await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Fetching Intercity RT...');
+    console.log('Fetching Intercity...');
     await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Intercity_Buses_GTFS-Realtime', 'intercity_buses_', tempPositions, tempUpdates);
 
     // 3. LPT
     await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Fetching LPT RT...');
+    console.log('Fetching LPT...');
     await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/LPT_Larnaca_GTFS-Realtime', 'lpt_', tempPositions, tempUpdates);
 
     // 4. Paphos (OsyPa)
     await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Fetching Paphos RT...');
+    console.log('Fetching Paphos...');
     await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OsyPa_Paphos_GTFS-Realtime', 'osypa_pafos_', tempPositions, tempUpdates);
 
     // 5. Famagusta (OSEA)
     await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Fetching OSEA RT...');
+    console.log('Fetching OSEA...');
     await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OSEA_Famagusta_GTFS-Realtime', 'osea__famagusta__', tempPositions, tempUpdates);
 
     // 6. Nicosia (CPT) - Usually the biggest, do it last
     await new Promise(resolve => setTimeout(resolve, 2000));
-    console.log('Fetching Nicosia RT...');
+    console.log('Fetching Nicosia...');
     await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/CPT_Lefkosia_GTFS-Realtime', 'npt_', tempPositions, tempUpdates);
 
     // Atomically update global stores
@@ -224,14 +224,13 @@ async function loadData() {
     for (const dir of dataDirs) {
       // Create a prefix from the directory name, e.g., "osypa_pafos_"
       const regionPrefix = path.basename(dir).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '_';
-      console.log(`Processing ${path.basename(dir)} (prefix: ${regionPrefix})...`);
+      console.log(`Fetching ${path.basename(dir)} static data...`);
 
       // 1. Stops
       let regionStops = [];
       const stopsMap = new Map(); // Deduplicate within region
 
-      // Force use of stops.txt (standard GTFS) as it matches stop_times.txt IDs (e.g. 3981 vs 10080)
-      // stops.csv in EMEL/Other folders often uses internal IDs that break linking.
+      // Sequential static load (already sequential loop, just added logs)
       if (fs.existsSync(path.join(dir, 'stops.txt'))) {
         const rawStops = await readDirCSV(dir, 'stops.txt');
         rawStops.forEach(s => {
@@ -268,6 +267,9 @@ async function loadData() {
         regionStops = Array.from(stopsMap.values());
       }
       stops = stops.concat(regionStops);
+
+      // Add small delay between static regions to let GC work
+      await new Promise(r => setTimeout(r, 1000));
 
       // 2. Routes
       const rawRoutes = await readDirCSV(dir, 'routes.txt');
