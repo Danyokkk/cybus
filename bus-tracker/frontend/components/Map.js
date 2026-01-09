@@ -29,7 +29,7 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
+const TimetablePopup = ({ stop, routes, onSelectRoute, tripUpdates }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -41,8 +41,20 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                 const now = new Date();
                 const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
 
+                // Augment schedule with frontend-fetched realtime data
+                const augmented = data.map(item => {
+                    const update = tripUpdates[item.trip_id] && tripUpdates[item.trip_id][stop.stop_id];
+                    if (update) {
+                        // Convert seconds timestamp to HH:MM:SS
+                        const dateObj = new Date(update.arrival_time * 1000);
+                        const liveTime = dateObj.toLocaleTimeString('en-GB', { hour12: false });
+                        return { ...item, arrival_time: liveTime, is_realtime: true, delay: update.delay };
+                    }
+                    return item;
+                });
+
                 // Filter: Upcoming AND within 60 minutes
-                const upcoming = data.filter(a => {
+                const upcoming = augmented.filter(a => {
                     if (a.arrival_time < currentTime) return false;
 
                     const [h, m] = a.arrival_time.split(':');
@@ -58,7 +70,7 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, [stop.stop_id]);
+    }, [stop.stop_id, tripUpdates]);
 
     const uniqueRoutes = [...new Set(arrivals.map(a => a.route_short_name))];
 
@@ -185,24 +197,11 @@ const createBusIcon = (routeShortName) => {
     });
 };
 
-export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick }) {
-    const [vehicles, setVehicles] = useState([]);
+export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles, tripUpdates }) {
     const [showStops, setShowStops] = useState(false); // Default hidden
     const { t } = useLanguage();
 
-    // Poll for vehicles
-    useEffect(() => {
-        const fetchVehicles = () => {
-            fetch('https://cyfinal.onrender.com/api/vehicle_positions')
-                .then(res => res.json())
-                .then(data => setVehicles(data))
-                .catch(err => console.error('Error fetching vehicles:', err));
-        };
-
-        fetchVehicles();
-        const interval = setInterval(fetchVehicles, 10000); // 10s polling matches 10s transition
-        return () => clearInterval(interval);
-    }, []);
+    // Vehicle polling removed - now handled by page.js props
 
     const center = [34.68, 33.04]; // Limassol center
 
@@ -264,7 +263,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                         {stops.map((stop) => (
                             <Marker key={stop.stop_id} position={[stop.lat, stop.lon]} icon={customIcon}>
                                 <Popup>
-                                    <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
+                                    <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} tripUpdates={tripUpdates} />
                                 </Popup>
                             </Marker>
                         ))}

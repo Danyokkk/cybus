@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V9 (PROXY BYPASS) ---");
+console.log("--- SERVER VERSION: V10 (FRONTEND RT MIGRATION) ---");
 
 app.use(cors());
 app.use(express.json());
@@ -278,8 +278,8 @@ async function loadData() {
   }
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
-  fetchData();
-  setInterval(fetchData, 45000);
+  // fetchData() and setInterval removed to bypass backend blocks. 
+  // Realtime is now handled by the frontend.
 }
 
 loadData();
@@ -336,6 +336,15 @@ app.get('/api/stops/:stopId/timetable', (req, res) => {
   }
   results.sort((a, b) => a.arrival_time.localeCompare(b.arrival_time));
   res.json(results);
+});
+
+app.get('/api/trips', (req, res) => {
+  // Return minimal trip data for frontend matching
+  res.json(trips.map(t => ({
+    trip_id: t.trip_id,
+    route_id: t.route_id,
+    trip_headsign: t.trip_headsign
+  })));
 });
 
 app.get('/api/vehicle_positions', (req, res) => res.json(vehiclePositions));
