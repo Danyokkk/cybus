@@ -20,8 +20,8 @@ export default function Home() {
   // 1. Fetch initial data (all stops and all routes)
   useEffect(() => {
     Promise.all([
-      fetch('http://localhost:3001/api/stops').then(res => res.json()),
-      fetch('http://localhost:3001/api/routes').then(res => res.json())
+      fetch('https://cyfinal.onrender.com/api/stops').then(res => res.json()),
+      fetch('https://cyfinal.onrender.com/api/routes').then(res => res.json())
     ]).then(([stopsData, routesData]) => {
       setStops(stopsData);
       setRoutes(routesData);
@@ -41,7 +41,7 @@ export default function Home() {
       setSelectedRouteColor(null);
       setShapes([]);
       try {
-        const res = await fetch('http://localhost:3001/api/stops');
+        const res = await fetch('https://cyfinal.onrender.com/api/stops');
         const data = await res.json();
         setStops(data);
       } catch (err) { console.error(err); }
@@ -50,7 +50,7 @@ export default function Home() {
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color);
       try {
-        const res = await fetch(`http://localhost:3001/api/routes/${route.route_id}`);
+        const res = await fetch(`https://cyfinal.onrender.com/api/routes/${route.route_id}`);
         const data = await res.json();
         // data.stops contains the stops for this route
         // data.shapes contains the line segments

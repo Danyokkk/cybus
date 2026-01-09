@@ -455,7 +455,7 @@ app.get('/api/stops/:stopId/timetable', (req, res) => {
 });
 
 // Get live vehicles
-app.get('/api/vehicles', (req, res) => {
+app.get('/api/vehicle_positions', (req, res) => {
   res.json(vehiclePositions);
 });
 

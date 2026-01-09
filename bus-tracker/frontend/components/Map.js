@@ -35,7 +35,7 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
     useEffect(() => {
         setLoading(true);
-        fetch(`http://localhost:3001/api/stops/${stop.stop_id}/timetable`)
+        fetch(`https://cyfinal.onrender.com/api/stops/${stop.stop_id}/timetable`)
             .then(res => res.json())
             .then(data => {
                 const now = new Date();
@@ -193,7 +193,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
     // Poll for vehicles
     useEffect(() => {
         const fetchVehicles = () => {
-            fetch('http://localhost:3001/api/vehicles')
+            fetch('https://cyfinal.onrender.com/api/vehicle_positions')
                 .then(res => res.json())
                 .then(data => setVehicles(data))
                 .catch(err => console.error('Error fetching vehicles:', err));
