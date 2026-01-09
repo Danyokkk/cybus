@@ -29,7 +29,7 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-const TimetablePopup = ({ stop, routes, onSelectRoute, tripUpdates }) => {
+const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -41,20 +41,8 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, tripUpdates }) => {
                 const now = new Date();
                 const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
 
-                // Augment schedule with frontend-fetched realtime data
-                const augmented = data.map(item => {
-                    const update = tripUpdates[item.trip_id] && tripUpdates[item.trip_id][stop.stop_id];
-                    if (update) {
-                        // Convert seconds timestamp to HH:MM:SS
-                        const dateObj = new Date(update.arrival_time * 1000);
-                        const liveTime = dateObj.toLocaleTimeString('en-GB', { hour12: false });
-                        return { ...item, arrival_time: liveTime, is_realtime: true, delay: update.delay };
-                    }
-                    return item;
-                });
-
                 // Filter: Upcoming AND within 60 minutes
-                const upcoming = augmented.filter(a => {
+                const upcoming = data.filter(a => {
                     if (a.arrival_time < currentTime) return false;
 
                     const [h, m] = a.arrival_time.split(':');
@@ -62,15 +50,14 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, tripUpdates }) => {
                     busTime.setHours(h, m, 0);
                     const diffMins = (busTime - now) / 60000;
 
-                    // Show if within 60 mins or if it's Live (sometimes live data can be slightly delayed/weird)
-                    return diffMins <= 60 || a.is_realtime;
+                    return diffMins <= 60;
                 });
 
                 setArrivals(upcoming.slice(0, 10));
                 setLoading(false);
             })
             .catch(() => setLoading(false));
-    }, [stop.stop_id, tripUpdates]);
+    }, [stop.stop_id]);
 
     const uniqueRoutes = [...new Set(arrivals.map(a => a.route_short_name))];
 
@@ -197,7 +184,7 @@ const createBusIcon = (routeShortName) => {
     });
 };
 
-export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles, tripUpdates }) {
+export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
     const [showStops, setShowStops] = useState(false); // Default hidden
     const { t } = useLanguage();
 
@@ -263,7 +250,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                         {stops.map((stop) => (
                             <Marker key={stop.stop_id} position={[stop.lat, stop.lon]} icon={customIcon}>
                                 <Popup>
-                                    <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} tripUpdates={tripUpdates} />
+                                    <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
                                 </Popup>
                             </Marker>
                         ))}

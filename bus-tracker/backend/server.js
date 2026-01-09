@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V10 (FRONTEND RT MIGRATION) ---");
+console.log("--- SERVER VERSION: V11 (DIRECT IP BYPASS) ---");
 
 app.use(cors());
 app.use(express.json());
@@ -66,10 +66,7 @@ function processCSV(filePath, onRow) {
 // Fetch Logic
 async function processFeed(originalUrl, regionPrefix, tempPositions, tempUpdates) {
   try {
-    // WRAP URL IN PROXY
-    const proxiedUrl = PROXY_URL + encodeURIComponent(originalUrl);
-
-    const response = await axiosInstance.get(proxiedUrl, {
+    const response = await axiosInstance.get(originalUrl, {
       responseType: 'arraybuffer'
     });
 
@@ -131,12 +128,12 @@ async function fetchData() {
   const tempUpdates = {};
 
   const feeds = [
-    { url: 'https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Emel_Lemesos_GTFS-Realtime', prefix: 'emel_' },
-    { url: 'https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Intercity_Buses_GTFS-Realtime', prefix: 'intercity_buses_' },
-    { url: 'https://opendata.cyprusbus.transport.services/api/gtfs-realtime/LPT_Larnaca_GTFS-Realtime', prefix: 'lpt_' },
-    { url: 'https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OsyPa_Paphos_GTFS-Realtime', prefix: 'osypa_pafos_' },
-    { url: 'https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OSEA_Famagusta_GTFS-Realtime', prefix: 'osea__famagusta__' },
-    { url: 'https://opendata.cyprusbus.transport.services/api/gtfs-realtime/CPT_Lefkosia_GTFS-Realtime', prefix: 'npt_' }
+    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/3', prefix: 'emel_' },
+    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/1', prefix: 'intercity_buses_' },
+    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/4', prefix: 'lpt_' },
+    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/6', prefix: 'osypa_pafos_' },
+    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/5', prefix: 'osea__famagusta__' },
+    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/2', prefix: 'npt_' }
   ];
 
   console.log("--- Starting Proxy Fetch Cycle ---");
@@ -278,8 +275,8 @@ async function loadData() {
   }
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
-  // fetchData() and setInterval removed to bypass backend blocks. 
-  // Realtime is now handled by the frontend.
+  fetchData();
+  setInterval(fetchData, 45000); // 45s interval
 }
 
 loadData();

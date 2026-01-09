@@ -2,7 +2,6 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import Sidebar from '../components/Sidebar';
-import { fetchAllRealtimeData } from '../utils/realtimeService';
 
 // Dynamic import for Map component
 const Map = dynamic(() => import('../components/Map'), {
@@ -16,21 +15,17 @@ export default function Home() {
   const [shapes, setShapes] = useState([]); // Array of arrays of points
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedRouteColor, setSelectedRouteColor] = useState(null);
-  const [trips, setTrips] = useState([]);
   const [vehicles, setVehicles] = useState([]);
-  const [tripUpdates, setTripUpdates] = useState({});
   const [loading, setLoading] = useState(true);
 
   // 1. Fetch initial data (all stops and all routes)
   useEffect(() => {
     Promise.all([
       fetch('https://cyfinal.onrender.com/api/stops').then(res => res.json()),
-      fetch('https://cyfinal.onrender.com/api/routes').then(res => res.json()),
-      fetch('https://cyfinal.onrender.com/api/trips').then(res => res.json())
-    ]).then(([stopsData, routesData, tripsData]) => {
+      fetch('https://cyfinal.onrender.com/api/routes').then(res => res.json())
+    ]).then(([stopsData, routesData]) => {
       setStops(stopsData);
       setRoutes(routesData);
-      setTrips(tripsData);
       setLoading(false);
     }).catch(err => {
       console.error('Error fetching initial data:', err);
@@ -38,22 +33,19 @@ export default function Home() {
     });
   }, []);
 
-  // 2. Realtime Data Polling (Option 5: Browser-side)
+  // 2. Poll Vehicles from Backend
   useEffect(() => {
-    if (loading || routes.length === 0 || trips.length === 0) return;
-
-    const pollRealtime = async () => {
-      const { positions, updates } = await fetchAllRealtimeData({ routes, trips, stops });
-      if (positions.length > 0) {
-        setVehicles(positions);
-        setTripUpdates(updates);
-      }
+    const fetchVehicles = () => {
+      fetch('https://cyfinal.onrender.com/api/vehicle_positions')
+        .then(res => res.json())
+        .then(data => setVehicles(data))
+        .catch(err => console.error('Error fetching vehicles:', err));
     };
 
-    pollRealtime();
-    const interval = setInterval(pollRealtime, 20000); // 20s polling
+    fetchVehicles();
+    const interval = setInterval(fetchVehicles, 15000);
     return () => clearInterval(interval);
-  }, [loading, routes, trips]);
+  }, []);
 
   // 2. Handle Route Selection
   const handleSelectRoute = async (route) => {
@@ -112,7 +104,6 @@ export default function Home() {
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}
           vehicles={vehicles}
-          tripUpdates={tripUpdates}
         />
       </div>
     </main>
