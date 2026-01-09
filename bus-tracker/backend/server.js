@@ -4,47 +4,51 @@ const fs = require('fs');
 const csv = require('csv-parser');
 const path = require('path');
 const axios = require('axios');
-const https = require('https'); // Required for SSL fix
+const https = require('https');
 const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // --- VERSION CHECK LOG ---
-console.log("--- SERVER VERSION: V4 (TODAY-ONLY FILTER + SSL FIX) ---");
+console.log("--- SERVER VERSION: V5 (NUCLEAR SSL FIX) ---");
 
 app.use(cors());
 app.use(express.json());
-
-const DATA_DIR = path.join(__dirname, 'data/gtfs');
-const GTFS_RT_URL = process.env.GTFS_RT_URL;
 
 // --- Global Data Stores ---
 let stops = [];
 let routes = [];
 let trips = [];
-let stopTimetable = {}; // { stop_id: [ { t: trip_id, a: arrival_time } ] }
-let routeStops = {};    // route_id -> Set(stop_ids)
-let shapes = {};        // shape_id -> [[lat, lon]]
-let routeShapes = {};   // route_id -> Set(shape_id)
+let stopTimetable = {};
+let routeStops = {};
+let shapes = {};
+let routeShapes = {};
 let vehiclePositions = [];
 let tripUpdates = {};
 
-// Fix for SSL Error (Cyprus Open Data strictness)
+// --- THE FIX: Nuclear SSL Agent ---
+// This bypasses 'Unrecognized Name' (112) AND 'Status 436' errors.
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,        // Ignore invalid certs
+  servername: "",                   // DISABLE SNI (Fixes "Unrecognized name")
+  ciphers: "ALL:@SECLEVEL=0",       // Allow old/weak encryption
+  checkServerIdentity: () => undefined // Disable hostname verification
+});
+
 const axiosInstance = axios.create({
-  httpsAgent: new https.Agent({
-    rejectUnauthorized: false, // Bypass strict SSL certificate checks
-    secureOptions: require('constants').SSL_OP_LEGACY_SERVER_CONNECT
-  }),
+  httpsAgent: httpsAgent,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+    // Mimic a real browser exactly
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'application/x-google-protobuf, application/json, */*',
+    'Connection': 'keep-alive'
   }
 });
 
 // Helper: Get Current Date in YYYYMMDD (Cyprus Time)
 function getCyprusDate() {
   const now = new Date();
-  // Adjust to Cyprus time (UTC+2/3) - simplified approach
   now.setHours(now.getHours() + 2);
   const yyyy = now.getFullYear();
   const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -52,7 +56,7 @@ function getCyprusDate() {
   return `${yyyy}${mm}${dd}`;
 }
 
-// Memory Efficient CSV Processor
+// CSV Processor
 function processCSV(filePath, onRow) {
   return new Promise((resolve, reject) => {
     if (!fs.existsSync(filePath)) return resolve();
@@ -67,20 +71,19 @@ function processCSV(filePath, onRow) {
         try { onRow(data); } catch (err) { }
       })
       .on('end', resolve)
-      .on('error', (err) => {
-        console.warn(`Warning processing ${filePath}: ${err.message}`);
-        resolve();
-      });
+      .on('error', () => resolve());
   });
 }
 
-// Realtime Fetcher with SSL Fix
+// Realtime Fetcher
 async function processFeed(url, regionPrefix, tempPositions, tempUpdates) {
   try {
     const response = await axiosInstance.get(url, {
       responseType: 'arraybuffer',
-      timeout: 15000
+      timeout: 20000 // 20s timeout
     });
+
+    // Decode GTFS-RT
     const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(response.data));
 
     feed.entity.forEach(entity => {
@@ -129,36 +132,46 @@ async function processFeed(url, regionPrefix, tempPositions, tempUpdates) {
         }
       }
     });
+    // console.log(`Fetched ${regionPrefix} OK`);
   } catch (error) {
-    console.error(`Error fetching ${regionPrefix}:`, error.message);
+    console.error(`Error fetching ${regionPrefix}: ${error.message} (Status: ${error.response?.status})`);
   }
 }
 
 async function fetchData() {
   const tempPositions = [];
   const tempUpdates = {};
-  try {
-    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Emel_Lemesos_GTFS-Realtime', 'emel_', tempPositions, tempUpdates);
-    await new Promise(r => setTimeout(r, 1000));
-    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Intercity_Buses_GTFS-Realtime', 'intercity_buses_', tempPositions, tempUpdates);
-    await new Promise(r => setTimeout(r, 1000));
-    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/LPT_Larnaca_GTFS-Realtime', 'lpt_', tempPositions, tempUpdates);
-    await new Promise(r => setTimeout(r, 1000));
-    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OsyPa_Paphos_GTFS-Realtime', 'osypa_pafos_', tempPositions, tempUpdates);
-    await new Promise(r => setTimeout(r, 1000));
-    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OSEA_Famagusta_GTFS-Realtime', 'osea__famagusta__', tempPositions, tempUpdates);
-    await new Promise(r => setTimeout(r, 1000));
-    await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/CPT_Lefkosia_GTFS-Realtime', 'npt_', tempPositions, tempUpdates);
 
+  // Sequential Fetching
+  await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Emel_Lemesos_GTFS-Realtime', 'emel_', tempPositions, tempUpdates);
+  await new Promise(r => setTimeout(r, 500));
+
+  await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/Intercity_Buses_GTFS-Realtime', 'intercity_buses_', tempPositions, tempUpdates);
+  await new Promise(r => setTimeout(r, 500));
+
+  await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/LPT_Larnaca_GTFS-Realtime', 'lpt_', tempPositions, tempUpdates);
+  await new Promise(r => setTimeout(r, 500));
+
+  await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OsyPa_Paphos_GTFS-Realtime', 'osypa_pafos_', tempPositions, tempUpdates);
+  await new Promise(r => setTimeout(r, 500));
+
+  await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/OSEA_Famagusta_GTFS-Realtime', 'osea__famagusta__', tempPositions, tempUpdates);
+  await new Promise(r => setTimeout(r, 500));
+
+  await processFeed('https://opendata.cyprusbus.transport.services/api/gtfs-realtime/CPT_Lefkosia_GTFS-Realtime', 'npt_', tempPositions, tempUpdates);
+
+  // Update Global State
+  if (tempPositions.length > 0) {
     vehiclePositions = tempPositions;
     tripUpdates = tempUpdates;
-  } catch (error) {
-    console.error('RT Update failed:', error);
+    console.log(`Updated: ${vehiclePositions.length} active buses found.`);
+  } else {
+    console.log("Update cycle finished, but 0 buses found (checking errors above).");
   }
 }
 
 async function loadData() {
-  console.log("Starting Smart Data Load (Today Only)...");
+  console.log("Starting Smart Data Load...");
 
   const TODAY = getCyprusDate();
   console.log(`Filtering for Date: ${TODAY}`);
@@ -173,7 +186,6 @@ async function loadData() {
     path.join(__dirname, 'data/other_gtfs/PAME EXPRESS'),
   ];
 
-  // Reset stores
   stops = [];
   routes = [];
   trips = [];
@@ -186,17 +198,14 @@ async function loadData() {
     const regionPrefix = path.basename(dir).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase() + '_';
     console.log(`Processing ${path.basename(dir)}...`);
 
-    // 1. Identify Active Services for TODAY
     const activeServices = new Set();
     await processCSV(path.join(dir, 'calendar_dates.txt'), (row) => {
       if (row.date === TODAY && row.exception_type === '1') {
         activeServices.add(regionPrefix + row.service_id);
       }
     });
-    // Fallback: If no calendar_dates for today (rare), maybe check calendar.txt? 
-    // For now, if activeServices is empty, we might load nothing for this region, saving RAM.
 
-    // 2. Load Stops (Always load all stops so map works)
+    // Stops
     const stopsFile = fs.existsSync(path.join(dir, 'stops.txt')) ? 'stops.txt' : 'stops.csv';
     const stopsSet = new Set();
     await processCSV(path.join(dir, stopsFile), (row) => {
@@ -215,7 +224,7 @@ async function loadData() {
       }
     });
 
-    // 3. Load Routes
+    // Routes
     await processCSV(path.join(dir, 'routes.txt'), (row) => {
       routes.push({
         route_id: regionPrefix + row.route_id,
@@ -226,14 +235,12 @@ async function loadData() {
       });
     });
 
-    // 4. Load Trips (ONLY if Service ID is active today)
+    // Trips (Today Only)
     const regionTripToRoute = new Map();
-    const activeTripsSet = new Set(); // Fast lookup
+    const activeTripsSet = new Set();
 
     await processCSV(path.join(dir, 'trips.txt'), (row) => {
       const fullServiceId = regionPrefix + row.service_id;
-
-      // CRITICAL FILTER: Only load trips running TODAY
       if (activeServices.has(fullServiceId)) {
         const fullTripId = regionPrefix + row.trip_id;
         const fullRouteId = regionPrefix + row.route_id;
@@ -257,20 +264,16 @@ async function loadData() {
       }
     });
 
-    // 5. Load Stop Times (ONLY if Trip is active today)
+    // Stop Times (Today Only)
     await processCSV(path.join(dir, 'stop_times.txt'), (row) => {
       const fullTripId = regionPrefix + row.trip_id;
-
-      // CRITICAL FILTER: Drop time if trip isn't running today
       if (activeTripsSet.has(fullTripId)) {
         const fullStopId = regionPrefix + row.stop_id;
         const arrival = row.arrival_time;
 
         if (!stopTimetable[fullStopId]) stopTimetable[fullStopId] = [];
-        // Store minimal data
         stopTimetable[fullStopId].push({ t: fullTripId, a: arrival });
 
-        // Link Stop to Route
         const routeId = regionTripToRoute.get(fullTripId);
         if (routeId) {
           if (!routeStops[routeId]) routeStops[routeId] = new Set();
@@ -279,8 +282,7 @@ async function loadData() {
       }
     });
 
-    // 6. Load Shapes (Only load shapes used by active trips to save more RAM?)
-    // Actually, let's load all shapes for map completeness, shapes are usually small compared to times.
+    // Shapes
     const tempShapes = {};
     await processCSV(path.join(dir, 'shapes.txt'), (row) => {
       const shapeId = regionPrefix + row.shape_id;
@@ -295,15 +297,13 @@ async function loadData() {
       shapes[sid] = tempShapes[sid].sort((a, b) => a.seq - b.seq).map(pt => [pt.lat, pt.lon]);
     });
 
-    // Cleanup for this region
     regionTripToRoute.clear();
     activeTripsSet.clear();
     if (global.gc) global.gc();
     await new Promise(r => setTimeout(r, 200));
   }
 
-  console.log("Smart Data Load Complete!");
-  console.log(`Stops: ${stops.length}, Active Trips Today: ${trips.length}`);
+  console.log(`Smart Data Load Complete! Stops: ${stops.length}, Active Trips: ${trips.length}`);
 
   fetchData();
   setInterval(fetchData, 40000);
@@ -313,13 +313,8 @@ loadData();
 
 // --- API ---
 
-app.get('/api/stops', (req, res) => {
-  res.json(stops);
-});
-
-app.get('/api/routes', (req, res) => {
-  res.json(routes);
-});
+app.get('/api/stops', (req, res) => res.json(stops));
+app.get('/api/routes', (req, res) => res.json(routes));
 
 app.get('/api/routes/:routeId', (req, res) => {
   const { routeId } = req.params;
@@ -336,9 +331,6 @@ app.get('/api/routes/:routeId', (req, res) => {
 
 app.get('/api/stops/:stopId/timetable', (req, res) => {
   const { stopId } = req.params;
-  // Since we only loaded TODAY's data, we ignore the date query param essentially.
-  // We just return what we have in memory.
-
   const rawArrivals = stopTimetable[stopId] || [];
   const results = [];
 
@@ -370,14 +362,11 @@ app.get('/api/stops/:stopId/timetable', (req, res) => {
       delay: delay
     });
   }
-
   results.sort((a, b) => a.arrival_time.localeCompare(b.arrival_time));
   res.json(results);
 });
 
-app.get('/api/vehicle_positions', (req, res) => {
-  res.json(vehiclePositions);
-});
+app.get('/api/vehicle_positions', (req, res) => res.json(vehiclePositions));
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
