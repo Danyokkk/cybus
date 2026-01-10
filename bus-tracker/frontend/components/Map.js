@@ -168,19 +168,29 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     );
 };
 
-// Custom Bus Icon Generator
-const createBusIcon = (routeShortName) => {
+// Custom Bus Icon Generator (Modern High-Quality Design)
+const createBusIcon = (routeShortName, color = '#2ecc71') => {
+    // We use the requested green theme or fallback to route color if needed
+    // User specifically asked for green theme
+    const themeColor = '#10B981'; // A modern "Cyber Green"
+
     return L.divIcon({
-        className: 'custom-bus-marker',
+        className: 'custom-bus-marker-container',
         html: `
-            <div class="bus-marker-container">
-                <img src="/images/bus_blue.png" class="bus-icon-img" alt="Bus" />
-                <div class="bus-badge">${routeShortName || '?'}</div>
+            <div class="modern-bus-marker">
+                <div class="bus-route-plate">
+                    ${routeShortName || '?'}
+                </div>
+                <div class="bus-teardrop">
+                    <svg viewBox="0 0 24 24" class="bus-silhouette">
+                        <path fill="white" d="M18,11V13H15V11H18M18,15V17H15V15H18M9,11V13H6V11H9M9,15V17H6V15H9M20,11V21C20,21.55 19.55,22 19,22H18.5C17.95,22 17.5,21.55 17.5,21V20H6.5V21C6.5,21.55 6.05,22 5.5,22H5C4.45,22 4,21.55 4,21V11C4,7.69 6.69,5 10,5H11V3H9V2H15V3H13V5H14C17.31,5 20,7.69 20,11Z" />
+                    </svg>
+                </div>
             </div>
         `,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16],
-        popupAnchor: [0, -16]
+        iconSize: [80, 42], // Wider to accommodate the plate
+        iconAnchor: [60, 40], // Anchor at the point of the teardrop
+        popupAnchor: [0, -35]
     });
 };
 
@@ -271,7 +281,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                         <Marker
                             key={v.vehicle_id || i}
                             position={[v.lat, v.lon]}
-                            icon={createBusIcon(v.route_short_name)}
+                            icon={createBusIcon(v.route_short_name, vColor)}
                             eventHandlers={{
                                 click: () => {
                                     if (onVehicleClick) onVehicleClick(v);
