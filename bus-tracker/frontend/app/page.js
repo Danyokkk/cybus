@@ -43,7 +43,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 15000);
+    const interval = setInterval(fetchVehicles, 5000); // 5s frontend poll
     return () => clearInterval(interval);
   }, []);
 
@@ -76,14 +76,13 @@ export default function Home() {
     setLoading(false);
   };
 
-  // 3. Handle Vehicle Click (Show route on map)
-  const handleVehicleClick = (vehicle) => {
-    // Find route by fuzzy match (in case of prefix mismatch)
-    const route = routes.find(r => r.route_id === vehicle.route_id);
+  // 4. Handle Vehicle Click
+  const handleVehicleClick = (v) => {
+    const route = routes.find(r => r.route_id === v.route_id);
     if (route) {
       handleSelectRoute(route);
     } else {
-      console.warn('Route not found for vehicle:', vehicle.route_id);
+      console.warn('Route not found for vehicle:', v.route_id);
     }
   };
 

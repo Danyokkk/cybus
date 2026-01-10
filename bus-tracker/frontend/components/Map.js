@@ -168,13 +168,13 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     );
 };
 
-// Custom Bus Icon Generator with Rotation (User Image + Bearing)
-const createBusIcon = (routeShortName, bearing = 0) => {
+// Custom Bus Icon Generator with Rotation and Dynamic Label Color
+const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
     return L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
             <div class="rotated-bus-container">
-                <div class="pixel-route-pill-v2">
+                <div class="pixel-route-pill-v2" style="border-color: ${color}; color: ${color}">
                     ${routeShortName || '?'}
                 </div>
                 <div class="pixel-icon-wrapper" style="transform: rotate(${bearing}deg)">
@@ -268,14 +268,14 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                         (r.short_name && v.route_short_name && r.short_name.trim() === v.route_short_name.trim()) ||
                         (r.route_short_name && v.route_short_name && r.route_short_name.trim() === v.route_short_name.trim())
                     );
-                    const vColor = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : (v.color ? `#${v.color}` : '#0070f3');
+                    const vColor = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : '#44bd32';
                     const vTextColor = routeInfo ? `#${routeInfo.text_color || routeInfo.route_text_color}` : (v.text_color ? `#${v.text_color}` : 'white');
 
                     return (
                         <Marker
                             key={v.vehicle_id || i}
                             position={[v.lat, v.lon]}
-                            icon={createBusIcon(v.route_short_name, v.bearing)}
+                            icon={createBusIcon(v.route_short_name, v.bearing, vColor)}
                             eventHandlers={{
                                 click: () => {
                                     if (onVehicleClick) onVehicleClick(v);

@@ -204,7 +204,6 @@ body {
 
 .pixel-route-pill-v2 {
   background: white;
-  color: #44bd32;
   font-weight: 800;
   font-size: 1.1rem;
   padding: 4px 14px;
@@ -214,7 +213,7 @@ body {
   position: absolute;
   left: 0;
   z-index: 1;
-  border: 2px solid #44bd32;
+  border: 2px solid #ccc;
   white-space: nowrap;
 }
 
