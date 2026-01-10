@@ -177,7 +177,7 @@ body {
 
 /* Smooth Marker Movement */
 .leaflet-marker-icon {
-  transition: transform 10s linear;
+  transition: transform 4s linear;
 }
 
 .loading-map {

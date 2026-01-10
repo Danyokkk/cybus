@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V18 (HYPER-REALTIME + COLOR SYNC) ---");
+console.log("--- SERVER VERSION: V19 (HYPER-FAST + DIRECT ROTATION) ---");
 
 app.use(cors());
 app.use(express.json());
@@ -292,7 +292,7 @@ async function loadData() {
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
   fetchData();
-  setInterval(fetchData, 5000); // Hyper-Realtime Strategy: 5 seconds
+  setInterval(fetchData, 4000); // Super-Hyper: 4 seconds
 }
 
 loadData();

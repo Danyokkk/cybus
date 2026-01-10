@@ -177,7 +177,7 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
                 <div class="pixel-route-pill-v2" style="border-color: ${color}; color: ${color}">
                     ${routeShortName || '?'}
                 </div>
-                <div class="pixel-icon-wrapper" style="transform: rotate(${bearing}deg)">
+                <div class="pixel-icon-wrapper" style="transform: rotate(${bearing + 90}deg)">
                     <img src="/images/busicon.png" class="pixel-bus-img" />
                 </div>
             </div>
