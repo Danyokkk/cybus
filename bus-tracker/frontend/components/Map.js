@@ -177,14 +177,14 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
                 <div class="balloon-label" style="background-color: ${color};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${bearing}deg)">
+                <div class="rotated-bus-wrapper" style="transform: rotate(${bearing + 180}deg)">
                     <img src="/images/busicon.png" class="bus-image-core" />
                 </div>
             </div>
         `,
-        iconSize: [60, 80],
-        iconAnchor: [30, 40],
-        popupAnchor: [0, -40]
+        iconSize: [60, 90],
+        iconAnchor: [30, 70], // Anchor at the bus icon center
+        popupAnchor: [0, -70]
     });
 };
 
