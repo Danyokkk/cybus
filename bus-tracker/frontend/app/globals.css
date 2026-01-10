@@ -187,61 +187,55 @@ body {
   justify-content: center;
 }
 
-/* Pixel-Perfect Bus Marker (Matching Sample Image) */
+/* V16: Rotatable Custom Bus Marker Styles */
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
 }
 
-.pixel-bus-marker {
+.rotated-bus-container {
   display: flex;
   align-items: center;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+  justify-content: center;
   position: relative;
+  width: 100px;
+  height: 60px;
 }
 
-.pixel-route-pill {
+.pixel-route-pill-v2 {
   background: white;
   color: #44bd32;
-  /* Vibrant Green */
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.1rem;
-  padding: 4px 18px 4px 12px;
+  padding: 4px 14px;
   border-radius: 12px;
   font-family: 'Unbounded', sans-serif;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 50px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: relative;
-  left: 15px;
-  /* Tuck under the leaf */
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  position: absolute;
+  left: 0;
   z-index: 1;
+  border: 2px solid #44bd32;
+  white-space: nowrap;
 }
 
-.pixel-leaf {
-  width: 48px;
-  height: 48px;
-  background: #44bd32;
-  border-radius: 50% 50% 0 50%;
-  /* Leaf shape */
-  transform: rotate(-45deg);
-  /* Points to the right */
+.pixel-icon-wrapper {
+  z-index: 2;
+  width: 50px;
+  height: 50px;
+  transition: transform 0.3s ease-out;
+  /* Smooth rotation */
+  position: absolute;
+  right: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
-  border: 3px solid white;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
-.pixel-bus-svg {
-  width: 28px;
-  height: 28px;
-  transform: rotate(45deg);
-  /* Keep bus upright */
+.pixel-bus-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
 }
 
 /* Sidebar & Map Global polishing */

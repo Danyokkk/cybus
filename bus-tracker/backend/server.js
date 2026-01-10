@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V13 (SIDEBAR FIX + FASTER POLLING) ---");
+console.log("--- SERVER VERSION: V16 (ROTATABLE CUSTOM ICON) ---");
 
 app.use(cors());
 app.use(express.json());
