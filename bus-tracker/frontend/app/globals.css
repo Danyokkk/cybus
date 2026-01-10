@@ -231,10 +231,9 @@ body {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* Optimized Smoothness */
-.leaflet-marker-icon {
-  transition: transform 8s linear;
-  /* Match 8s polling */
+/* V22: Class-based transitions to prevent "flying" on start */
+.leaflet-marker-icon.smooth-move {
+  transition: transform 5s linear;
 }
 
 /* Sidebar Polishing */

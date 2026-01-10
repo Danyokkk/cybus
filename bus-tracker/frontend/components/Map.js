@@ -189,8 +189,17 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
 };
 
 export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
-    const [showStops, setShowStops] = useState(false); // Default hidden
+    const [showStops, setShowStops] = useState(false);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
     const { t } = useLanguage();
+
+    useEffect(() => {
+        if (vehicles.length > 0 && isFirstLoad) {
+            // After first batch of buses arrives, wait a moment then enable transitions
+            const timer = setTimeout(() => setIsFirstLoad(false), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [vehicles, isFirstLoad]);
 
     // Vehicle polling removed - now handled by page.js props
 
@@ -280,6 +289,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                             key={v.vehicle_id || i}
                             position={[v.lat, v.lon]}
                             icon={createBusIcon(v.route_short_name, v.bearing, vColor)}
+                            className={!isFirstLoad ? 'smooth-move' : ''}
                             eventHandlers={{
                                 click: () => {
                                     if (onVehicleClick) onVehicleClick(v);
