@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V12 (FUZZY MATCH + CALENDAR FIX) ---");
+console.log("--- SERVER VERSION: V13 (SIDEBAR FIX + FASTER POLLING) ---");
 
 app.use(cors());
 app.use(express.json());
@@ -220,7 +220,8 @@ async function loadData() {
     await processCSV(path.join(dir, 'routes.txt'), (row) => {
       routes.push({
         route_id: regionPrefix + row.route_id,
-        short_name: row.route_short_name,
+        short_name: row.route_short_name || '?',
+        long_name: row.route_long_name || row.route_desc || '',
         color: row.route_color,
         text_color: row.route_text_color
       });
@@ -291,7 +292,7 @@ async function loadData() {
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
   fetchData();
-  setInterval(fetchData, 45000); // 45s interval
+  setInterval(fetchData, 20000); // Faster polling (20s) for better tracking
 }
 
 loadData();
