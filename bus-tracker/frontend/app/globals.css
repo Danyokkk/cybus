@@ -39,7 +39,7 @@ body {
   width: 100vw;
 }
 
-/* Sidebar Styles */
+/* Sidebar Styles & Transitions */
 .sidebar {
   width: var(--sidebar-width);
   height: 100%;
@@ -49,6 +49,36 @@ body {
   flex-direction: column;
   z-index: 1000;
   box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, width 0.3s ease;
+}
+
+/* Mobile Responsive Logic */
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 100vw;
+  }
+
+  .sidebar {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 85vw;
+    /* Almost full width but showing map edge */
+    height: 100%;
+    z-index: 2000;
+  }
+
+  .sidebar.closed {
+    transform: translateX(-100%);
+  }
+
+  .mobile-sidebar-toggle {
+    display: flex !important;
+  }
+
+  .map-container {
+    width: 100vw;
+  }
 }
 
 .sidebar-header {
@@ -123,11 +153,30 @@ body {
   color: #666;
 }
 
-/* Map Container */
 .map-container {
   flex: 1;
   position: relative;
   height: 100%;
+}
+
+.mobile-sidebar-toggle {
+  display: none;
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 3000;
+  width: 45px;
+  height: 45px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: #44bd32;
+  transition: transform 0.2s;
 }
 
 .loading-overlay {
@@ -135,12 +184,15 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  font-weight: bold;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 15px 30px;
+  border-radius: 30px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  z-index: 5000;
+  font-weight: 800;
+  color: #44bd32;
+  backdrop-filter: blur(4px);
+  border: 2px solid #44bd32;
 }
 
 /* Bus Marker Styles */

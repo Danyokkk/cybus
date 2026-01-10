@@ -12,13 +12,14 @@ const Map = dynamic(() => import('../components/Map'), {
 export default function Home() {
   const [stops, setStops] = useState([]);
   const [routes, setRoutes] = useState([]);
-  const [shapes, setShapes] = useState([]); // Array of arrays of points
+  const [shapes, setShapes] = useState([]);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedRouteColor, setSelectedRouteColor] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  // 1. Fetch initial data (all stops and all routes)
+  // 1. Fetch initial data
   useEffect(() => {
     Promise.all([
       fetch('https://cyfinal.onrender.com/api/stops').then(res => res.json()),
@@ -33,7 +34,7 @@ export default function Home() {
     });
   }, []);
 
-  // 2. Poll Vehicles from Backend
+  // 2. Poll Vehicles
   useEffect(() => {
     const fetchVehicles = () => {
       fetch('https://cyfinal.onrender.com/api/vehicle_positions')
@@ -43,15 +44,18 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 5000); // Sync to 5s
+    const interval = setInterval(fetchVehicles, 5000);
     return () => clearInterval(interval);
   }, []);
 
-  // 2. Handle Route Selection
+  // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = async (route) => {
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
     setLoading(true);
     if (!route) {
-      // Reset to all stops
+      // ... (rest of reset logic)
       setSelectedRouteId(null);
       setSelectedRouteColor(null);
       setShapes([]);
@@ -61,14 +65,11 @@ export default function Home() {
         setStops(data);
       } catch (err) { console.error(err); }
     } else {
-      // Fetch specific route details
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color);
       try {
         const res = await fetch(`https://cyfinal.onrender.com/api/routes/${route.route_id}`);
         const data = await res.json();
-        // data.stops contains the stops for this route
-        // data.shapes contains the line segments
         setStops(data.stops);
         setShapes(data.shapes || []);
       } catch (err) { console.error(err); }
@@ -76,23 +77,30 @@ export default function Home() {
     setLoading(false);
   };
 
-  // 4. Handle Vehicle Click
+  // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = (v) => {
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
     const route = routes.find(r => r.route_id === v.route_id);
-    if (route) {
-      handleSelectRoute(route);
-    } else {
-      console.warn('Route not found for vehicle:', v.route_id);
-    }
+    if (route) handleSelectRoute(route);
   };
 
   return (
-    <main className="main-container">
+    <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      {/* Mobile Toggle Button */}
+      <button
+        className="mobile-sidebar-toggle"
+        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        {isSidebarOpen ? '✕' : '☰'}
+      </button>
+
       <Sidebar
         routes={routes}
         onSelectRoute={handleSelectRoute}
         selectedRouteId={selectedRouteId}
+        isOpen={isSidebarOpen}
       />
+
       <div className="map-container">
         {loading && <div className="loading-overlay">Loading...</div>}
         <Map

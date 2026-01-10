@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function Sidebar({ routes, onSelectRoute, selectedRouteId }) {
+export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen }) {
     const [searchTerm, setSearchTerm] = useState('');
     const { language, setLanguage, t } = useLanguage();
 
@@ -13,7 +13,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId }) {
     );
 
     return (
-        <div className="sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className={`sidebar ${isOpen ? 'open' : 'closed'}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
             <div className="sidebar-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <h2>CyBus</h2>

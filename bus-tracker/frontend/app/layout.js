@@ -2,9 +2,17 @@ import './globals.css';
 import { LanguageProvider } from '../context/LanguageContext';
 
 export const metadata = {
-  title: 'Cyprus Bus Tracker',
-  description: 'Live bus tracking and timetables for Cyprus',
+  title: 'CyBus | Live Cyprus Bus Tracker',
+  description: 'Track live bus locations, routes, and timetables across Cyprus including Nicosia, Limassol, Paphos, and Larnaca. Real-time GTFS data at your fingertips.',
+  keywords: 'Cyprus bus, bus tracker, live bus tracker, Limassol bus, Nicosia bus, Cyprus public transport, bus timetable Cyprus',
   manifest: '/manifest.json',
+  openGraph: {
+    title: 'CyBus | Live Cyprus Bus Tracker',
+    description: 'Real-time bus tracking for all of Cyprus.',
+    url: 'https://cyfinal.onrender.com',
+    siteName: 'CyBus',
+    type: 'website',
+  },
 };
 
 export const viewport = {
@@ -12,7 +20,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#0070f3',
+  themeColor: '#44bd32',
 };
 
 export default function RootLayout({ children }) {
