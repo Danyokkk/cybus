@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V11 (DIRECT IP BYPASS) ---");
+console.log("--- SERVER VERSION: V12 (FUZZY MATCH + CALENDAR FIX) ---");
 
 app.use(cors());
 app.use(express.json());
@@ -44,10 +44,25 @@ function getCyprusDate() {
   return `${yyyy}${mm}${dd}`;
 }
 
-// CSV Processor
+// Helper: Get Day of Week (0-6, 0=Sunday)
+function getDayOfWeek() {
+  const now = new Date();
+  now.setHours(now.getHours() + 2); // Cyprus Time
+  return now.getDay();
+}
+
+function getDayName(dayIndex) {
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days[dayIndex];
+}
+
+// CSV Processor (with error handling)
 function processCSV(filePath, onRow) {
   return new Promise((resolve) => {
-    if (!fs.existsSync(filePath)) return resolve();
+    if (!fs.existsSync(filePath)) {
+      // console.log(`! File not found: ${filePath}`);
+      return resolve();
+    }
     fs.createReadStream(filePath)
       .pipe(csv({
         mapHeaders: ({ header, index }) => {
@@ -59,104 +74,90 @@ function processCSV(filePath, onRow) {
         try { onRow(data); } catch (err) { }
       })
       .on('end', resolve)
-      .on('error', () => resolve());
+      .on('error', (err) => {
+        console.error(`Error reading ${filePath}:`, err.message);
+        resolve();
+      });
   });
 }
 
 // Fetch Logic
-async function processFeed(originalUrl, regionPrefix, tempPositions, tempUpdates) {
+async function fetchData() {
   try {
-    const response = await axiosInstance.get(originalUrl, {
-      responseType: 'arraybuffer'
-    });
-
+    const url = 'http://20.19.98.194:8328/Api/api/gtfs-realtime';
+    const response = await axiosInstance.get(url, { responseType: 'arraybuffer' });
     const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(response.data));
+
+    const tempPositions = [];
+    const tempUpdates = {};
 
     feed.entity.forEach(entity => {
       if (entity.vehicle) {
         const rawTripId = entity.vehicle.trip?.tripId;
-        const fullTripId = regionPrefix + rawTripId;
-        const trip = trips.find(t => t.trip_id === fullTripId);
+        const rawRouteId = entity.vehicle.trip?.routeId;
 
-        let rawRouteId = trip ? trip.route_id : null;
-        if (!rawRouteId && entity.vehicle.trip?.routeId) {
-          rawRouteId = regionPrefix + entity.vehicle.trip.routeId;
+        // --- FUZZY MATCHING (NUCLEAR VERSION) ---
+        // 1. Try match by trip_id ending with rawTripId
+        let trip = trips.find(t => t.trip_id.endsWith(rawTripId));
+
+        // 2. If no trip, try searching by route_id
+        if (!trip && rawRouteId) {
+          trip = trips.find(t => t.route_id.endsWith(rawRouteId));
         }
 
-        const route = routes.find(r => r.route_id === rawRouteId);
+        const route = trip ? routes.find(r => r.route_id === trip.route_id) : routes.find(r => r.route_id.endsWith(rawRouteId));
 
         tempPositions.push({
           vehicle_id: entity.vehicle.vehicle?.id,
-          trip_id: fullTripId,
-          route_id: rawRouteId,
+          trip_id: trip ? trip.trip_id : rawTripId,
+          route_id: route ? route.route_id : rawRouteId,
           lat: entity.vehicle.position?.latitude,
           lon: entity.vehicle.position?.longitude,
           bearing: entity.vehicle.position?.bearing,
           speed: entity.vehicle.position?.speed,
           timestamp: entity.vehicle.timestamp,
-          route_short_name: route ? route.short_name : '?',
-          trip_headsign: trip ? trip.trip_headsign : '?',
-          color: route ? route.color : '000000',
-          text_color: route ? route.text_color : 'FFFFFF'
+          route_short_name: route ? (route.short_name || route.route_short_name) : '?',
+          trip_headsign: trip ? trip.trip_headsign : (entity.vehicle.trip?.tripId || '?'),
+          color: route ? (route.color || '0070f3') : '000000',
+          text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF'
         });
       }
 
       if (entity.tripUpdate) {
-        const tripId = regionPrefix + entity.tripUpdate.trip.tripId;
-        if (!tempUpdates[tripId]) tempUpdates[tripId] = {};
+        const rawTripId = entity.tripUpdate.trip.tripId;
+        const trip = trips.find(t => t.trip_id.endsWith(rawTripId));
+        const fullTripId = trip ? trip.trip_id : rawTripId;
+
+        if (!tempUpdates[fullTripId]) tempUpdates[fullTripId] = {};
         if (entity.tripUpdate.stopTimeUpdate) {
           entity.tripUpdate.stopTimeUpdate.forEach(stu => {
-            const stopId = regionPrefix + stu.stopId;
+            const rawStopId = stu.stopId;
+            const stop = stops.find(s => s.stop_id.endsWith(rawStopId));
+            const fullStopId = stop ? stop.stop_id : rawStopId;
+
             const arrival = stu.arrival?.time;
-            const delay = stu.arrival?.delay;
-            tempUpdates[tripId][stopId] = {
+            tempUpdates[fullTripId][fullStopId] = {
               arrival_time: arrival ? (arrival.low || arrival) : null,
-              delay: delay
+              delay: stu.arrival?.delay
             };
           });
         }
       }
     });
-    console.log(`✓ ${regionPrefix} fetched via Proxy.`);
-  } catch (error) {
-    console.error(`X Error fetching ${regionPrefix}: ${error.message}`);
-  }
-}
 
-async function fetchData() {
-  const tempPositions = [];
-  const tempUpdates = {};
-
-  const feeds = [
-    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/3', prefix: 'emel_' },
-    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/1', prefix: 'intercity_buses_' },
-    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/4', prefix: 'lpt_' },
-    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/6', prefix: 'osypa_pafos_' },
-    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/5', prefix: 'osea__famagusta__' },
-    { url: 'http://20.19.98.194:8328/Api/api/gtfs-realtime/2', prefix: 'npt_' }
-  ];
-
-  console.log("--- Starting Proxy Fetch Cycle ---");
-
-  for (const feed of feeds) {
-    await processFeed(feed.url, feed.prefix, tempPositions, tempUpdates);
-    // Small pause to be nice to the proxy
-    await new Promise(r => setTimeout(r, 500));
-  }
-
-  if (tempPositions.length > 0) {
     vehiclePositions = tempPositions;
     tripUpdates = tempUpdates;
-    console.log(`>>> Updated: ${vehiclePositions.length} active buses found.`);
-  } else {
-    console.log(">>> Cycle finished. 0 buses found.");
+    console.log(`>>> Global Feed Sync: ${vehiclePositions.length} buses found.`);
+  } catch (err) {
+    console.error(`X Error fetching Global Feed: ${err.message}`);
   }
 }
 
 async function loadData() {
   console.log("Starting Smart Data Load...");
   const TODAY = getCyprusDate();
-  console.log(`Filtering for Date: ${TODAY}`);
+  const DAY_NAME = getDayName(getDayOfWeek());
+  console.log(`Date: ${TODAY}, Day: ${DAY_NAME}`);
 
   const dataDirs = [
     path.join(__dirname, 'data/other_gtfs/EMEL'),
@@ -181,11 +182,25 @@ async function loadData() {
     console.log(`Processing ${path.basename(dir)}...`);
 
     const activeServices = new Set();
-    await processCSV(path.join(dir, 'calendar_dates.txt'), (row) => {
-      if (row.date === TODAY && row.exception_type === '1') {
+    await processCSV(path.join(dir, 'calendar.txt'), (row) => {
+      if (row[DAY_NAME] === '1') {
         activeServices.add(regionPrefix + row.service_id);
       }
     });
+    await processCSV(path.join(dir, 'calendar_dates.txt'), (row) => {
+      if (row.date === TODAY) {
+        if (row.exception_type === '1') activeServices.add(regionPrefix + row.service_id);
+        if (row.exception_type === '2') activeServices.delete(regionPrefix + row.service_id);
+      }
+    });
+
+    // SAFETY FALLBACK: If no services found for today (old data), just take all services
+    if (activeServices.size === 0) {
+      console.log(`! No active services for ${path.basename(dir)} today. Loading ALL services as fallback.`);
+      await processCSV(path.join(dir, 'trips.txt'), (row) => {
+        activeServices.add(regionPrefix + row.service_id);
+      });
+    }
 
     const stopsFile = fs.existsSync(path.join(dir, 'stops.txt')) ? 'stops.txt' : 'stops.csv';
     const stopsSet = new Set();
