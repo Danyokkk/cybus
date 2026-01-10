@@ -168,23 +168,23 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     );
 };
 
-// Custom Bus Icon Generator with Rotation and Dynamic Label Color
+// Custom Bus Icon Generator (Balloon Label + Rotated Bus)
 const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
     return L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
-            <div class="rotated-bus-container">
-                <div class="pixel-route-pill-v2" style="border-color: ${color}; color: ${color}">
+            <div class="balloon-bus-marker">
+                <div class="balloon-label" style="background-color: ${color};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="pixel-icon-wrapper" style="transform: rotate(${bearing + 90}deg)">
-                    <img src="/images/busicon.png" class="pixel-bus-img" />
+                <div class="rotated-bus-wrapper" style="transform: rotate(${bearing}deg)">
+                    <img src="/images/busicon.png" class="bus-image-core" />
                 </div>
             </div>
         `,
-        iconSize: [100, 60],
-        iconAnchor: [50, 30],
-        popupAnchor: [0, -30]
+        iconSize: [60, 80],
+        iconAnchor: [30, 40],
+        popupAnchor: [0, -40]
     });
 };
 
@@ -228,8 +228,12 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                 {showStops ? 'Hide Stops' : 'Show Stops'}
             </button>
 
-            <MapContainer center={center} zoom={12} style={{ height: "100%", width: "100%" }}>
-                <TileLayer
+            <MapContainer
+                center={[35.1264, 33.4299]}
+                zoom={10}
+                style={{ height: '100%', width: '100%' }}
+                preferCanvas={true}
+            >    <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />

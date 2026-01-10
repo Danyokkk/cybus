@@ -187,57 +187,57 @@ body {
   justify-content: center;
 }
 
-/* V16: Rotatable Custom Bus Marker Styles */
+/* V20: Optimized Balloon Markers */
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
 }
 
-.rotated-bus-container {
+.balloon-bus-marker {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   position: relative;
-  width: 100px;
-  height: 60px;
 }
 
-.pixel-route-pill-v2 {
-  background: white;
+.balloon-label {
+  padding: 4px 10px;
+  border-radius: 15px 15px 15px 5px;
+  /* Leaf/Balloon shape */
+  color: white;
   font-weight: 800;
-  font-size: 1.1rem;
-  padding: 4px 14px;
-  border-radius: 12px;
   font-family: 'Unbounded', sans-serif;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
-  position: absolute;
-  left: 0;
-  z-index: 1;
-  border: 2px solid #ccc;
+  font-size: 0.9rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  margin-bottom: 2px;
+  border: 2px solid white;
+  z-index: 2;
   white-space: nowrap;
 }
 
-.pixel-icon-wrapper {
-  z-index: 2;
-  width: 50px;
-  height: 50px;
-  transition: transform 0.3s ease-out;
-  /* Smooth rotation */
-  position: absolute;
-  right: 10px;
+.rotated-bus-wrapper {
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
 }
 
-.pixel-bus-img {
-  width: 50px;
-  height: 50px;
+.bus-image-core {
+  width: 40px;
+  height: 40px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* Sidebar & Map Global polishing */
+/* Optimized Smoothness */
+.leaflet-marker-icon {
+  transition: transform 8s linear;
+  /* Match 8s polling */
+}
+
+/* Sidebar Polishing */
 .route-badge {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
@@ -248,6 +248,5 @@ body {
 }
 
 .stops-toggle-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2) !important;
 }

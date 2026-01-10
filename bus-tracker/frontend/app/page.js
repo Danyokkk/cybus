@@ -43,7 +43,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 4000); // 4s frontend poll
+    const interval = setInterval(fetchVehicles, 8000); // 8s frontend poll
     return () => clearInterval(interval);
   }, []);
 
