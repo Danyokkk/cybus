@@ -187,65 +187,64 @@ body {
   justify-content: center;
 }
 
-/* Modern Teardrop Marker Styles */
+/* Pixel-Perfect Bus Marker (Matching Sample Image) */
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
 }
 
-.modern-bus-marker {
+.pixel-bus-marker {
   display: flex;
   align-items: center;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.25));
-  transition: transform 0.2s ease;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+  position: relative;
 }
 
-.modern-bus-marker:hover {
-  transform: scale(1.1);
-  z-index: 9999 !important;
-}
-
-.bus-route-plate {
+.pixel-route-pill {
   background: white;
-  color: #10B981;
-  font-weight: 900;
-  font-size: 0.85rem;
-  padding: 4px 10px;
-  border-radius: 8px 0 0 8px;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+  color: #44bd32;
+  /* Vibrant Green */
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 4px 18px 4px 12px;
+  border-radius: 12px;
   font-family: 'Unbounded', sans-serif;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 40px;
-  white-space: nowrap;
-  border: 2px solid #10B981;
-  border-right: none;
-}
-
-.bus-teardrop {
-  width: 40px;
   height: 40px;
-  background: #10B981;
-  border-radius: 20px 20px 20px 4px;
-  /* Teardrop shape */
-  transform: rotate(-45deg);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
-  border: 2px solid white;
+  min-width: 50px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: relative;
+  left: 15px;
+  /* Tuck under the leaf */
+  z-index: 1;
 }
 
-.bus-silhouette {
-  width: 24px;
-  height: 24px;
+.pixel-leaf {
+  width: 48px;
+  height: 48px;
+  background: #44bd32;
+  border-radius: 50% 50% 0 50%;
+  /* Leaf shape */
+  transform: rotate(-45deg);
+  /* Points to the right */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  border: 3px solid white;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.pixel-bus-svg {
+  width: 28px;
+  height: 28px;
   transform: rotate(45deg);
-  /* Counter-rotate to keep bus upright */
+  /* Keep bus upright */
 }
 
-/* Specific Sidebar polishing */
+/* Sidebar & Map Global polishing */
 .route-badge {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s;
