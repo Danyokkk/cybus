@@ -67,7 +67,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                             {route.short_name}
                         </div>
                         <div className="route-info" style={{ textAlign: 'left' }}>
-                            <strong style={{ fontSize: '0.85rem' }}>{route.short_name}</strong>
+                            <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{route.long_name}</span>
                         </div>
                     </button>
                 ))}
