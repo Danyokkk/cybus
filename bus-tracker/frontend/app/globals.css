@@ -176,7 +176,15 @@ body {
 }
 
 .daan1k-credit {
-  color: #fff;
+  font-weight: 900;
+  font-size: 0.8rem;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), #fff, rgba(255, 255, 255, 0.4));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: nebula-shimmer 3s linear infinite;
+  letter-spacing: 0.5px;
 }
 
 @keyframes nebula-shimmer {

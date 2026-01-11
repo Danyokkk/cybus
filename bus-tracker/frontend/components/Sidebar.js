@@ -80,8 +80,8 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     rel="noopener noreferrer"
                     style={{ textDecoration: 'none' }}
                 >
-                    <div className="daan1k-credit" style={{ fontSize: '0.75rem', opacity: 0.6, letterSpacing: '0.5px' }}>
-                        made by <span style={{ fontWeight: 900, opacity: 1 }}>@daan1k</span>
+                    <div className="daan1k-credit">
+                        made by @daan1k
                     </div>
                 </a>
             </div>
