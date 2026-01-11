@@ -310,3 +310,21 @@ body {
 .leaflet-marker-icon {
   transition: transform 1.9s linear;
 }
+
+@keyframes sonar {
+  0% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+    box-shadow: 0 0 30px #39ff14;
+  }
+
+  100% {
+    transform: scale(0.9);
+    opacity: 1;
+  }
+}

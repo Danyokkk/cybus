@@ -38,6 +38,14 @@ const stopIcon = L.divIcon({
     popupAnchor: [0, -12]
 });
 
+// User Location "Radar" Icon - Fat Neon Green
+const userLocationIcon = L.divIcon({
+    className: 'custom-user-location-icon',
+    html: '<div style="background: #39ff14; width: 22px; height: 22px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 20px #39ff14, 0 0 40px rgba(57, 255, 20, 0.4); animation: sonar 2s infinite;"></div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+});
+
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -267,12 +275,38 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
 
 export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
     const [showStops, setShowStops] = useState(false);
-    const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const [mapZoom, setMapZoom] = useState(10);
     const [visibleVehicles, setVisibleVehicles] = useState([]);
     const [visibleStops, setVisibleStops] = useState([]);
-    const [mapZoom, setMapZoom] = useState(10);
-    const filterTimeout = useRef(null);
+    const [userLoc, setUserLoc] = useState(null);
+    const [locLoading, setLocLoading] = useState(false);
     const seenVehicles = useRef(new Set());
+    const filterTimeout = useRef(null);
+
+    const mapRef = useRef(null);
+
+    // My Location Logic
+    const handleMyLocation = () => {
+        if (!navigator.geolocation) return alert("Geolocation not supported");
+        setLocLoading(true);
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setUserLoc([latitude, longitude]);
+                setLocLoading(false);
+                setShowStops(true);
+                if (mapRef.current) {
+                    mapRef.current.setView([latitude, longitude], 15, { animate: true });
+                }
+            },
+            (err) => {
+                console.error(err);
+                setLocLoading(false);
+                alert("Could not find your location");
+            },
+            { enableHighAccuracy: true }
+        );
+    };
     const { t } = useLanguage();
 
     // 1. Instant Spawn Logic: Track which vehicles we've already seen
@@ -340,36 +374,55 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
 
-            {/* Show Stops Toggle Button */}
-            <button
-                onClick={() => setShowStops(!showStops)}
-                className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
-                style={{
-                    position: 'absolute',
-                    top: '25px', /* Floating Margin Alignment */
-                    right: '25px',
-                    zIndex: 1000,
-                    padding: '10px 20px',
-                    borderRadius: '16px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontWeight: '900',
-                    fontSize: '0.75rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '10px',
-                    letterSpacing: '0.5px'
-                }}
-            >
-                <span style={{ fontSize: '1.2rem' }}>{showStops ? '✕' : '🚏'}</span>
-                {showStops ? 'Hide Stops' : 'Show Stops'}
-            </button>
+            {/* UI Controls - Floating Right */}
+            <div style={{ position: 'absolute', top: '25px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button
+                    onClick={() => setShowStops(!showStops)}
+                    className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
+                    style={{
+                        padding: '10px 20px',
+                        borderRadius: '16px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '900',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        letterSpacing: '0.5px'
+                    }}
+                >
+                    <span style={{ fontSize: '1.2rem' }}>{showStops ? '✕' : '🚏'}</span>
+                    {showStops ? 'Hide Stops' : 'Show Stops'}
+                </button>
+
+                <button
+                    onClick={handleMyLocation}
+                    className="stops-toggle-btn"
+                    style={{
+                        padding: '10px 20px',
+                        borderRadius: '16px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '900',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        letterSpacing: '0.5px'
+                    }}
+                >
+                    <span style={{ fontSize: '1.2rem' }}>{locLoading ? '⌛' : '🛰️'}</span>
+                    {locLoading ? 'Finding...' : 'My Location'}
+                </button>
+            </div>
 
             <MapContainer
                 center={[35.1264, 33.4299]}
                 zoom={10}
                 style={{ height: '100%', width: '100%' }}
                 preferCanvas={true}
+                ref={mapRef}
             >
                 <ViewportFilter />
 
@@ -444,6 +497,15 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                         />
                     );
                 })}
+
+                {/* User Location Marker */}
+                {userLoc && (
+                    <Marker position={userLoc} icon={userLocationIcon} zIndexOffset={1000}>
+                        <Popup>
+                            <div style={{ textAlign: 'center', fontWeight: 'bold' }}>You are here</div>
+                        </Popup>
+                    </Marker>
+                )}
 
             </MapContainer>
         </div>
