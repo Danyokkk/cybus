@@ -288,16 +288,41 @@ body {
   transition: transform 4.5s linear;
 }
 
-/* Sidebar Polishing */
-.route-badge {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
+/* V26: Premium Layer Control Styles */
+.leaflet-control-layers {
+  border: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden;
+  font-family: 'Unbounded', sans-serif !important;
+  font-size: 0.8rem !important;
 }
 
-.route-item:hover .route-badge {
-  transform: scale(1.1);
+.leaflet-control-layers-toggle {
+  width: 44px !important;
+  height: 44px !important;
+  background-size: 24px 24px !important;
+  border-radius: 12px !important;
 }
 
-.stops-toggle-btn:hover {
-  box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2) !important;
+.leaflet-control-layers-expanded {
+  padding: 12px !important;
+  background: white !important;
+  color: #333 !important;
+}
+
+.leaflet-control-layers-base label,
+.leaflet-control-layers-overlays label {
+  margin-bottom: 5px !important;
+  cursor: pointer;
+}
+
+.leaflet-control-layers-base label:last-child,
+.leaflet-control-layers-overlays label:last-child {
+  margin-bottom: 0 !important;
+}
+
+.leaflet-control-layers-separator {
+  margin: 10px -12px !important;
+  border-top: 1px solid #eee !important;
 }
