@@ -29,10 +29,10 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// Lightweight stop icon for better performance than CircleMarkers
+// Lightweight neon stop icon
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background-color: #44bd32; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>',
+    html: '<div style="background-color: #39ff14; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #39ff14;"></div>',
     iconSize: [12, 12],
     iconAnchor: [6, 6],
     popupAnchor: [0, -6]
@@ -70,12 +70,12 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
     const uniqueRoutes = [...new Set(arrivals.map(a => a.route_short_name))];
 
-    if (loading) return <div style={{ minWidth: '320px', padding: '20px', textAlign: 'center', fontFamily: 'Unbounded, sans-serif' }}>Loading timetable...</div>;
+    if (loading) return <div style={{ minWidth: '320px', padding: '20px', textAlign: 'center', color: '#39ff14', fontWeight: 'bold' }}>Loading toxic timetable...</div>;
 
     return (
-        <div style={{ minWidth: '320px', maxWidth: '350px', fontFamily: 'Unbounded, sans-serif' }}>
-            <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', whiteSpace: 'normal', wordWrap: 'break-word', lineHeight: '1.2' }}>{stop.name}</h3>
-            <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '10px' }}>Stop ID: {stop.stop_id}</div>
+        <div style={{ minWidth: '320px', maxWidth: '350px', color: '#fff' }}>
+            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#39ff14', textShadow: '0 0 5px rgba(57, 255, 20, 0.5)' }}>{stop.name}</h3>
+            <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', fontWeight: 'bold' }}>STOP ID: {stop.stop_id}</div>
 
             {uniqueRoutes.length > 0 && (
                 <div style={{ marginBottom: '10px' }}>
@@ -119,13 +119,13 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                 </div>
             )}
 
-            <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', color: '#ddd' }}>
                 <thead>
-                    <tr style={{ borderBottom: '1px solid #ddd', textAlign: 'left' }}>
-                        <th style={{ padding: '6px 4px' }}>⏳ Time</th>
-                        <th style={{ padding: '6px 4px' }}>🚌 Route</th>
-                        <th style={{ padding: '6px 4px' }}>📍 Dest.</th>
-                        <th style={{ padding: '6px 4px' }}>Status</th>
+                    <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#39ff14' }}>
+                        <th style={{ padding: '8px 4px' }}>⏳ Time</th>
+                        <th style={{ padding: '8px 4px' }}>🚌 Route</th>
+                        <th style={{ padding: '8px 4px' }}>📍 Dest.</th>
+                        <th style={{ padding: '8px 4px' }}>Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -143,28 +143,30 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                             const routeInfo = routes.find(r => r.short_name === arr.route_short_name || r.route_short_name === arr.route_short_name);
 
                             return (
-                                <tr key={i} style={{ borderBottom: '1px solid #eee' }}>
-                                    <td style={{ padding: '8px 4px', fontWeight: 'bold' }}>{timeDisplay}</td>
-                                    <td style={{ padding: '8px 4px' }}>
+                                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                    <td style={{ padding: '10px 4px', fontWeight: '900', color: '#fff' }}>{timeDisplay}</td>
+                                    <td style={{ padding: '10px 4px' }}>
                                         <span
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 if (routeInfo) onSelectRoute(routeInfo);
                                             }}
                                             style={{
-                                                background: '#eee',
-                                                padding: '2px 6px',
-                                                borderRadius: '4px',
+                                                background: 'rgba(57, 255, 20, 0.1)',
+                                                padding: '4px 8px',
+                                                borderRadius: '6px',
+                                                border: '1px solid rgba(57, 255, 20, 0.3)',
+                                                color: '#39ff14',
                                                 cursor: routeInfo ? 'pointer' : 'default',
-                                                textDecoration: routeInfo ? 'underline' : 'none',
-                                                fontSize: '0.8rem'
+                                                fontSize: '0.8rem',
+                                                fontWeight: 'bold'
                                             }}
                                         >
                                             {arr.route_short_name}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '8px 4px' }}>{arr.trip_headsign}</td>
-                                    <td style={{ padding: '8px 4px', color: arr.is_realtime ? 'green' : 'gray', fontWeight: arr.is_realtime ? 'bold' : 'normal' }}>
+                                    <td style={{ padding: '10px 4px', color: '#bbb' }}>{arr.trip_headsign}</td>
+                                    <td style={{ padding: '10px 4px', color: arr.is_realtime ? '#39ff14' : '#666', fontWeight: 'bold' }}>
                                         {arr.is_realtime ? '● Live' : 'Sched.'}
                                     </td>
                                 </tr>
@@ -247,14 +249,14 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
                     }}>
                         {shortName || '?'}
                     </div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px', color: '#000' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', color: '#fff' }}>
                         {headsign || 'Bus Route'}
                     </div>
-                    <div style={{ textAlign: 'left', fontSize: '0.9rem', marginTop: '12px', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '12px', fontWeight: 'bold' }}>
-                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase' }}>Vehicle ID:</strong> <span style={{ fontFamily: 'monospace', color: '#333' }}>{id}</span></div>
-                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase' }}>Operator:</strong> <span style={{ color: '#333' }}>{agency || 'Cyprus Public Transport'}</span></div>
-                        <div style={{ marginBottom: '6px', color: '#2ecc71' }}>
-                            <strong style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
+                    <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
+                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#39ff14', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Vehicle ID:</strong> <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 'bold' }}>{id}</span></div>
+                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#39ff14', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Operator:</strong> <span style={{ color: '#fff' }}>{agency || 'Cyprus Public Transport'}</span></div>
+                        <div style={{ marginBottom: '6px', color: '#39ff14', textShadow: '0 0 5px rgba(57, 255, 20, 0.4)' }}>
+                            <strong style={{ color: '#39ff14', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
                         </div>
                     </div>
                 </div>
@@ -394,7 +396,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
                 {/* Stops with Zoom Logic - Using CircleMarkers for better performance than full Icons */}
                 {showStops && mapZoom < 14 && (
-                    <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.95)', padding: '10px 20px', borderRadius: '20px', border: '1px solid #44bd32', fontWeight: 'bold', color: '#333', fontSize: '0.85rem', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
+                    <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '16px', border: '2px solid #39ff14', fontWeight: '900', color: '#39ff14', fontSize: '0.9rem', boxShadow: '0 0 20px rgba(57, 255, 20, 0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>
                         {t.zoomInToSeeStops || 'Zoom in to see stops'}
                     </div>
                 )}

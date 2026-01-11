@@ -66,7 +66,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     </button>
                 ))}
             </div>
-            <div style={{ marginTop: 'auto', padding: '15px', textAlign: 'center', borderTop: '1px solid #eee', background: '#fff' }}>
+            <div style={{ marginTop: 'auto', padding: '20px', textAlign: 'center', borderTop: '1px solid var(--glass-border)', background: 'transparent' }}>
                 <a
                     href="https://t.me/daqxn"
                     target="_blank"
@@ -77,7 +77,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                         Made by @daan1k
                     </div>
                 </a>
-                <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '10px' }}>
+                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '12px', fontWeight: 'bold' }}>
                     {t.disclaimer}
                 </div>
             </div>
