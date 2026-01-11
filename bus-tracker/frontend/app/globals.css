@@ -97,10 +97,7 @@ body {
 .sidebar-header h2 {
   font-size: 2.2rem;
   font-weight: 900;
-  background: linear-gradient(135deg, #fff, var(--nebula-accent));
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #fff;
   letter-spacing: -1.5px;
 }
 
@@ -179,14 +176,7 @@ body {
 }
 
 .daan1k-credit {
-  font-weight: 900;
-  font-size: 1.1rem;
-  background: linear-gradient(90deg, #fff, var(--nebula-accent), #fff);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: nebula-shimmer 4s linear infinite;
+  color: #fff;
 }
 
 @keyframes nebula-shimmer {
