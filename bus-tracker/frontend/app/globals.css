@@ -1,22 +1,21 @@
 :root {
   --background: #000000;
   --foreground: #ffffff;
-  --sidebar-width: 380px;
-  --primary: #9d00ff;
-  /* Toxic Purple */
-  --secondary: #39ff14;
+  --sidebar-width: 360px;
+  --primary: #39ff14;
   /* Toxic Neon Green */
-  --accent: #ff007f;
-  /* Neon Pink */
+  --secondary: #9d00ff;
+  /* Toxic Purple */
 
-  /* Liquid Glass Tokens */
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-blur: blur(25px) saturate(200%);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --glass-glow: rgba(57, 255, 20, 0.2);
+  /* Super Minimal Liquid Glass */
+  --liquid-bg: rgba(255, 255, 255, 0.05);
+  /* Very subtle tint */
+  --liquid-blur: blur(20px) saturate(180%);
+  --liquid-shine: inset 2px 2px 2px 0 rgba(255, 255, 255, 0.2),
+    inset -1px -1px 2px 1px rgba(255, 255, 255, 0.1);
+  --liquid-border: rgba(255, 255, 250, 0.08);
 
-  --shadow-liquid: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
-  --shadow-neon-soft: 0 0 20px rgba(57, 255, 20, 0.15);
+  --shadow-minimal: 0 10px 40px rgba(0, 0, 0, 0.9);
 }
 
 @font-face {
@@ -39,15 +38,14 @@
   margin: 0;
   font-family: 'Unbounded', sans-serif !important;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 html,
 body {
-  max-width: 100vw;
-  overflow: hidden;
   height: 100vh;
-  background-color: var(--background);
+  width: 100vw;
+  overflow: hidden;
+  background: var(--background);
   color: var(--foreground);
 }
 
@@ -58,28 +56,181 @@ body {
   background: #000;
 }
 
-/* Liquid Glass Sidebar */
+/* Liquid Glass Sidebar Rebuild */
 .sidebar {
   width: var(--sidebar-width);
   height: calc(100% - 60px);
-  /* Increased spacing for "rising" effect */
   margin: 30px;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 32px;
-  /* Super rounded */
+  position: relative;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
-  z-index: 1000;
-  box-shadow: var(--shadow-liquid);
-  transition: all 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: var(--liquid-bg);
+  backdrop-filter: var(--liquid-blur);
+  -webkit-backdrop-filter: var(--liquid-blur);
+  border: 1px solid var(--liquid-border);
+  box-shadow: var(--shadow-minimal), var(--liquid-shine);
+  border-radius: 40px;
+  /* Strong minimalist curve */
+  transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
   overflow: hidden;
-  /* Ensure symmetry */
+  /* NO SCROLLBARS AT ROOT */
 }
 
-/* Mobile Responsive */
+/* Header & Footer Symmetry */
+.sidebar-header,
+.sidebar-footer {
+  padding: 30px;
+  border-radius: 40px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  flex-shrink: 0;
+  /* Important: prevents shrinking */
+}
+
+.sidebar-header h2 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: -1.5px;
+  background: linear-gradient(135deg, #fff, #39ff14);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--liquid-border);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  color: #fff;
+  outline: none;
+  transition: 0.3s ease;
+  box-shadow: var(--liquid-shine);
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(57, 255, 20, 0.3);
+}
+
+/* Ultra-Clean Scrollable List */
+.route-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 15px;
+  scrollbar-width: none;
+  /* Hide scrollbar for Firefox */
+}
+
+.route-list::-webkit-scrollbar {
+  display: none;
+  /* Hide scrollbar for Chrome/Safari */
+}
+
+.route-item {
+  width: 100%;
+  padding: 18px;
+  margin-bottom: 8px;
+  border-radius: 24px;
+  border: 1px solid transparent;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  cursor: pointer;
+  transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+  color: #888;
+}
+
+.route-item:hover {
+  background: rgba(255, 255, 255, 0.02);
+  color: #fff;
+  transform: translateX(5px);
+}
+
+.route-item.active {
+  background: rgba(57, 255, 20, 0.05);
+  border-color: rgba(57, 255, 20, 0.2);
+  color: #39ff14;
+  box-shadow: var(--liquid-shine);
+}
+
+.route-badge {
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-weight: 900;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+.route-info strong {
+  font-size: 1rem;
+  display: block;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding: 25px;
+  border-top: 1px solid var(--liquid-border);
+  text-align: center;
+}
+
+.daan1k-credit {
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: #fff;
+  letter-spacing: -0.5px;
+  transition: 0.3s ease;
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: var(--liquid-shine);
+}
+
+.daan1k-credit:hover {
+  transform: scale(1.05);
+  color: #39ff14;
+}
+
+/* Map Controls - Super Clean Glass */
+.stops-toggle-btn {
+  background: var(--liquid-bg) !important;
+  backdrop-filter: var(--liquid-blur) !important;
+  border: 1px solid var(--liquid-border) !important;
+  box-shadow: var(--shadow-minimal), var(--liquid-shine) !important;
+  border-radius: 20px !important;
+  color: #fff !important;
+  padding: 12px 24px !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+  transition: 0.3s cubic-bezier(0.19, 1, 0.22, 1) !important;
+}
+
+/* Popups as Liquid Glass */
+.leaflet-popup-content-wrapper {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(15px) !important;
+  border: 1px solid var(--liquid-border) !important;
+  border-radius: 30px !important;
+  box-shadow: var(--shadow-minimal), var(--liquid-shine) !important;
+  color: #fff !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid var(--liquid-border) !important;
+}
+
+.leaflet-marker-icon {
+  transition: transform 1.9s linear;
+}
+
 @media (max-width: 768px) {
   :root {
     --sidebar-width: 100vw;
@@ -90,253 +241,8 @@ body {
     left: 0;
     top: 0;
     margin: 0;
-    width: 92vw;
+    width: 90vw;
     height: 100vh;
-    border-radius: 0 32px 32px 0;
-    z-index: 2000;
-    background: rgba(0, 0, 0, 0.8);
+    border-radius: 0 40px 40px 0;
   }
-
-  .sidebar.closed {
-    transform: translateX(-110%);
-  }
-
-  .mobile-sidebar-toggle {
-    display: flex !important;
-  }
-}
-
-.sidebar-header {
-  padding: 30px;
-  border-bottom: 1px solid var(--glass-border);
-  background: rgba(255, 255, 255, 0.02);
-}
-
-.sidebar-header h2 {
-  margin-bottom: 20px;
-  font-size: 2.2rem;
-  font-weight: 900;
-  background: linear-gradient(90deg, #39ff14, #9d00ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -1px;
-}
-
-.search-input {
-  width: 100%;
-  padding: 18px 25px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  font-size: 0.9rem;
-  color: #39ff14;
-  outline: none;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.search-input:focus {
-  border-color: #39ff14;
-  box-shadow: 0 0 20px rgba(57, 255, 20, 0.2);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.route-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 15px;
-}
-
-.route-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.route-list::-webkit-scrollbar-thumb {
-  background: var(--glass-border);
-  border-radius: 10px;
-}
-
-.route-item {
-  width: 100%;
-  border: 1px solid transparent;
-  background: transparent;
-  padding: 20px;
-  margin-bottom: 12px;
-  border-radius: 24px;
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  color: #aaa;
-}
-
-.route-item:hover {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: var(--glass-border);
-  color: #fff;
-  transform: translateX(5px);
-}
-
-.route-item.active {
-  background: rgba(57, 255, 20, 0.05);
-  border-color: rgba(57, 255, 20, 0.4);
-  color: #39ff14;
-}
-
-.route-badge {
-  padding: 10px 16px;
-  border-radius: 14px;
-  font-weight: 900;
-  min-width: 65px;
-  text-align: center;
-  font-size: 0.95rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
-}
-
-.route-info strong {
-  font-size: 1.05rem;
-  color: #fff;
-}
-
-.route-info span {
-  font-size: 0.8rem;
-  color: #777;
-}
-
-.map-container {
-  flex: 1;
-  position: relative;
-  height: 100vh;
-}
-
-/* Minimalist Neon Toggle */
-.mobile-sidebar-toggle {
-  display: none;
-  position: absolute;
-  top: 30px;
-  left: 30px;
-  z-index: 3000;
-  width: 60px;
-  height: 60px;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(15px);
-  border: 1px solid var(--glass-border);
-  border-radius: 20px;
-  box-shadow: var(--shadow-liquid);
-  align-items: center;
-  justify-content: center;
-  font-size: 1.8rem;
-  cursor: pointer;
-  color: #fff;
-  transition: all 0.3s ease;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background: rgba(0, 0, 0, 0.8);
-  padding: 30px 60px;
-  border-radius: 30px;
-  box-shadow: var(--shadow-liquid);
-  z-index: 5000;
-  font-weight: 900;
-  color: #39ff14;
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-}
-
-/* Bus Marker Styles - Liquid Minimalism */
-.custom-bus-marker-container {
-  background: transparent !important;
-  border: none !important;
-}
-
-.balloon-bus-marker {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-
-.balloon-label {
-  padding: 7px 18px;
-  border-radius: 15px;
-  color: white;
-  font-weight: 900;
-  font-size: 1.1rem;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-  margin-bottom: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  z-index: 2;
-}
-
-.bus-image-core {
-  width: 52px;
-  height: 52px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
-}
-
-/* Credit - Liquid Shimmer */
-.daan1k-credit {
-  font-weight: 900;
-  font-size: 1.2rem;
-  background: linear-gradient(90deg, #39ff14, #9d00ff, #39ff14);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: shimmer 5s infinite linear;
-  display: block;
-}
-
-@keyframes shimmer {
-  to {
-    background-position: 200% center;
-  }
-}
-
-/* Liquid Popups */
-.leaflet-popup-content-wrapper {
-  background: rgba(0, 0, 0, 0.85) !important;
-  backdrop-filter: blur(15px) !important;
-  color: #fff !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 28px !important;
-  box-shadow: var(--shadow-liquid) !important;
-}
-
-.leaflet-popup-tip {
-  background: rgba(0, 0, 0, 0.85) !important;
-  border: 1px solid var(--glass-border) !important;
-}
-
-/* Minimalist Toggle Button */
-.stops-toggle-btn {
-  background: rgba(0, 0, 0, 0.6) !important;
-  backdrop-filter: blur(12px) !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 20px !important;
-  color: #fff !important;
-  box-shadow: var(--shadow-liquid) !important;
-  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
-}
-
-.stops-toggle-btn:hover {
-  background: rgba(0, 0, 0, 0.8) !important;
-  border-color: #39ff14 !important;
-  transform: translateY(-2px);
-}
-
-.stops-toggle-btn.active {
-  background: #39ff14 !important;
-  color: #000 !important;
-  border-color: transparent !important;
-}
-
-.leaflet-marker-icon {
-  transition: transform 1.9s linear;
 }

@@ -29,13 +29,13 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// Lightweight neon stop icon
+// Super Minimal Liquid Glass stop icon
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background-color: #39ff14; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #39ff14;"></div>',
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
-    popupAnchor: [0, -6]
+    html: '<div style="background-color: #39ff14; width: 10px; height: 10px; border-radius: 50%; box-shadow: var(--liquid-shine), 0 0 10px rgba(57,255,20,0.3);"></div>',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
+    popupAnchor: [0, -5]
 });
 
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
