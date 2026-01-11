@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker } from '
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -191,15 +191,47 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
 export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
     const [showStops, setShowStops] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const [visibleVehicles, setVisibleVehicles] = useState([]);
+    const seenVehicles = useRef(new Set());
     const { t } = useLanguage();
 
+    // 1. Instant Spawn Logic: Track which vehicles we've already seen
     useEffect(() => {
-        if (vehicles.length > 0 && isFirstLoad) {
-            // After first batch of buses arrives, wait a moment then enable transitions
-            const timer = setTimeout(() => setIsFirstLoad(false), 1000);
-            return () => clearTimeout(timer);
+        if (vehicles.length > 0) {
+            if (isFirstLoad) {
+                vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
+                const timer = setTimeout(() => setIsFirstLoad(false), 1000);
+                return () => clearTimeout(timer);
+            } else {
+                // Add new vehicles to seen set so they don't get 'smooth-move' on first render
+            }
         }
     }, [vehicles, isFirstLoad]);
+
+    // 2. Viewport Filtering Component
+    const ViewportFilter = () => {
+        const map = L.useMapEvents({
+            moveend: () => updateVisibleVehicles(),
+            zoomend: () => updateVisibleVehicles(),
+        });
+
+        const updateVisibleVehicles = () => {
+            const bounds = map.getBounds();
+            const filtered = vehicles.filter(v => {
+                const lat = v.lt || v.lat;
+                const lon = v.ln || v.lon;
+                return bounds.contains([lat, lon]);
+            });
+            setVisibleVehicles(filtered);
+        };
+
+        // Initial update
+        useEffect(() => {
+            updateVisibleVehicles();
+        }, [vehicles]);
+
+        return null;
+    };
 
     // Vehicle polling removed - now handled by page.js props
 
@@ -242,9 +274,11 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                 zoom={10}
                 style={{ height: '100%', width: '100%' }}
                 preferCanvas={true}
-            >    <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            >
+                <ViewportFilter />
+                <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
                 />
 
                 {/* Shapes */}
@@ -274,22 +308,33 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                     </MarkerClusterGroup>
                 )}
 
-                {/* Vehicles */}
-                {vehicles.map((v, i) => {
-                    // Try to find the correct color from the routes list (static data)
+                {/* Vehicles (Filtered by Viewport) */}
+                {visibleVehicles.map((v, i) => {
+                    const vId = v.id || v.vehicle_id;
+                    const vLat = v.lt || v.lat;
+                    const vLon = v.ln || v.lon;
+                    const vBearing = v.b !== undefined ? v.b : v.bearing;
+                    const vShortName = v.sn || v.route_short_name;
+
                     const routeInfo = routes.find(r =>
-                        (r.short_name && v.route_short_name && r.short_name.trim() === v.route_short_name.trim()) ||
-                        (r.route_short_name && v.route_short_name && r.route_short_name.trim() === v.route_short_name.trim())
+                        (r.short_name && vShortName && r.short_name.trim() === vShortName.trim()) ||
+                        (r.route_short_name && vShortName && r.route_short_name.trim() === vShortName.trim())
                     );
-                    const vColor = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : '#44bd32';
-                    const vTextColor = routeInfo ? `#${routeInfo.text_color || routeInfo.route_text_color}` : (v.text_color ? `#${v.text_color}` : 'white');
+                    const vColor = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : (v.c ? `#${v.c}` : '#44bd32');
+                    const vTextColor = routeInfo ? `#${routeInfo.text_color || routeInfo.route_text_color}` : 'white';
+
+                    // Determine if this is a newly seen vehicle to skip animation
+                    const isNew = !seenVehicles.current.has(vId);
+                    if (isNew) {
+                        seenVehicles.current.add(vId);
+                    }
 
                     return (
                         <Marker
-                            key={v.vehicle_id || i}
-                            position={[v.lat, v.lon]}
-                            icon={createBusIcon(v.route_short_name, v.bearing, vColor)}
-                            className={!isFirstLoad ? 'smooth-move' : ''}
+                            key={vId || i}
+                            position={[vLat, vLon]}
+                            icon={createBusIcon(vShortName, vBearing, vColor)}
+                            className={(!isFirstLoad && !isNew) ? 'smooth-move' : ''}
                             eventHandlers={{
                                 click: () => {
                                     if (onVehicleClick) onVehicleClick(v);
@@ -309,18 +354,14 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                                         marginBottom: '10px',
                                         boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
                                     }}>
-                                        {v.route_short_name}
+                                        {vShortName}
                                     </div>
                                     <div style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '5px', color: '#333' }}>
-                                        {v.trip_headsign}
-                                    </div>
-                                    <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '10px' }}>
-                                        {v.route_long_name}
+                                        {v.trip_headsign || ''}
                                     </div>
                                     <div style={{ textAlign: 'left', fontSize: '0.9rem', marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                        <div style={{ marginBottom: '4px' }}><strong>Vehicle:</strong> {v.vehicle_id}</div>
-                                        <div style={{ marginBottom: '4px' }}><strong>{t.speed}:</strong> {(v.speed * 3.6).toFixed(1)} km/h</div>
-                                        <div><strong>Fare:</strong> €2.00</div>
+                                        <div style={{ marginBottom: '4px' }}><strong>Vehicle:</strong> {vId}</div>
+                                        {v.speed !== undefined && <div style={{ marginBottom: '4px' }}><strong>{t.speed}:</strong> {(v.speed * 3.6).toFixed(1)} km/h</div>}
                                     </div>
                                 </div>
                             </Popup>

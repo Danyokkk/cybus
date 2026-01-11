@@ -285,7 +285,7 @@ body {
 
 /* V22: Class-based transitions to prevent "flying" on start */
 .leaflet-marker-icon.smooth-move {
-  transition: transform 5s linear;
+  transition: transform 4.5s linear;
 }
 
 /* Sidebar Polishing */

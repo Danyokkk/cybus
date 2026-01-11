@@ -9,7 +9,7 @@ const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V22 (INSTANT START + 5S SYNC) ---");
+console.log("--- SERVER VERSION: V24 (HYPER-OPTIMIZED + HQ MAP) ---");
 
 app.use(cors());
 app.use(express.json());
@@ -145,9 +145,19 @@ async function fetchData() {
       }
     });
 
-    vehiclePositions = tempPositions;
+    // Minimized payload for bandwidth efficiency
+    vehiclePositions = tempPositions.map(v => ({
+      id: v.vehicle_id,
+      t: v.trip_id,
+      r: v.route_id,
+      lt: v.lat,
+      ln: v.lon,
+      b: v.bearing,
+      sn: v.route_short_name,
+      c: v.color
+    }));
     tripUpdates = tempUpdates;
-    console.log(`>>> Global Feed Sync: ${vehiclePositions.length} buses found.`);
+    console.log(`>>> Sync: ${vehiclePositions.length} buses. Payload minimized.`);
   } catch (err) {
     console.error(`X Error fetching Global Feed: ${err.message}`);
   }
