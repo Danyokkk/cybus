@@ -286,19 +286,17 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     const mapRef = useRef(null);
 
-    // My Location Logic - Silent V52
+    // My Location Logic - Robust for iOS (V55)
     const handleMyLocation = () => {
-        console.log("CYBUS_VERSION: V52 (Silent Radar) - Triggered handleMyLocation");
-        if (!navigator.geolocation) {
-            console.error("Geolocation not supported by this browser.");
-            return;
-        }
+        console.log("CYBUS_VERSION: V55 (Mobile Radar) - Triggered");
+        if (!navigator.geolocation) return;
+
         setLocLoading(true);
 
         const posOptions = {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 5000
+            timeout: 15000,
+            maximumAge: 0
         };
 
         const success = (pos) => {
@@ -315,12 +313,12 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         const error = (err) => {
             console.warn(`Geolocation error (${err.code}): ${err.message}`);
 
-            // If high accuracy failed, try one more time with low accuracy
-            if (err.code === 3 || err.code === 2) { // Timeout or Position Unavailable
+            // If high accuracy failed (Timeout or Position Unavailable), try low accuracy
+            if (err.code === 3 || err.code === 2 || err.code === 0) {
                 navigator.geolocation.getCurrentPosition(success, (err2) => {
                     setLocLoading(false);
-                    console.warn(`Fallback Geolocation error (${err2.code}): ${err2.message}`);
-                }, { enableHighAccuracy: false, timeout: 5000 });
+                    console.warn(`Fallback (Low Accuracy) failed:`, err2);
+                }, { enableHighAccuracy: false, timeout: 10000 });
                 return;
             }
 

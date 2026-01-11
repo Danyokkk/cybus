@@ -124,13 +124,9 @@ export default function Home() {
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-      {/* Mobile Toggle Button */}
-      <button
-        className="mobile-sidebar-toggle"
-        onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-      >
-        {isSidebarOpen ? '✕' : '☰'}
-      </button>
+      <div className="mobile-credit-bar">
+        <div className="mobile-daan1k">made by @daan1k</div>
+      </div>
 
       <Sidebar
         routes={routes}
