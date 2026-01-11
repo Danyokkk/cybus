@@ -7,16 +7,16 @@
   --nebula-deep: #0a0a2e;
   /* Midnight Blue */
   --nebula-purple: #3d0a5e;
-  /* Deep Nebula Aesthetic - Darkened Refinement */
-  --nebula-deep: #05051a;
+  /* Deep Nebula Aesthetic - Maximum Darkness Refinement */
+  --nebula-deep: #02020a;
   /* Deep Purple */
   --nebula-accent: #4834d4;
   /* Vibrant Indigo */
 
-  --glass-bg: rgba(5, 5, 26, 0.85);
-  /* Significantly darker for better readability */
-  --glass-blur: blur(25px) saturate(140%);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(2, 2, 10, 0.95);
+  /* Near black for maximum premium contrast */
+  --glass-blur: blur(30px) saturate(120%);
+  --glass-border: rgba(255, 255, 255, 0.05);
 
   --shadow-quantum: 0 10px 50px rgba(0, 0, 0, 0.9);
   --shadow-glow: 0 0 20px rgba(72, 52, 212, 0.2);

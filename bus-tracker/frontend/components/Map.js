@@ -29,13 +29,13 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// Deep Nebula stop icon
+// Deep Nebula "Fat" Purple Stop Icon
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background-color: #4834d4; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 0 10px rgba(72,52,212,0.4);"></div>',
-    iconSize: [10, 10],
-    iconAnchor: [5, 5],
-    popupAnchor: [0, -5]
+    html: '<div style="background: linear-gradient(135deg, #4834d4, #6a0572); width: 14px; height: 14px; border-radius: 50%; border: 2.5px solid rgba(255,255,255,0.4); box-shadow: 0 0 15px rgba(72, 52, 212, 0.6), inset 0 0 5px rgba(255,255,255,0.2);"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    popupAnchor: [0, -8]
 });
 
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
