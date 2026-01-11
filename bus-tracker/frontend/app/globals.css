@@ -218,6 +218,39 @@ body {
   }
 }
 
+/* Bus Marker Styles - Deep Nebula Minimalism */
+.custom-bus-marker-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+.balloon-bus-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.balloon-label {
+  padding: 4px 10px;
+  border-radius: 10px;
+  color: white;
+  font-weight: 900;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  margin-bottom: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 2;
+}
+
+.bus-image-core {
+  width: 44px;
+  /* Reduced from 52px for cleaner minimalism */
+  height: 44px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
 .leaflet-popup-content-wrapper {
   background: rgba(10, 10, 46, 0.85) !important;
   backdrop-filter: blur(15px) !important;
