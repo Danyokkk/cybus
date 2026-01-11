@@ -14,7 +14,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
 
     return (
         <div className={`sidebar ${isOpen ? 'open' : 'closed'}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            <div className="sidebar-header">
+            <div className="sidebar-header" style={{ borderRadius: '32px 32px 0 0' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                     <h2>CyBus</h2>
                     <select
@@ -66,7 +66,18 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     </button>
                 ))}
             </div>
-            <div style={{ marginTop: 'auto', padding: '20px', textAlign: 'center', borderTop: '1px solid var(--glass-border)', background: 'transparent' }}>
+            <div style={{
+                marginTop: 'auto',
+                padding: '25px',
+                textAlign: 'center',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderTop: '1px solid var(--glass-border)',
+                borderRadius: '0 0 32px 32px', /* Matches sidebar rounding */
+                margin: '10px', /* "Rising" effect */
+                marginBottom: '10px',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid var(--glass-border)'
+            }}>
                 <a
                     href="https://t.me/daqxn"
                     target="_blank"
@@ -77,7 +88,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                         Made by @daan1k
                     </div>
                 </a>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '12px', fontWeight: 'bold' }}>
+                <div style={{ fontSize: '0.75rem', color: '#777', marginTop: '12px', fontWeight: 'bold', letterSpacing: '0.5px' }}>
                     {t.disclaimer}
                 </div>
             </div>

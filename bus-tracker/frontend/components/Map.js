@@ -346,21 +346,22 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
                 style={{
                     position: 'absolute',
-                    top: '20px',
-                    right: '25px',
+                    top: '30px',
+                    right: '30px',
                     zIndex: 1000,
-                    padding: '12px 24px',
-                    borderRadius: '16px',
+                    padding: '14px 28px',
+                    borderRadius: '20px',
                     border: 'none',
                     cursor: 'pointer',
-                    fontWeight: '800',
-                    fontSize: '0.9rem',
+                    fontWeight: '900',
+                    fontSize: '0.85rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px'
+                    gap: '12px',
+                    letterSpacing: '0.5px'
                 }}
             >
-                <span style={{ fontSize: '1.3rem' }}>{showStops ? '✕' : '🚏'}</span>
+                <span style={{ fontSize: '1.4rem' }}>{showStops ? '✕' : '🚏'}</span>
                 {showStops ? 'Hide Stops' : 'Show Stops'}
             </button>
 
