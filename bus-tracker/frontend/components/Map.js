@@ -70,11 +70,11 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
     const uniqueRoutes = [...new Set(arrivals.map(a => a.route_short_name))];
 
-    if (loading) return <div style={{ minWidth: '320px', padding: '20px', textAlign: 'center', color: '#39ff14', fontWeight: 'bold' }}>Loading toxic timetable...</div>;
+    if (loading) return <div style={{ minWidth: '320px', padding: '20px', textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Loading arrivals...</div>;
 
     return (
         <div style={{ minWidth: '320px', maxWidth: '350px', color: '#fff' }}>
-            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.1rem', color: '#39ff14', textShadow: '0 0 5px rgba(57, 255, 20, 0.5)' }}>{stop.name}</h3>
+            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px' }}>{stop.name}</h3>
             <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', fontWeight: 'bold' }}>STOP ID: {stop.stop_id}</div>
 
             {uniqueRoutes.length > 0 && (
@@ -121,7 +121,7 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
             <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', color: '#ddd' }}>
                 <thead>
-                    <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#39ff14' }}>
+                    <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#fff', opacity: 0.6, fontSize: '0.7rem', textTransform: 'uppercase' }}>
                         <th style={{ padding: '8px 4px' }}>⏳ Time</th>
                         <th style={{ padding: '8px 4px' }}>🚌 Route</th>
                         <th style={{ padding: '8px 4px' }}>📍 Dest.</th>
@@ -152,21 +152,21 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                                                 if (routeInfo) onSelectRoute(routeInfo);
                                             }}
                                             style={{
-                                                background: 'rgba(57, 255, 20, 0.1)',
+                                                background: 'rgba(72, 52, 212, 0.2)',
                                                 padding: '4px 8px',
                                                 borderRadius: '6px',
-                                                border: '1px solid rgba(57, 255, 20, 0.3)',
-                                                color: '#39ff14',
+                                                border: '1px solid rgba(72, 52, 212, 0.4)',
+                                                color: '#fff',
                                                 cursor: routeInfo ? 'pointer' : 'default',
                                                 fontSize: '0.8rem',
-                                                fontWeight: 'bold'
+                                                fontWeight: '900'
                                             }}
                                         >
                                             {arr.route_short_name}
                                         </span>
                                     </td>
                                     <td style={{ padding: '10px 4px', color: '#bbb' }}>{arr.trip_headsign}</td>
-                                    <td style={{ padding: '10px 4px', color: arr.is_realtime ? '#39ff14' : '#666', fontWeight: 'bold' }}>
+                                    <td style={{ padding: '10px 4px', color: arr.is_realtime ? '#fff' : '#666', fontWeight: 'bold' }}>
                                         {arr.is_realtime ? '● Live' : 'Sched.'}
                                     </td>
                                 </tr>
