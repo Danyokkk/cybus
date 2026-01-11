@@ -15,18 +15,18 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
     return (
         <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
             <div className="sidebar-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                     <h2>CyBus</h2>
                     <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
                         style={{
-                            padding: '6px 12px',
-                            borderRadius: '15px',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            background: 'rgba(255,255,255,0.05)',
-                            color: '#fff',
-                            fontSize: '0.7rem',
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            background: 'rgba(255,255,255,0.03)',
+                            color: '#777',
+                            fontSize: '0.65rem',
                             cursor: 'pointer',
                             outline: 'none'
                         }}
@@ -38,7 +38,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                 </div>
                 <input
                     type="text"
-                    placeholder={t.searchPlaceholder || 'Search...'}
+                    placeholder={t.searchPlaceholder || 'Search routes...'}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
@@ -52,7 +52,6 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                 >
                     <div className="route-info">
                         <strong>{t.allRoutes}</strong>
-                        <span style={{ fontSize: '0.7rem' }}>{t.showAllStops}</span>
                     </div>
                 </button>
                 {filteredRoutes.map(route => (
@@ -69,7 +68,6 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                         </div>
                         <div className="route-info" style={{ textAlign: 'left' }}>
                             <strong>{route.short_name}</strong>
-                            <span>{route.long_name}</span>
                         </div>
                     </button>
                 ))}
@@ -83,12 +81,12 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     style={{ textDecoration: 'none' }}
                 >
                     <div className="daan1k-credit">
-                        Made by @daan1k
+                        @daan1k
                     </div>
                 </a>
             </div>
             <style jsx>{`
-                /* Deep Nebula Refinement */
+                /* Ultra-Minimalist Floating Refinement */
             `}</style>
         </div>
     );
