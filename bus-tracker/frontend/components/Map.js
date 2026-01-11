@@ -250,11 +250,11 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
                     <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px', color: '#000' }}>
                         {headsign || 'Bus Route'}
                     </div>
-                    <div style={{ textAlign: 'left', fontSize: '0.95rem', marginTop: '12px', borderTop: '1px solid #ddd', paddingTop: '12px' }}>
-                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#555' }}>Vehicle ID:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{id}</span></div>
-                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#555' }}>Operator:</strong> {agency || 'Cyprus Public Transport'}</div>
-                        <div style={{ marginBottom: '6px', color: '#2ecc71', fontWeight: 'bold' }}>
-                            <strong style={{ color: '#555' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
+                    <div style={{ textAlign: 'left', fontSize: '0.9rem', marginTop: '12px', borderTop: '1px solid rgba(0,0,0,0.1)', paddingTop: '12px', fontWeight: 'bold' }}>
+                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase' }}>Vehicle ID:</strong> <span style={{ fontFamily: 'monospace', color: '#333' }}>{id}</span></div>
+                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase' }}>Operator:</strong> <span style={{ color: '#333' }}>{agency || 'Cyprus Public Transport'}</span></div>
+                        <div style={{ marginBottom: '6px', color: '#2ecc71' }}>
+                            <strong style={{ color: '#666', fontSize: '0.75rem', textTransform: 'uppercase' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
                         </div>
                     </div>
                 </div>
@@ -341,29 +341,24 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             {/* Show Stops Toggle Button */}
             <button
                 onClick={() => setShowStops(!showStops)}
-                className="stops-toggle-btn"
+                className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
                 style={{
                     position: 'absolute',
                     top: '20px',
-                    right: '20px', // Right side so it doesn't conflict with sidebar
+                    right: '25px',
                     zIndex: 1000,
-                    padding: '10px 20px',
-                    borderRadius: '30px',
+                    padding: '12px 24px',
+                    borderRadius: '16px',
                     border: 'none',
-                    background: showStops ? '#0070f3' : 'white',
-                    color: showStops ? 'white' : '#333',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                     cursor: 'pointer',
-                    fontFamily: 'Unbounded, sans-serif',
-                    fontWeight: 'bold',
+                    fontWeight: '800',
                     fontSize: '0.9rem',
-                    transition: 'all 0.3s ease',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '10px'
                 }}
             >
-                <span style={{ fontSize: '1.2rem' }}>🚏</span>
+                <span style={{ fontSize: '1.3rem' }}>{showStops ? '✕' : '🚏'}</span>
                 {showStops ? 'Hide Stops' : 'Show Stops'}
             </button>
 

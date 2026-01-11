@@ -1,8 +1,17 @@
 :root {
-  --background: #f5f5f5;
-  --foreground: #171717;
-  --sidebar-width: 350px;
-  --primary: #0070f3;
+  --background: #0f0c29;
+  /* Deep space background */
+  --foreground: #ffffff;
+  --sidebar-width: 380px;
+  --primary: #6c5ce7;
+  /* Vibrant Purple */
+  --secondary: #00d2ff;
+  /* Sky Blue */
+  --accent: #44bd32;
+  /* Neon Green */
+  --glass: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.2);
+  --shadow-premium: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
 }
 
 @font-face {
@@ -23,6 +32,7 @@
   box-sizing: border-box;
   padding: 0;
   margin: 0;
+  font-family: 'Unbounded', sans-serif !important;
 }
 
 html,
@@ -30,26 +40,32 @@ body {
   max-width: 100vw;
   overflow: hidden;
   height: 100vh;
-  font-family: 'Unbounded', sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
 }
 
 .main-container {
   display: flex;
   height: 100vh;
   width: 100vw;
+  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
 }
 
 /* Sidebar Styles & Transitions */
 .sidebar {
   width: var(--sidebar-width);
-  height: 100%;
-  background: white;
-  border-right: 1px solid #ddd;
+  height: calc(100% - 40px);
+  margin: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
   display: flex;
   flex-direction: column;
   z-index: 1000;
-  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, width 0.3s ease;
+  box-shadow: var(--shadow-premium);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Mobile Responsive Logic */
@@ -62,9 +78,10 @@ body {
     position: absolute;
     left: 0;
     top: 0;
-    width: 85vw;
-    /* Almost full width but showing map edge */
-    height: 100%;
+    margin: 0;
+    width: 88vw;
+    height: 100vh;
+    border-radius: 0 24px 24px 0;
     z-index: 2000;
   }
 
@@ -82,60 +99,88 @@ body {
 }
 
 .sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-  background: #fff;
+  padding: 24px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 24px 24px 0 0;
 }
 
 .sidebar-header h2 {
-  margin-bottom: 10px;
-  font-size: 1.5rem;
-  color: #333;
+  margin-bottom: 15px;
+  font-size: 1.8rem;
+  font-weight: 800;
+  background: linear-gradient(to right, #6c5ce7, #00d2ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .search-input {
   width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 1rem;
+  padding: 14px 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: white;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.search-input:focus {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--secondary);
+  box-shadow: 0 0 15px rgba(0, 210, 255, 0.3);
 }
 
 .route-list {
   flex: 1;
   overflow-y: auto;
+  padding: 10px;
+}
+
+/* Hide Scrollbar for Chrome, Safari and Opera */
+.route-list::-webkit-scrollbar {
+  display: none;
 }
 
 .route-item {
   width: 100%;
-  border: none;
-  background: none;
-  padding: 15px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 16px;
+  margin-bottom: 8px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   gap: 15px;
   cursor: pointer;
   text-align: left;
-  transition: background 0.2s;
+  transition: all 0.3s ease;
+  color: #ddd;
 }
 
 .route-item:hover {
-  background: #f9f9f9;
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  border-color: var(--glass-border);
 }
 
 .route-item.active {
-  background: #e6f7ff;
-  border-left: 4px solid var(--primary);
+  background: linear-gradient(135deg, rgba(108, 92, 231, 0.2), rgba(0, 210, 255, 0.1));
+  border-color: var(--primary);
+  color: white;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.2);
 }
 
 .route-badge {
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-weight: bold;
-  min-width: 50px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 800;
+  min-width: 55px;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .route-info {
@@ -144,13 +189,14 @@ body {
 }
 
 .route-info strong {
-  font-size: 1rem;
-  color: #333;
+  font-size: 0.95rem;
+  color: white;
 }
 
 .route-info span {
-  font-size: 0.85rem;
-  color: #666;
+  font-size: 0.75rem;
+  color: #aaa;
+  margin-top: 2px;
 }
 
 .map-container {
@@ -165,18 +211,23 @@ body {
   top: 20px;
   left: 20px;
   z-index: 3000;
-  width: 45px;
-  height: 45px;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-premium);
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  color: #44bd32;
-  transition: transform 0.2s;
+  color: white;
+  transition: all 0.3s ease;
+}
+
+.mobile-sidebar-toggle:active {
+  transform: scale(0.9);
 }
 
 .loading-overlay {
@@ -184,62 +235,19 @@ body {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: rgba(255, 255, 255, 0.9);
-  padding: 15px 30px;
-  border-radius: 30px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: rgba(15, 12, 41, 0.8);
+  padding: 20px 40px;
+  border-radius: 20px;
+  box-shadow: var(--shadow-premium);
   z-index: 5000;
   font-weight: 800;
-  color: #44bd32;
-  backdrop-filter: blur(4px);
-  border: 2px solid #44bd32;
+  color: white;
+  backdrop-filter: blur(10px);
+  border: 1px solid var(--primary);
+  text-align: center;
 }
 
 /* Bus Marker Styles */
-.bus-marker-container {
-  position: relative;
-  width: 32px;
-  height: 32px;
-}
-
-.bus-icon-img {
-  width: 32px;
-  height: 32px;
-  display: block;
-}
-
-.bus-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background-color: #0070f3;
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: bold;
-  border: 2px solid white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-  z-index: 10;
-}
-
-/* Smooth Marker Movement - V33: 2s interval */
-.leaflet-marker-icon {
-  transition: transform 1.9s linear;
-}
-
-.loading-map {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* V20: Optimized Balloon Markers */
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
@@ -253,15 +261,14 @@ body {
 }
 
 .balloon-label {
-  padding: 4px 12px;
-  border-radius: 20px;
+  padding: 5px 14px;
+  border-radius: 12px;
   color: white;
-  font-weight: 800;
-  font-family: 'Unbounded', sans-serif;
-  font-size: 0.85rem;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  font-weight: 900;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
   margin-bottom: 5px;
-  border: 2px solid white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
   z-index: 2;
   white-space: nowrap;
   display: inline-block;
@@ -277,10 +284,15 @@ body {
 }
 
 .bus-image-core {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   object-fit: contain;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+/* Smooth Marker Movement - V33: 2s interval */
+.leaflet-marker-icon {
+  transition: transform 1.9s linear;
 }
 
 /* V22: Class-based transitions - V33: 2s interval */
@@ -288,41 +300,54 @@ body {
   transition: transform 1.9s linear;
 }
 
-/* V26: Premium Layer Control Styles */
-.leaflet-control-layers {
-  border: none !important;
-  border-radius: 12px !important;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important;
-  overflow: hidden;
-  font-family: 'Unbounded', sans-serif !important;
-  font-size: 0.8rem !important;
+/* Made by @daan1k - V34: Purple-Blue Gradient Animation */
+.daan1k-credit {
+  font-weight: 800;
+  font-size: 0.95rem;
+  background: linear-gradient(90deg, #6c5ce7, #00d2ff, #6c5ce7);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 4s linear infinite;
+  display: block;
 }
 
-.leaflet-control-layers-toggle {
-  width: 44px !important;
-  height: 44px !important;
-  background-size: 24px 24px !important;
-  border-radius: 12px !important;
+@keyframes shine {
+  to {
+    background-position: 200% center;
+  }
 }
 
-.leaflet-control-layers-expanded {
-  padding: 12px !important;
-  background: white !important;
-  color: #333 !important;
+/* Premium Map Buttons */
+.stops-toggle-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px !important;
+  color: white !important;
+  box-shadow: var(--shadow-premium) !important;
+  transition: all 0.3s ease !important;
 }
 
-.leaflet-control-layers-base label,
-.leaflet-control-layers-overlays label {
-  margin-bottom: 5px !important;
-  cursor: pointer;
+.stops-toggle-btn.active {
+  background: var(--primary) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
 }
 
-.leaflet-control-layers-base label:last-child,
-.leaflet-control-layers-overlays label:last-child {
-  margin-bottom: 0 !important;
+.stops-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px);
 }
 
-.leaflet-control-layers-separator {
-  margin: 10px -12px !important;
-  border-top: 1px solid #eee !important;
+/* Premium Popups */
+.leaflet-popup-content-wrapper {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 20px !important;
+  box-shadow: var(--shadow-premium) !important;
+  padding: 8px !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(255, 255, 255, 0.95) !important;
 }

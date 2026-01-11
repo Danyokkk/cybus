@@ -71,49 +71,18 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     href="https://t.me/daqxn"
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{
-                        textDecoration: 'none',
-                        display: 'block',
-                        marginBottom: '8px'
-                    }}
+                    style={{ textDecoration: 'none' }}
                 >
-                    <div style={{
-                        fontWeight: 'bold',
-                        fontSize: '0.9rem',
-                        color: '#4b0082', // Dark purple base
-                        textShadow: '0 0 8px rgba(75, 0, 130, 0.6)',
-                        animation: 'multi-toxic-glow 4s linear infinite',
-                        transition: 'transform 0.2s'
-                    }}
-                        onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                        onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                    >
+                    <div className="daan1k-credit">
                         Made by @daan1k
                     </div>
                 </a>
-                <div style={{ fontSize: '0.7rem', color: '#aaa' }}>
+                <div style={{ fontSize: '0.7rem', color: '#aaa', marginTop: '10px' }}>
                     {t.disclaimer}
                 </div>
             </div>
             <style jsx>{`
-                @keyframes multi-toxic-glow {
-                    0% { 
-                        color: #4b0082; 
-                        text-shadow: 0 0 10px rgba(75, 0, 130, 0.7); 
-                    }
-                    33% { 
-                        color: #7d00b3; 
-                        text-shadow: 0 0 15px rgba(125, 0, 179, 0.9), 0 0 25px rgba(125, 0, 179, 0.5); 
-                    }
-                    66% { 
-                        color: #000080; 
-                        text-shadow: 0 0 15px rgba(0, 0, 128, 0.9), 0 0 25px rgba(0, 0, 128, 0.5); 
-                    }
-                    100% { 
-                        color: #4b0082; 
-                        text-shadow: 0 0 10px rgba(75, 0, 130, 0.7); 
-                    }
-                }
+                /* Scoped styles for refinement if needed, but mostly using globals.css classes */
             `}</style>
         </div>
     );
