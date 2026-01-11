@@ -14,7 +14,8 @@ export const translations = {
         favorites: "Favorites",
         addToFavorites: "Add to Favorites",
         removeFromFavorites: "Remove from Favorites",
-        disclaimer: "Data from Open Data Portal. Not an official app."
+        disclaimer: "Data from Open Data Portal. Not an official app.",
+        zoomInToSeeStops: "Zoom in to see stops"
     },
     el: {
         searchPlaceholder: "Αναζήτηση διαδρομών...",
@@ -31,7 +32,8 @@ export const translations = {
         favorites: "Αγαπημένα",
         addToFavorites: "Προσθήκη στα Αγαπημένα",
         removeFromFavorites: "Αφαίρεση από Αγαπημένα",
-        disclaimer: "Δεδομένα από Open Data Portal. Ανεπίσημη εφαρμογή."
+        disclaimer: "Δεδομένα από Open Data Portal. Ανεπίσημη εφαρμογή.",
+        zoomInToSeeStops: "Μεγεθύνετε για να δείτε τις στάσεις"
     },
     ru: {
         searchPlaceholder: "Поиск маршрутов...",
@@ -48,6 +50,7 @@ export const translations = {
         favorites: "Избранное",
         addToFavorites: "Добавить в избранное",
         removeFromFavorites: "Удалить из избранного",
-        disclaimer: "Данные от Open Data Portal. Неофициальное приложение."
+        disclaimer: "Данные от Open Data Portal. Неофициальное приложение.",
+        zoomInToSeeStops: "Приблизьте карту, чтобы увидеть остановки"
     }
 };

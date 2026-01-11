@@ -192,6 +192,9 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
     const [showStops, setShowStops] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [visibleVehicles, setVisibleVehicles] = useState([]);
+    const [visibleStops, setVisibleStops] = useState([]);
+    const [mapZoom, setMapZoom] = useState(10);
+    const filterTimeout = useRef(null);
     const seenVehicles = useRef(new Set());
     const { t } = useLanguage();
 
@@ -208,27 +211,47 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
         }
     }, [vehicles, isFirstLoad]);
 
-    // 2. Viewport Filtering Component
+    // 2. Viewport Filtering Component (Debounced)
     const ViewportFilter = () => {
         const map = useMapEvents({
-            moveend: () => updateVisibleVehicles(),
-            zoomend: () => updateVisibleVehicles(),
+            move: () => debouncedUpdate(),
+            zoomend: () => {
+                setMapZoom(map.getZoom());
+                debouncedUpdate();
+            },
         });
 
-        const updateVisibleVehicles = () => {
-            const bounds = map.getBounds();
-            const filtered = vehicles.filter(v => {
+        const debouncedUpdate = () => {
+            if (filterTimeout.current) clearTimeout(filterTimeout.current);
+            filterTimeout.current = setTimeout(() => {
+                updateVisibleElements(map);
+            }, 150); // 150ms debounce
+        };
+
+        const updateVisibleElements = (m) => {
+            const bounds = m.getBounds();
+
+            // Vehicles
+            const filteredVehicles = vehicles.filter(v => {
                 const lat = v.lt || v.lat;
                 const lon = v.ln || v.lon;
                 return bounds.contains([lat, lon]);
             });
-            setVisibleVehicles(filtered);
+            setVisibleVehicles(filteredVehicles);
+
+            // Stops (Only if showStops is true and Zoom >= 14)
+            if (showStops && m.getZoom() >= 14) {
+                const filteredStops = stops.filter(s => bounds.contains([s.lat, s.lon]));
+                setVisibleStops(filteredStops);
+            } else {
+                setVisibleStops([]);
+            }
         };
 
         // Initial update
         useEffect(() => {
-            updateVisibleVehicles();
-        }, [vehicles]);
+            updateVisibleElements(map);
+        }, [vehicles, showStops]);
 
         return null;
     };
@@ -290,15 +313,21 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
                     />
                 ))}
 
-                {/* Stops with Relaxed Clustering - CONDITIONALLY RENDERED */}
-                {showStops && (
+                {/* Stops with Zoom Logic */}
+                {showStops && mapZoom < 14 && (
+                    <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.9)', padding: '10px 20px', borderRadius: '20px', border: '1px solid #44bd32', fontWeight: 'bold', color: '#333', fontSize: '0.85rem' }}>
+                        {t.zoomInToSeeStops || 'Zoom in to see stops'}
+                    </div>
+                )}
+
+                {showStops && mapZoom >= 14 && (
                     <MarkerClusterGroup
                         chunkedLoading
-                        disableClusteringAtZoom={14}
+                        disableClusteringAtZoom={16}
                         maxClusterRadius={30}
                         spiderfyOnMaxZoom={true}
                     >
-                        {stops.map((stop) => (
+                        {visibleStops.map((stop) => (
                             <Marker key={stop.stop_id} position={[stop.lat, stop.lon]} icon={customIcon}>
                                 <Popup>
                                     <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
