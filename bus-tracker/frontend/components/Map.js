@@ -29,13 +29,13 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// Lightweight neon stop icon
+// Deep Nebula stop icon
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background-color: #39ff14; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #39ff14;"></div>',
-    iconSize: [12, 12],
-    iconAnchor: [6, 6],
-    popupAnchor: [0, -6]
+    html: '<div style="background-color: #4834d4; width: 10px; height: 10px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.2); box-shadow: 0 0 10px rgba(72,52,212,0.4);"></div>',
+    iconSize: [10, 10],
+    iconAnchor: [5, 5],
+    popupAnchor: [0, -5]
 });
 
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
@@ -249,14 +249,14 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
                     }}>
                         {shortName || '?'}
                     </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', color: '#fff' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', color: '#fff', letterSpacing: '-0.5px' }}>
                         {headsign || 'Bus Route'}
                     </div>
                     <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
-                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#39ff14', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Vehicle ID:</strong> <span style={{ fontFamily: 'monospace', color: '#fff', fontWeight: 'bold' }}>{id}</span></div>
-                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#39ff14', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Operator:</strong> <span style={{ color: '#fff' }}>{agency || 'Cyprus Public Transport'}</span></div>
-                        <div style={{ marginBottom: '6px', color: '#39ff14', textShadow: '0 0 5px rgba(57, 255, 20, 0.4)' }}>
-                            <strong style={{ color: '#39ff14', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
+                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>ID:</strong> <span style={{ fontFamily: 'monospace', color: '#fff' }}>{id}</span></div>
+                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Operator:</strong> <span style={{ color: '#fff' }}>{agency || 'CPT'}</span></div>
+                        <div style={{ marginBottom: '6px', color: '#4834d4' }}>
+                            <strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
                         </div>
                     </div>
                 </div>
@@ -396,7 +396,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
                 {/* Stops with Zoom Logic - Using CircleMarkers for better performance than full Icons */}
                 {showStops && mapZoom < 14 && (
-                    <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '16px', border: '2px solid #39ff14', fontWeight: '900', color: '#39ff14', fontSize: '0.9rem', boxShadow: '0 0 20px rgba(57, 255, 20, 0.4)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(10,10,46,0.8)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '15px', border: '1px solid var(--glass-border)', fontWeight: '900', color: '#fff', fontSize: '0.8rem', boxShadow: 'var(--shadow-quantum)', textTransform: 'uppercase' }}>
                         {t.zoomInToSeeStops || 'Zoom in to see stops'}
                     </div>
                 )}

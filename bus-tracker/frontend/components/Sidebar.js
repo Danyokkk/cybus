@@ -13,21 +13,22 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
     );
 
     return (
-        <div className={`sidebar ${isOpen ? 'open' : 'closed'}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+        <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
             <div className="sidebar-header">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h2>CyBus</h2>
                     <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
                         style={{
-                            padding: '8px 12px',
-                            borderRadius: '20px',
-                            border: '1px solid #ddd',
-                            fontFamily: 'Unbounded, sans-serif',
-                            fontSize: '0.8rem',
-                            outline: 'none',
-                            cursor: 'pointer'
+                            padding: '6px 12px',
+                            borderRadius: '15px',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            background: 'rgba(255,255,255,0.05)',
+                            color: '#fff',
+                            fontSize: '0.7rem',
+                            cursor: 'pointer',
+                            outline: 'none'
                         }}
                     >
                         <option value="en">EN</option>
@@ -37,19 +38,22 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                 </div>
                 <input
                     type="text"
-                    placeholder={t.searchPlaceholder}
+                    placeholder={t.searchPlaceholder || 'Search...'}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="search-input"
                 />
             </div>
-            <div className="route-list" style={{ flex: 1, overflowY: 'auto' }}>
+
+            <div className="route-list">
                 <button
                     className={`route-item ${!selectedRouteId ? 'active' : ''}`}
                     onClick={() => onSelectRoute(null)}
                 >
-                    <strong>{t.allRoutes}</strong>
-                    <span>{t.showAllStops}</span>
+                    <div className="route-info">
+                        <strong>{t.allRoutes}</strong>
+                        <span style={{ fontSize: '0.7rem' }}>{t.showAllStops}</span>
+                    </div>
                 </button>
                 {filteredRoutes.map(route => (
                     <button
@@ -57,16 +61,21 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                         className={`route-item ${selectedRouteId === route.route_id ? 'active' : ''}`}
                         onClick={() => onSelectRoute(route)}
                     >
-                        <div className="route-badge" style={{ backgroundColor: `#${route.color || '000000'}`, color: `#${route.text_color || 'FFFFFF'}` }}>
+                        <div className="route-badge" style={{
+                            backgroundColor: `#${route.color || '0a0a2e'}`,
+                            color: `#${route.text_color || 'FFFFFF'}`
+                        }}>
                             {route.short_name}
                         </div>
-                        <div className="route-info">
+                        <div className="route-info" style={{ textAlign: 'left' }}>
+                            <strong>{route.short_name}</strong>
                             <span>{route.long_name}</span>
                         </div>
                     </button>
                 ))}
             </div>
-            <div style={{ marginTop: 'auto', padding: '20px', textAlign: 'center', borderTop: '1px solid var(--glass-border)', background: 'transparent' }}>
+
+            <div className="sidebar-footer">
                 <a
                     href="https://t.me/daqxn"
                     target="_blank"
@@ -77,12 +86,9 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                         Made by @daan1k
                     </div>
                 </a>
-                <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '12px', fontWeight: 'bold' }}>
-                    {t.disclaimer}
-                </div>
             </div>
             <style jsx>{`
-                /* Scoped styles for refinement if needed, but mostly using globals.css classes */
+                /* Deep Nebula Refinement */
             `}</style>
         </div>
     );
