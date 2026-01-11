@@ -286,27 +286,45 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     const mapRef = useRef(null);
 
-    // My Location Logic
+    // My Location Logic - Robust V51
     const handleMyLocation = () => {
         if (!navigator.geolocation) return alert("Geolocation not supported");
         setLocLoading(true);
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const { latitude, longitude } = pos.coords;
-                setUserLoc([latitude, longitude]);
-                setLocLoading(false);
-                setShowStops(true);
-                if (mapRef.current) {
-                    mapRef.current.setView([latitude, longitude], 15, { animate: true });
-                }
-            },
-            (err) => {
-                console.error(err);
-                setLocLoading(false);
-                alert("Could not find your location");
-            },
-            { enableHighAccuracy: true }
-        );
+
+        const posOptions = {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 5000
+        };
+
+        const success = (pos) => {
+            const { latitude, longitude } = pos.coords;
+            setUserLoc([latitude, longitude]);
+            setLocLoading(false);
+            setShowStops(true);
+            if (mapRef.current) {
+                mapRef.current.setView([latitude, longitude], 15, { animate: true });
+            }
+        };
+
+        const error = (err) => {
+            console.warn(`Geolocation error (${err.code}): ${err.message}`);
+
+            // If high accuracy failed, try one more time with low accuracy
+            if (err.code === 3 || err.code === 2) { // Timeout or Position Unavailable
+                navigator.geolocation.getCurrentPosition(success, (err2) => {
+                    setLocLoading(false);
+                    // Only alert if it's a permission issue or total failure
+                    if (err2.code === 1) alert("Location permission denied");
+                }, { enableHighAccuracy: false, timeout: 5000 });
+                return;
+            }
+
+            setLocLoading(false);
+            if (err.code === 1) alert("Location permission denied");
+        };
+
+        navigator.geolocation.getCurrentPosition(success, error, posOptions);
     };
     const { t } = useLanguage();
 
