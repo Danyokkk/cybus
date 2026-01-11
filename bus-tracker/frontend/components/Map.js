@@ -286,9 +286,13 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     const mapRef = useRef(null);
 
-    // My Location Logic - Robust V51
+    // My Location Logic - Silent V52
     const handleMyLocation = () => {
-        if (!navigator.geolocation) return alert("Geolocation not supported");
+        console.log("CYBUS_VERSION: V52 (Silent Radar) - Triggered handleMyLocation");
+        if (!navigator.geolocation) {
+            console.error("Geolocation not supported by this browser.");
+            return;
+        }
         setLocLoading(true);
 
         const posOptions = {
@@ -299,6 +303,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
         const success = (pos) => {
             const { latitude, longitude } = pos.coords;
+            console.log(`Location Found: ${latitude}, ${longitude}`);
             setUserLoc([latitude, longitude]);
             setLocLoading(false);
             setShowStops(true);
@@ -314,14 +319,12 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             if (err.code === 3 || err.code === 2) { // Timeout or Position Unavailable
                 navigator.geolocation.getCurrentPosition(success, (err2) => {
                     setLocLoading(false);
-                    // Only alert if it's a permission issue or total failure
-                    if (err2.code === 1) alert("Location permission denied");
+                    console.warn(`Fallback Geolocation error (${err2.code}): ${err2.message}`);
                 }, { enableHighAccuracy: false, timeout: 5000 });
                 return;
             }
 
             setLocLoading(false);
-            if (err.code === 1) alert("Location permission denied");
         };
 
         navigator.geolocation.getCurrentPosition(success, error, posOptions);
