@@ -29,13 +29,13 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// Super Minimal Liquid Glass stop icon
+// Lightweight neon stop icon
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background-color: #39ff14; width: 10px; height: 10px; border-radius: 50%; box-shadow: var(--liquid-shine), 0 0 10px rgba(57,255,20,0.3);"></div>',
-    iconSize: [10, 10],
-    iconAnchor: [5, 5],
-    popupAnchor: [0, -5]
+    html: '<div style="background-color: #39ff14; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #39ff14;"></div>',
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+    popupAnchor: [0, -6]
 });
 
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
@@ -346,22 +346,21 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
                 style={{
                     position: 'absolute',
-                    top: '30px',
-                    right: '30px',
+                    top: '20px',
+                    right: '25px',
                     zIndex: 1000,
-                    padding: '14px 28px',
-                    borderRadius: '20px',
+                    padding: '12px 24px',
+                    borderRadius: '16px',
                     border: 'none',
                     cursor: 'pointer',
-                    fontWeight: '900',
-                    fontSize: '0.85rem',
+                    fontWeight: '800',
+                    fontSize: '0.9rem',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '12px',
-                    letterSpacing: '0.5px'
+                    gap: '10px'
                 }}
             >
-                <span style={{ fontSize: '1.4rem' }}>{showStops ? '✕' : '🚏'}</span>
+                <span style={{ fontSize: '1.3rem' }}>{showStops ? '✕' : '🚏'}</span>
                 {showStops ? 'Hide Stops' : 'Show Stops'}
             </button>
 
