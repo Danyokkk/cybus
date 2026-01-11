@@ -1,6 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -210,7 +210,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
 
     // 2. Viewport Filtering Component
     const ViewportFilter = () => {
-        const map = L.useMapEvents({
+        const map = useMapEvents({
             moveend: () => updateVisibleVehicles(),
             zoomend: () => updateVisibleVehicles(),
         });
