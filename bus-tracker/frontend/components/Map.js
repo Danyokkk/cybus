@@ -263,7 +263,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
+export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
     const [showStops, setShowStops] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [visibleVehicles, setVisibleVehicles] = useState([]);

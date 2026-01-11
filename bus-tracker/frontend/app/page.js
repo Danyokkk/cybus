@@ -3,8 +3,8 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback } from 'react';
 import Sidebar from '../components/Sidebar';
 
-// Dynamic import for Map component
-const Map = dynamic(() => import('../components/Map'), {
+// Dynamic import for BusMap component
+const BusMap = dynamic(() => import('../components/Map'), {
   ssr: false,
   loading: () => <div className="loading-map">Loading Map...</div>
 });
@@ -141,7 +141,7 @@ export default function Home() {
 
       <div className="map-container">
         {loading && <div className="loading-overlay">Loading...</div>}
-        <Map
+        <BusMap
           stops={stops}
           shapes={shapes}
           routes={routes}
