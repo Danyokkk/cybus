@@ -124,6 +124,14 @@ export default function Home() {
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      {/* Liquid Glass Distortion Filter */}
+      <svg style={{ visibility: 'hidden', position: 'absolute', width: 0, height: 0 }}>
+        <filter id="glass-distortion">
+          <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+        </filter>
+      </svg>
+
       {/* Mobile Toggle Button */}
       <button
         className="mobile-sidebar-toggle"

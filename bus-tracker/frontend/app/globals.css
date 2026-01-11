@@ -7,15 +7,14 @@
   --secondary: #9d00ff;
   /* Toxic Purple */
 
-  /* Super Minimal Liquid Glass */
-  --liquid-bg: rgba(255, 255, 255, 0.05);
-  /* Very subtle tint */
-  --liquid-blur: blur(20px) saturate(180%);
-  --liquid-shine: inset 2px 2px 2px 0 rgba(255, 255, 255, 0.2),
-    inset -1px -1px 2px 1px rgba(255, 255, 255, 0.1);
-  --liquid-border: rgba(255, 255, 250, 0.08);
-
-  --shadow-minimal: 0 10px 40px rgba(0, 0, 0, 0.9);
+  /* True Liquid Glass Tokens */
+  --liquid-bg: rgba(255, 255, 255, 0.08);
+  /* Minimalist tint */
+  --liquid-blur: blur(25px) saturate(200%);
+  --liquid-shine: inset 2px 2px 2px 0 rgba(255, 255, 255, 0.4),
+    inset -1px -1px 2px 1px rgba(255, 255, 255, 0.2);
+  --liquid-border: rgba(255, 255, 255, 0.15);
+  --shadow-liquid: 0 10px 40px rgba(0, 0, 0, 0.9);
 }
 
 @font-face {
@@ -50,31 +49,38 @@ body {
 }
 
 .main-container {
-  display: flex;
+  position: relative;
   height: 100vh;
   width: 100vw;
   background: #000;
+  overflow: hidden;
 }
 
-/* Liquid Glass Sidebar Rebuild */
+/* Floating Liquid Glass Sidebar - Absolute to prevent map drift */
 .sidebar {
+  position: absolute;
+  top: 30px;
+  left: 30px;
+  bottom: 30px;
   width: var(--sidebar-width);
-  height: calc(100% - 60px);
-  margin: 30px;
-  position: relative;
-  z-index: 1000;
+  z-index: 2000;
   display: flex;
   flex-direction: column;
   background: var(--liquid-bg);
   backdrop-filter: var(--liquid-blur);
   -webkit-backdrop-filter: var(--liquid-blur);
+  filter: url('#glass-distortion');
+  /* The "Liquid" secret */
   border: 1px solid var(--liquid-border);
-  box-shadow: var(--shadow-minimal), var(--liquid-shine);
+  box-shadow: var(--shadow-liquid), var(--liquid-shine);
   border-radius: 40px;
-  /* Strong minimalist curve */
-  transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
   overflow: hidden;
-  /* NO SCROLLBARS AT ROOT */
+}
+
+.sidebar.closed {
+  transform: translateX(calc(-100% - 60px));
+  opacity: 0;
 }
 
 /* Header & Footer Symmetry */
