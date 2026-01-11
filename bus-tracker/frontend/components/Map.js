@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapE
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, memo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
@@ -24,9 +24,18 @@ const customIcon = new L.Icon({
 
 const busIcon = new L.Icon({
     iconUrl: '/images/bus_blue.png',
-    iconSize: [32, 32], // Adjust size as needed
+    iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -16],
+});
+
+// Lightweight stop icon for better performance than CircleMarkers
+const stopIcon = L.divIcon({
+    className: 'custom-stop-icon',
+    html: '<div style="background-color: #44bd32; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; box-shadow: 0 1px 3px rgba(0,0,0,0.3);"></div>',
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+    popupAnchor: [0, -6]
 });
 
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
@@ -168,16 +177,22 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     );
 };
 
+// Icon Cache to prevent redundant divIcon creation
+const iconCache = new Map();
+
 // Custom Bus Icon Generator (Balloon Label + Rotated Bus)
 const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
-    return L.divIcon({
+    const key = `${routeShortName}_${bearing}_${color}`;
+    if (iconCache.has(key)) return iconCache.get(key);
+
+    const icon = L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
             <div class="balloon-bus-marker">
                 <div class="balloon-label" style="background-color: ${color};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${bearing + 180}deg)">
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0) + 180}deg)">
                     <img src="/images/busicon.png" class="bus-image-core" />
                 </div>
             </div>
@@ -186,7 +201,67 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
         iconAnchor: [30, 70], // Anchor at the bus icon center
         popupAnchor: [0, -70]
     });
+
+    iconCache.set(key, icon);
+    // Limit cache size
+    if (iconCache.size > 1000) {
+        const firstKey = iconCache.keys().next().value;
+        iconCache.delete(firstKey);
+    }
+
+    return icon;
 };
+
+// Memoized Bus Marker Component to prevent re-renders unless data changes
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle }) => {
+    const routeInfo = useMemo(() => null, []); // Placeholder or logic to find route if needed, but we have color/shortName from backend
+
+    const vColor = color || '#44bd32';
+    // Text color logic could be simplified or passed from props
+    const vTextColor = 'white';
+
+    return (
+        <Marker
+            position={[lat, lon]}
+            icon={createBusIcon(shortName, bearing, vColor)}
+            className={(!isFirstLoad && !isNew) ? 'smooth-move' : ''}
+            eventHandlers={{
+                click: () => {
+                    if (onVehicleClick) onVehicleClick(rawVehicle);
+                }
+            }}
+        >
+            <Popup className="bus-popup" minWidth={200}>
+                <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
+                    <div style={{
+                        backgroundColor: vColor,
+                        color: vTextColor,
+                        padding: '10px 18px',
+                        borderRadius: '25px',
+                        display: 'inline-block',
+                        fontSize: '1.3rem',
+                        fontWeight: '900',
+                        marginBottom: '12px',
+                        boxShadow: '0 3px 8px rgba(0,0,0,0.3)',
+                        border: '2px solid rgba(255,255,255,0.2)'
+                    }}>
+                        {shortName || '?'}
+                    </div>
+                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px', color: '#000' }}>
+                        {headsign || 'Bus Route'}
+                    </div>
+                    <div style={{ textAlign: 'left', fontSize: '0.95rem', marginTop: '12px', borderTop: '1px solid #ddd', paddingTop: '12px' }}>
+                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#555' }}>Vehicle ID:</strong> <span style={{ fontFamily: 'monospace', fontWeight: 'bold' }}>{id}</span></div>
+                        <div style={{ marginBottom: '6px' }}><strong style={{ color: '#555' }}>Operator:</strong> {agency || 'Cyprus Public Transport'}</div>
+                        <div style={{ marginBottom: '6px', color: '#2ecc71', fontWeight: 'bold' }}>
+                            <strong style={{ color: '#555' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
+                        </div>
+                    </div>
+                </div>
+            </Popup>
+        </Marker>
+    );
+});
 
 export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
     const [showStops, setShowStops] = useState(false);
@@ -225,7 +300,7 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
             if (filterTimeout.current) clearTimeout(filterTimeout.current);
             filterTimeout.current = setTimeout(() => {
                 updateVisibleElements(map);
-            }, 150); // 150ms debounce
+            }, 250); // Increased debounce: 250ms for mobile stability
         };
 
         const updateVisibleElements = (m) => {
@@ -300,127 +375,75 @@ export default function Map({ stops, shapes, routes, onSelectRoute, routeColor, 
             >
                 <ViewportFilter />
 
-                <LayersControl position="topright">
-                    <LayersControl.BaseLayer checked name="Modern Street">
-                        <TileLayer
-                            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                {/* Performance optimized Tile Layers: Directly rendered without LayersControl overhead */}
+                <TileLayer
+                    attribution='&copy; Esri'
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                />
+                <TileLayer
+                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                />
+
+                {/* Shapes - Only render if a route is selected to save memory */}
+                {shapes && shapes.length > 0 && shapes.map((shape, index) => {
+                    let sColor = routeColor || '0070f3';
+                    if (!sColor.startsWith('#')) sColor = '#' + sColor;
+                    return (
+                        <Polyline
+                            key={`shape-${index}`}
+                            positions={shape}
+                            pathOptions={{ color: sColor, weight: 6, opacity: 0.9, lineJoin: 'round' }}
                         />
-                    </LayersControl.BaseLayer>
+                    );
+                })}
 
-                    <LayersControl.BaseLayer name="Satellite (Realistic)">
-                        <TileLayer
-                            attribution='&copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                        />
-                    </LayersControl.BaseLayer>
-
-                    <LayersControl.Overlay name="Road Names & Buildings">
-                        <TileLayer
-                            attribution='&copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
-                            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                        />
-                    </LayersControl.Overlay>
-
-                    <LayersControl.Overlay name="Transportation">
-                        <TileLayer
-                            attribution='&copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
-                            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer/tile/{z}/{y}/{x}"
-                        />
-                    </LayersControl.Overlay>
-                </LayersControl>
-
-                {/* Shapes */}
-                {shapes && shapes.map((shape, index) => (
-                    <Polyline
-                        key={index}
-                        positions={shape}
-                        pathOptions={{ color: routeColor ? `#${routeColor}` : '#0070f3', weight: 4, opacity: 0.7 }}
-                    />
-                ))}
-
-                {/* Stops with Zoom Logic */}
+                {/* Stops with Zoom Logic - Using CircleMarkers for better performance than full Icons */}
                 {showStops && mapZoom < 14 && (
-                    <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.9)', padding: '10px 20px', borderRadius: '20px', border: '1px solid #44bd32', fontWeight: 'bold', color: '#333', fontSize: '0.85rem' }}>
+                    <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(255,255,255,0.95)', padding: '10px 20px', borderRadius: '20px', border: '1px solid #44bd32', fontWeight: 'bold', color: '#333', fontSize: '0.85rem', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }}>
                         {t.zoomInToSeeStops || 'Zoom in to see stops'}
                     </div>
                 )}
 
-                {showStops && mapZoom >= 14 && (
-                    <MarkerClusterGroup
-                        chunkedLoading
-                        disableClusteringAtZoom={16}
-                        maxClusterRadius={30}
-                        spiderfyOnMaxZoom={true}
+                {showStops && mapZoom >= 14 && visibleStops.map((stop) => (
+                    <Marker
+                        key={`stop-${stop.stop_id}`}
+                        position={[stop.lat, stop.lon]}
+                        icon={stopIcon}
                     >
-                        {visibleStops.map((stop) => (
-                            <Marker key={stop.stop_id} position={[stop.lat, stop.lon]} icon={customIcon}>
-                                <Popup>
-                                    <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
-                                </Popup>
-                            </Marker>
-                        ))}
-                    </MarkerClusterGroup>
-                )}
+                        <Popup minWidth={300}>
+                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
+                        </Popup>
+                    </Marker>
+                ))}
 
                 {/* Vehicles (Filtered by Viewport) */}
                 {visibleVehicles.map((v, i) => {
                     const vId = v.id || v.vehicle_id;
-                    const vLat = v.lt || v.lat;
-                    const vLon = v.ln || v.lon;
-                    const vBearing = v.b !== undefined ? v.b : v.bearing;
-                    const vShortName = v.sn || v.route_short_name;
-
-                    const routeInfo = routes.find(r =>
-                        (r.short_name && vShortName && r.short_name.trim() === vShortName.trim()) ||
-                        (r.route_short_name && vShortName && r.route_short_name.trim() === vShortName.trim())
-                    );
-                    const vColor = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : (v.c ? `#${v.c}` : '#44bd32');
-                    const vTextColor = routeInfo ? `#${routeInfo.text_color || routeInfo.route_text_color}` : 'white';
-
-                    // Determine if this is a newly seen vehicle to skip animation
                     const isNew = !seenVehicles.current.has(vId);
-                    if (isNew) {
-                        seenVehicles.current.add(vId);
-                    }
+                    if (isNew) seenVehicles.current.add(vId);
+
+                    // Robust color formatting
+                    let vColor = v.c || '44bd32';
+                    if (!vColor.startsWith('#')) vColor = '#' + vColor;
 
                     return (
-                        <Marker
-                            key={vId || i}
-                            position={[vLat, vLon]}
-                            icon={createBusIcon(vShortName, vBearing, vColor)}
-                            className={(!isFirstLoad && !isNew) ? 'smooth-move' : ''}
-                            eventHandlers={{
-                                click: () => {
-                                    if (onVehicleClick) onVehicleClick(v);
-                                }
-                            }}
-                        >
-                            <Popup className="bus-popup">
-                                <div style={{ textAlign: 'center', minWidth: '180px' }}>
-                                    <div style={{
-                                        backgroundColor: vColor,
-                                        color: vTextColor,
-                                        padding: '8px 15px',
-                                        borderRadius: '20px',
-                                        display: 'inline-block',
-                                        fontSize: '1.2rem',
-                                        fontWeight: 'bold',
-                                        marginBottom: '10px',
-                                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                                    }}>
-                                        {vShortName}
-                                    </div>
-                                    <div style={{ fontSize: '1rem', fontWeight: 'bold', marginBottom: '5px', color: '#333' }}>
-                                        {v.trip_headsign || ''}
-                                    </div>
-                                    <div style={{ textAlign: 'left', fontSize: '0.9rem', marginTop: '10px', borderTop: '1px solid #eee', paddingTop: '10px' }}>
-                                        <div style={{ marginBottom: '4px' }}><strong>Vehicle:</strong> {vId}</div>
-                                        {v.speed !== undefined && <div style={{ marginBottom: '4px' }}><strong>{t.speed}:</strong> {(v.speed * 3.6).toFixed(1)} km/h</div>}
-                                    </div>
-                                </div>
-                            </Popup>
-                        </Marker>
+                        <BusMarker
+                            key={`bus-${vId || i}`}
+                            id={vId}
+                            lat={v.lt || v.lat}
+                            lon={v.ln || v.lon}
+                            bearing={v.b !== undefined ? v.b : v.bearing}
+                            shortName={v.sn || v.route_short_name}
+                            color={vColor}
+                            speed={v.s !== undefined ? v.s : v.speed}
+                            headsign={v.h || v.trip_headsign}
+                            agency={v.ag || v.agency_name}
+                            isFirstLoad={isFirstLoad}
+                            isNew={isNew}
+                            onVehicleClick={onVehicleClick}
+                            t={t}
+                            rawVehicle={v}
+                        />
                     );
                 })}
 

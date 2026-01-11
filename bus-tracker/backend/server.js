@@ -119,7 +119,8 @@ async function fetchData() {
           route_short_name: route ? (route.short_name || route.route_short_name) : '?',
           trip_headsign: trip ? trip.trip_headsign : (entity.vehicle.trip?.tripId || '?'),
           color: route ? (route.color || '0070f3') : '000000',
-          text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF'
+          text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF',
+          agency_name: route ? route.agency_name : 'Cyprus Public Transport'
         });
       }
 
@@ -153,8 +154,11 @@ async function fetchData() {
       lt: v.lat,
       ln: v.lon,
       b: v.bearing,
+      s: v.speed || 0,
+      h: v.trip_headsign || 'Route ' + v.route_short_name,
       sn: v.route_short_name,
-      c: v.color
+      c: v.color,
+      ag: v.agency_name // Adding agency reference if available
     }));
     tripUpdates = tempUpdates;
     console.log(`>>> Sync: ${vehiclePositions.length} buses. Payload minimized.`);
@@ -227,13 +231,19 @@ async function loadData() {
       }
     });
 
+    const agencyNames = new Map();
+    await processCSV(path.join(dir, 'agency.txt'), (row) => {
+      agencyNames.set(row.agency_id, row.agency_name);
+    });
+
     await processCSV(path.join(dir, 'routes.txt'), (row) => {
       routes.push({
         route_id: regionPrefix + row.route_id,
         short_name: row.route_short_name || '?',
         long_name: row.route_long_name || row.route_desc || '',
         color: row.route_color,
-        text_color: row.route_text_color
+        text_color: row.route_text_color,
+        agency_name: agencyNames.get(row.agency_id) || path.basename(dir)
       });
     });
 
