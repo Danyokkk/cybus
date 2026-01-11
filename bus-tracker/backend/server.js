@@ -312,7 +312,7 @@ async function loadData() {
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
   fetchData();
-  setInterval(fetchData, 5000); // Back to 5s for better responsiveness
+  setInterval(fetchData, 2000); // 2s for "instant" movement as requested
 }
 
 loadData();

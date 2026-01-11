@@ -54,7 +54,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 5000);
+    const interval = setInterval(fetchVehicles, 2000);
     return () => {
       isCancelled = true;
       clearInterval(interval);

@@ -227,9 +227,9 @@ body {
   z-index: 10;
 }
 
-/* Smooth Marker Movement */
+/* Smooth Marker Movement - V33: 2s interval */
 .leaflet-marker-icon {
-  transition: transform 4s linear;
+  transition: transform 1.9s linear;
 }
 
 .loading-map {
@@ -283,9 +283,9 @@ body {
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
 }
 
-/* V22: Class-based transitions to prevent "flying" on start */
+/* V22: Class-based transitions - V33: 2s interval */
 .leaflet-marker-icon.smooth-move {
-  transition: transform 4.5s linear;
+  transition: transform 1.9s linear;
 }
 
 /* V26: Premium Layer Control Styles */
