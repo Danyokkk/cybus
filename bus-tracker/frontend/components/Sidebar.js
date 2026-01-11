@@ -16,19 +16,19 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
         <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
             <div className="sidebar-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h2>CyBus</h2>
+                    <h2 style={{ fontSize: '1.6rem' }}>CyBus</h2>
                     <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}
                         style={{
-                            padding: '6px 12px',
-                            borderRadius: '15px',
-                            border: '1px solid rgba(255,255,255,0.1)',
-                            background: 'rgba(255,255,255,0.05)',
-                            color: '#fff',
-                            fontSize: '0.7rem',
-                            cursor: 'pointer',
-                            outline: 'none'
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            background: 'rgba(255,255,255,0.03)',
+                            color: '#777',
+                            fontSize: '0.65rem',
+                            outline: 'none',
+                            cursor: 'pointer'
                         }}
                     >
                         <option value="en">EN</option>
@@ -51,8 +51,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     onClick={() => onSelectRoute(null)}
                 >
                     <div className="route-info">
-                        <strong>{t.allRoutes}</strong>
-                        <span style={{ fontSize: '0.7rem' }}>{t.showAllStops}</span>
+                        <strong style={{ fontSize: '0.85rem' }}>{t.allRoutes}</strong>
                     </div>
                 </button>
                 {filteredRoutes.map(route => (
@@ -68,8 +67,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                             {route.short_name}
                         </div>
                         <div className="route-info" style={{ textAlign: 'left' }}>
-                            <strong>{route.short_name}</strong>
-                            <span>{route.long_name}</span>
+                            <strong style={{ fontSize: '0.85rem' }}>{route.short_name}</strong>
                         </div>
                     </button>
                 ))}
@@ -82,8 +80,8 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     rel="noopener noreferrer"
                     style={{ textDecoration: 'none' }}
                 >
-                    <div className="daan1k-credit">
-                        Made by @daan1k
+                    <div className="daan1k-credit" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.4)' }}>
+                        @daan1k
                     </div>
                 </a>
             </div>

@@ -58,13 +58,14 @@ body {
   overflow: hidden;
 }
 
-/* Deep Nebula Sidebar - Absolute Floating */
+/* Floating Deep Nebula Sidebar - Detached from edges */
 .sidebar {
   position: absolute;
-  top: 30px;
-  left: 30px;
-  bottom: 30px;
-  width: var(--sidebar-width);
+  top: 25px;
+  left: 25px;
+  bottom: 25px;
+  width: 320px;
+  /* Slimmer for V43 minimalism */
   z-index: 2000;
   display: flex;
   flex-direction: column;
@@ -74,6 +75,7 @@ body {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-quantum);
   border-radius: 40px;
+  /* Symmetrical rounded rectangle */
   transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
   overflow: hidden;
 }
@@ -254,6 +256,38 @@ body {
     justify-content: center;
     font-size: 1.5rem;
   }
+}
+
+/* Bus Marker Styles */
+.custom-bus-marker-container {
+  background: transparent !important;
+  border: none !important;
+}
+
+.balloon-bus-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.balloon-label {
+  padding: 6px 14px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 900;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  margin-bottom: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  z-index: 2;
+}
+
+.bus-image-core {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
 }
 
 /* Popups as Space Glass */
