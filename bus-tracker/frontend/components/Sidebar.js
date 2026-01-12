@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen }) {
+export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen, setIsOpen }) {
     const [searchTerm, setSearchTerm] = useState('');
     const { language, setLanguage, t } = useLanguage();
 
@@ -14,9 +14,23 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
 
     return (
         <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+            {/* Mobile Pull Handle */}
+            <div className="sidebar-handle" onClick={() => setIsOpen(true)}>
+                <div className="handle-bar"></div>
+            </div>
+
             <div className="sidebar-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h2 style={{ fontSize: '1.6rem' }}>CyBus</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h2 style={{ fontSize: '1.6rem', margin: 0 }}>CyBus</h2>
+                        {/* Mobile Close Button */}
+                        <button
+                            className="mobile-close-btn"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            ✕
+                        </button>
+                    </div>
                     <select
                         value={language}
                         onChange={(e) => setLanguage(e.target.value)}

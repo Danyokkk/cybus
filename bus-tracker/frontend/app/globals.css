@@ -239,6 +239,54 @@ body {
     border-radius: 0 40px 40px 0;
   }
 
+  .sidebar.closed {
+    transform: translateX(calc(-100% + 40px));
+    opacity: 1;
+  }
+
+  /* Pull Handle - Mobile Only */
+  .sidebar-handle {
+    display: flex !important;
+    position: absolute;
+    top: 50%;
+    right: 0;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 100%;
+    background: transparent;
+    cursor: pointer;
+    z-index: 5000;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .handle-bar {
+    width: 4px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    margin-right: 8px;
+    transition: 0.3s;
+  }
+
+  .sidebar.open .sidebar-handle {
+    display: none !important;
+  }
+
+  .mobile-close-btn {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    color: #fff;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
   .mobile-sidebar-toggle {
     display: none !important;
   }
@@ -254,6 +302,12 @@ body {
   .stops-toggle-btn span {
     font-size: 1rem !important;
   }
+}
+
+/* Hide pull-handle and close btn on desktop */
+.sidebar-handle,
+.mobile-close-btn {
+  display: none;
 }
 
 /* Mobile Credit Bar */

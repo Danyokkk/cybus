@@ -19,6 +19,13 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
+  // 0. Mobile-aware initial state
+  useEffect(() => {
+    if (window.innerWidth < 768) {
+      setIsSidebarOpen(false);
+    }
+  }, []);
+
   // 1. Fetch initial data
   useEffect(() => {
     Promise.all([
@@ -133,6 +140,7 @@ export default function Home() {
         onSelectRoute={handleSelectRoute}
         selectedRouteId={selectedRouteId}
         isOpen={isSidebarOpen}
+        setIsOpen={setIsSidebarOpen}
       />
 
       <div className="map-container">
