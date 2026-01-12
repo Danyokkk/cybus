@@ -47,8 +47,8 @@ export default function Home() {
           routesRes.json()
         ]);
 
-        setStops(stopsData);
-        setRoutes(routesData);
+        if (Array.isArray(stopsData)) setStops(stopsData);
+        if (Array.isArray(routesData)) setRoutes(routesData);
       } catch (err) {
         console.error('Error fetching initial data:', err);
       } finally {
@@ -68,8 +68,8 @@ export default function Home() {
         .then(data => {
           if (!isCancelled) {
             setVehicles(prev => {
+              if (!Array.isArray(data)) return prev;
               // Only update if data actually changed (length or first few entries)
-              // This is a naive check but helps prevent some re-renders
               if (prev.length === data.length && JSON.stringify(prev[0]) === JSON.stringify(data[0])) return prev;
               return data;
             });

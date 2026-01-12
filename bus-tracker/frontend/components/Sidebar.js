@@ -8,8 +8,8 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
     const { language, setLanguage, t } = useLanguage();
 
     const filteredRoutes = routes.filter(route =>
-        route.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        route.long_name.toLowerCase().includes(searchTerm.toLowerCase())
+        (route.short_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (route.long_name || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
