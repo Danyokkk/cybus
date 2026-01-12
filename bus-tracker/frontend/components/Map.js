@@ -4,7 +4,7 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapE
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
-import { useEffect, useState, useRef, useMemo, memo } from 'react';
+import { useEffect, useState, useRef, useMemo, memo, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
