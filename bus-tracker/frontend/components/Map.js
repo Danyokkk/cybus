@@ -273,7 +273,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles }) {
+export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles, showToast }) {
     const [showStops, setShowStops] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [mapZoom, setMapZoom] = useState(10);
@@ -289,14 +289,17 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     // My Location Logic - Robust for iOS (V55)
     const handleMyLocation = () => {
-        console.log("CYBUS_VERSION: V55 (Mobile Radar) - Triggered");
-        if (!navigator.geolocation) return;
+        console.log("CYBUS_VERSION: V58 (Reliability) - Triggered");
+        if (!navigator.geolocation) {
+            if (showToast) showToast(t.notSupported || "Geolocation not supported");
+            return;
+        }
 
         setLocLoading(true);
 
         const posOptions = {
             enableHighAccuracy: true,
-            timeout: 15000,
+            timeout: 10000,
             maximumAge: 0
         };
 
@@ -314,12 +317,21 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         const error = (err) => {
             console.warn(`Geolocation error (${err.code}): ${err.message}`);
 
+            // User Denied
+            if (err.code === 1) {
+                if (showToast) showToast(t.permissionDenied || "Permission Denied 🔒");
+                setLocLoading(false);
+                return;
+            }
+
             // If high accuracy failed (Timeout or Position Unavailable), try low accuracy
             if (err.code === 3 || err.code === 2 || err.code === 0) {
+                if (showToast) showToast(t.lowAccuracyTry || "Finding you... 🛰️");
                 navigator.geolocation.getCurrentPosition(success, (err2) => {
                     setLocLoading(false);
                     console.warn(`Fallback (Low Accuracy) failed:`, err2);
-                }, { enableHighAccuracy: false, timeout: 10000 });
+                    if (showToast) showToast(t.signalTooWeak || "Signal too weak 🧭");
+                }, { enableHighAccuracy: false, timeout: 8000 });
                 return;
             }
 

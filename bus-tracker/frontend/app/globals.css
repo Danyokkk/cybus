@@ -239,7 +239,6 @@ body {
 .sidebar.closed {
   transform: translateX(110%);
 }
-}
 
 /* Main Loading Overlay - Deep Nebula Style */
 .loading-overlay {
@@ -305,6 +304,50 @@ body {
 
   100% {
     left: 100%;
+  }
+}
+
+/* Toast System - Minimalist Pilling */
+.toast-pilling {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(10, 10, 46, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 10px 24px;
+  border-radius: 30px;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 900;
+  z-index: 10000;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  animation: toast-up 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+@keyframes toast-up {
+  0% {
+    transform: translate(-50%, 20px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .toast-pilling {
+    bottom: 80px;
+    font-size: 0.7rem;
+    padding: 8px 18px;
   }
 }
 

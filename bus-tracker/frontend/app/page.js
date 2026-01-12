@@ -18,6 +18,13 @@ export default function Home() {
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [toast, setToast] = useState(null);
+
+  // Helper to show toasts
+  const showToast = useCallback((msg, duration = 3000) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), duration);
+  }, []);
 
   // 0. Mobile-aware initial state
   useEffect(() => {
@@ -94,6 +101,10 @@ export default function Home() {
     }
     setLoading(true);
     if (!route) {
+      if (selectedRouteId === null) {
+        setLoading(false);
+        return; // Already null, avoid redundant work
+      }
       setSelectedRouteId(null);
       setSelectedRouteColor(null);
       setShapes([]);
@@ -103,6 +114,10 @@ export default function Home() {
         setStops(data);
       } catch (err) { console.error(err); }
     } else {
+      if (selectedRouteId === route.route_id) {
+        setLoading(false);
+        return; // Avoid double loading same route
+      }
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
       try {
@@ -169,6 +184,13 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {toast && (
+        <div className="toast-pilling">
+          {toast}
+        </div>
+      )}
+
       <div className="map-container">
         <BusMap
           stops={stops}
@@ -178,6 +200,7 @@ export default function Home() {
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}
           vehicles={vehicles}
+          showToast={showToast}
         />
       </div>
     </main>
