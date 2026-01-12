@@ -79,13 +79,15 @@ body {
   box-shadow: var(--shadow-quantum);
   border-radius: 40px;
   /* Symmetrical rounded rectangle */
-  transition: all 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
   overflow: hidden;
+  will-change: transform;
 }
 
 .sidebar.closed {
-  transform: translateX(calc(-100% - 60px));
+  transform: translateX(-110%);
   opacity: 0;
+  pointer-events: none;
 }
 
 .sidebar-header {
@@ -460,8 +462,9 @@ body {
   background: var(--nebula-deep) !important;
 }
 
-.leaflet-marker-icon {
-  transition: transform 1.9s linear;
+/* Marker transitions removed for performance */
+.leaflet-container {
+  cursor: crosshair !important;
 }
 
 @keyframes sonar {
@@ -480,4 +483,22 @@ body {
     transform: scale(0.9);
     opacity: 1;
   }
+}
+
+.zoom-hint-pill {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(10, 10, 46, 0.8);
+  backdrop-filter: blur(10px);
+  padding: 12px 24px;
+  border-radius: 15px;
+  border: 1px solid var(--glass-border);
+  font-weight: 900;
+  color: #fff;
+  font-size: 0.8rem;
+  box-shadow: var(--shadow-quantum);
+  text-transform: uppercase;
 }

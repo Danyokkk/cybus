@@ -191,8 +191,13 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 const iconCache = new Map();
 
 // Custom Bus Icon Generator (Balloon Label + Rotated Bus)
-const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
-    const key = `${routeShortName}_${bearing}_${color}`;
+const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15) => {
+    // Quantize bearing to 10-degree steps to reduce cache size and re-mounts
+    const qBearing = Math.round((bearing || 0) / 10) * 10;
+    // Dynamic scale to keep buses "readable" even when zoomed out (doesn't shrink as much as map)
+    const scale = zoom < 12 ? 0.8 : zoom < 14 ? 0.9 : 1.0;
+
+    const key = `${routeShortName}_${qBearing}_${color}_${scale}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
@@ -202,13 +207,13 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
                 <div class="balloon-label" style="background-color: ${color};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0) + 180}deg)">
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0) + 180}deg) scale(${scale})">
                     <img src="/images/busicon.png" class="bus-image-core" />
                 </div>
             </div>
         `,
         iconSize: [60, 90],
-        iconAnchor: [30, 70], // Anchor at the bus icon center
+        iconAnchor: [30, 70],
         popupAnchor: [0, -70]
     });
 
@@ -233,8 +238,8 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, bearing, vColor)}
-            className={(!isFirstLoad && !isNew) ? 'smooth-move' : ''}
+            icon={createBusIcon(shortName, bearing, vColor, 15)} // Default zoom scale in popup
+            className="smooth-move"
             eventHandlers={{
                 click: () => {
                     if (onVehicleClick) onVehicleClick(rawVehicle);
@@ -273,6 +278,31 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
+const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes }) => {
+    useMapEvents({
+        moveend: () => {
+            setMapZoom(map.getZoom());
+            updateVisibleElements();
+        },
+        zoomend: () => {
+            setMapZoom(map.getZoom());
+            updateVisibleElements();
+        }
+    });
+
+    // Auto-Zoom to Route Shapes
+    useEffect(() => {
+        if (shapes && shapes.length > 0 && map) {
+            const allPoints = shapes.flat();
+            if (allPoints.length > 0) {
+                map.fitBounds(allPoints, { padding: [50, 50], animate: true });
+            }
+        }
+    }, [shapes, map]);
+
+    return null;
+};
+
 export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles, showToast }) {
     const [showStops, setShowStops] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -283,213 +313,83 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     const [locLoading, setLocLoading] = useState(false);
     const [isSatellite, setIsSatellite] = useState(true);
     const seenVehicles = useRef(new Set());
-    const filterTimeout = useRef(null);
 
     const mapRef = useRef(null);
+    const { t } = useLanguage();
 
-    // My Location Logic - Robust for iOS (V55)
+    // 1. Map Events Handling Logic
+    const updateVisibleElements = useCallback(() => {
+        if (!mapRef.current) return;
+        const m = mapRef.current;
+        const bounds = m.getBounds();
+        const zoom = m.getZoom();
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+        const buffer = isMobile ? 0.05 : 0.15;
+        const paddedBounds = bounds.pad(buffer);
+
+        // Filter vehicles
+        const filteredVehicles = vehicles.filter(v => {
+            const lat = v.lt || v.lat;
+            const lon = v.ln || v.lon;
+            return paddedBounds.contains([lat, lon]);
+        });
+        setVisibleVehicles(filteredVehicles);
+
+        // Filter stops
+        if (showStops && zoom >= 14) {
+            const filteredStops = stops.filter(s => paddedBounds.contains([s.lat, s.lon]));
+            setVisibleStops(filteredStops);
+        } else {
+            setVisibleStops([]);
+        }
+    }, [vehicles, showStops, stops]);
+
+    // Update visibility when source data or settings change
+    useEffect(() => {
+        updateVisibleElements();
+    }, [vehicles, showStops, stops]);
+
+    // Instant Spawn Logic
+    useEffect(() => {
+        if (vehicles.length > 0 && isFirstLoad) {
+            vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
+            const timer = setTimeout(() => setIsFirstLoad(false), 1000);
+            return () => clearTimeout(timer);
+        }
+    }, [vehicles, isFirstLoad]);
+
+    // Geolocation handlers...
     const handleMyLocation = () => {
-        console.log("CYBUS_VERSION: V59 (Nexus) - Triggered");
         if (!navigator.geolocation) {
             if (showToast) showToast(t.notSupported || "Geolocation not supported");
             return;
         }
-
         setLocLoading(true);
-
-        const posOptions = {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
-        };
-
-        const success = (pos) => {
-            const { latitude, longitude } = pos.coords;
-            console.log(`Location Found: ${latitude}, ${longitude}`);
-            setUserLoc([latitude, longitude]);
-            setLocLoading(false);
-            setShowStops(true);
-            if (mapRef.current) {
-                mapRef.current.setView([latitude, longitude], 15, { animate: true });
-            }
-        };
-
-        const error = (err) => {
-            console.warn(`Geolocation error (${err.code}): ${err.message}`);
-
-            // User Denied
-            if (err.code === 1) {
-                if (showToast) showToast("Check Permissions 🔒");
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                const { latitude, longitude } = pos.coords;
+                setUserLoc([latitude, longitude]);
                 setLocLoading(false);
-                return;
-            }
-
-            // If high accuracy failed (Timeout or Position Unavailable), try low accuracy
-            if (err.code === 3 || err.code === 2 || err.code === 0) {
-                const hint = err.code === 3 ? "Finding you... (Try Outdoor) 🧭" : "Enable Precise Location 🛰️";
-                if (showToast) showToast(hint);
-
-                navigator.geolocation.getCurrentPosition(success, (err2) => {
-                    setLocLoading(false);
-                    console.warn(`Fallback (Low Accuracy) failed:`, err2);
-                    if (showToast) showToast("Signal too weak 🧭");
-                }, { enableHighAccuracy: false, timeout: 8000 });
-                return;
-            }
-
-            setLocLoading(false);
-        };
-
-        navigator.geolocation.getCurrentPosition(success, error, posOptions);
-    };
-    const { t } = useLanguage();
-
-    // 1. Instant Spawn Logic: Track which vehicles we've already seen
-    useEffect(() => {
-        if (vehicles.length > 0) {
-            if (isFirstLoad) {
-                vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
-                const timer = setTimeout(() => setIsFirstLoad(false), 1000);
-                return () => clearTimeout(timer);
-            } else {
-                // Add new vehicles to seen set so they don't get 'smooth-move' on first render
-            }
-        }
-    }, [vehicles, isFirstLoad]);
-
-    // 2. Viewport Filtering Component (Debounced)
-    const ViewportFilter = () => {
-        const map = useMap();
-
-        useMapEvents({
-            moveend: () => {
-                setMapZoom(map.getZoom());
-                debouncedUpdate();
+                setShowStops(true);
+                if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
             },
-            zoomend: () => {
-                setMapZoom(map.getZoom());
-                debouncedUpdate();
-            }
-        });
-
-        const debouncedUpdate = () => {
-            if (filterTimeout.current) clearTimeout(filterTimeout.current);
-            filterTimeout.current = setTimeout(() => {
-                updateVisibleElements(map);
-            }, 250);
-        };
-
-        const updateVisibleElements = (m) => {
-            const bounds = m.getBounds();
-            const zoom = m.getZoom();
-            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
-            // More aggressive filtering for mobile
-            const buffer = isMobile ? 0.05 : 0.2;
-            const paddedBounds = bounds.pad(buffer);
-
-            // Vehicles
-            const filteredVehicles = vehicles.filter(v => {
-                const lat = v.lt || v.lat;
-                const lon = v.ln || v.lon;
-                return paddedBounds.contains([lat, lon]);
-            });
-            setVisibleVehicles(filteredVehicles);
-
-            // Stops (Only if showStops is true and Zoom >= 14)
-            if (showStops && zoom >= 14) {
-                const filteredStops = stops.filter(s => paddedBounds.contains([s.lat, s.lon]));
-                setVisibleStops(filteredStops);
-            } else {
-                setVisibleStops([]);
-            }
-        };
-
-        // Auto-Zoom to Route Shapes
-        useEffect(() => {
-            if (shapes && shapes.length > 0 && map) {
-                const allPoints = shapes.flat();
-                if (allPoints.length > 0) {
-                    map.fitBounds(allPoints, { padding: [50, 50], animate: true });
-                }
-            }
-        }, [shapes, map]);
-
-        // Initial update
-        useEffect(() => {
-            updateVisibleElements(map);
-        }, [vehicles, showStops]);
-
-        return null;
+            () => setLocLoading(false),
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
     };
-
-    // Vehicle polling removed - now handled by page.js props
-
-    const center = [34.68, 33.04]; // Limassol center
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-
-            {/* UI Controls - Floating Right */}
             <div style={{ position: 'absolute', top: '25px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button
-                    onClick={() => setIsSatellite(!isSatellite)}
-                    className="stops-toggle-btn"
-                    style={{
-                        padding: '10px 20px',
-                        borderRadius: '16px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: '900',
-                        fontSize: '0.75rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        letterSpacing: '0.5px'
-                    }}
-                >
-                    <span style={{ fontSize: '1.2rem' }}>{isSatellite ? '🏙️' : '🛰️'}</span>
-                    {isSatellite ? (t.streetView || 'Street') : (t.satelliteView || 'Satellite')}
+                <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn">
+                    <span>{isSatellite ? '🏙️' : '🛰️'}</span> {isSatellite ? (t.streetView || 'Street') : (t.satelliteView || 'Satellite')}
                 </button>
-
-                <button
-                    onClick={() => setShowStops(!showStops)}
-                    className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
-                    style={{
-                        padding: '10px 20px',
-                        borderRadius: '16px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: '900',
-                        fontSize: '0.75rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        letterSpacing: '0.5px'
-                    }}
-                >
-                    <span style={{ fontSize: '1.2rem' }}>{showStops ? '✕' : '🚏'}</span>
-                    {showStops ? (t.hideStops || 'Hide Stops') : (t.showStops || 'Show Stops')}
+                <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`}>
+                    <span>{showStops ? '✕' : '🚏'}</span> {showStops ? (t.hideStops || 'Hide Stops') : (t.showStops || 'Show Stops')}
                 </button>
-
-                <button
-                    onClick={handleMyLocation}
-                    className="stops-toggle-btn"
-                    style={{
-                        padding: '10px 20px',
-                        borderRadius: '16px',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontWeight: '900',
-                        fontSize: '0.75rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '10px',
-                        letterSpacing: '0.5px'
-                    }}
-                >
-                    <span style={{ fontSize: '1.2rem' }}>{locLoading ? '⌛' : '🎯'}</span>
-                    {locLoading ? (t.finding || 'Finding...') : (t.myLocation || 'My Location')}
+                <button onClick={handleMyLocation} className="stops-toggle-btn">
+                    <span>{locLoading ? '⌛' : '🎯'}</span> {locLoading ? (t.finding || 'Finding...') : (t.myLocation || 'My Location')}
                 </button>
             </div>
 
@@ -502,98 +402,70 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 zoomControl={false}
             >
                 <ZoomControl position="bottomright" />
-                <ViewportFilter />
+                <MapEvents
+                    map={mapRef.current}
+                    setMapZoom={setMapZoom}
+                    updateVisibleElements={updateVisibleElements}
+                    shapes={shapes}
+                />
 
-                {/* Performance optimized Tile Layers: Directly rendered without LayersControl overhead */}
                 {isSatellite ? (
                     <>
-                        <TileLayer
-                            attribution='&copy; Esri'
-                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                        />
-                        <TileLayer
-                            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                        />
+                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
                     </>
                 ) : (
-                    <TileLayer
-                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                    />
+                    <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
                 )}
 
-                {/* Shapes - Only render if a route is selected to save memory */}
-                {shapes && shapes.length > 0 && shapes.map((shape, index) => {
-                    let sColor = routeColor || '0070f3';
-                    if (!sColor.startsWith('#')) sColor = '#' + sColor;
-                    return (
-                        <Polyline
-                            key={`shape-${index}`}
-                            positions={shape}
-                            pathOptions={{ color: sColor, weight: 6, opacity: 0.9, lineJoin: 'round' }}
-                        />
-                    );
-                })}
+                {shapes && shapes.length > 0 && shapes.map((shape, index) => (
+                    <Polyline key={`shape-${index}`} positions={shape} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
+                ))}
 
-                {/* Stops with Zoom Logic - Using CircleMarkers for better performance than full Icons */}
                 {showStops && mapZoom < 14 && (
-                    <div style={{ position: 'absolute', bottom: '30px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, background: 'rgba(10,10,46,0.8)', backdropFilter: 'blur(10px)', padding: '12px 24px', borderRadius: '15px', border: '1px solid var(--glass-border)', fontWeight: '900', color: '#fff', fontSize: '0.8rem', boxShadow: 'var(--shadow-quantum)', textTransform: 'uppercase' }}>
+                    <div className="zoom-hint-pill">
                         {t.zoomInToSeeStops || 'Zoom in to see stops'}
                     </div>
                 )}
 
                 {showStops && mapZoom >= 14 && visibleStops.map((stop) => (
-                    <Marker
-                        key={`stop-${stop.stop_id}`}
-                        position={[stop.lat, stop.lon]}
-                        icon={stopIcon}
-                    >
+                    <Marker key={`stop-${stop.stop_id}`} position={[stop.lat, stop.lon]} icon={stopIcon}>
                         <Popup minWidth={300}>
                             <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
                         </Popup>
                     </Marker>
                 ))}
 
-                {/* Vehicles (Filtered by Viewport) */}
                 {visibleVehicles.map((v, i) => {
                     const vId = v.id || v.vehicle_id;
-                    const isNew = !seenVehicles.current.has(vId);
-                    if (isNew) seenVehicles.current.add(vId);
-
-                    // Robust color formatting
-                    let vColor = v.c || '44bd32';
-                    if (!vColor.startsWith('#')) vColor = '#' + vColor;
-
+                    const vColor = v.c || '44bd32';
                     return (
-                        <BusMarker
+                        <Marker
                             key={`bus-${vId || i}`}
-                            id={vId}
-                            lat={v.lt || v.lat}
-                            lon={v.ln || v.lon}
-                            bearing={v.b !== undefined ? v.b : v.bearing}
-                            shortName={v.sn || v.route_short_name}
-                            color={vColor}
-                            speed={v.s !== undefined ? v.s : v.speed}
-                            headsign={v.h || v.trip_headsign}
-                            agency={v.ag || v.agency_name}
-                            isFirstLoad={isFirstLoad}
-                            isNew={isNew}
-                            onVehicleClick={onVehicleClick}
-                            t={t}
-                            rawVehicle={v}
-                        />
+                            position={[v.lt || v.lat, v.ln || v.lon]}
+                            icon={createBusIcon(v.sn || v.route_short_name, v.b !== undefined ? v.b : v.bearing, vColor.startsWith('#') ? vColor : '#' + vColor, mapZoom)}
+                            eventHandlers={{ click: () => onVehicleClick(v) }}
+                        >
+                            <Popup className="bus-popup" minWidth={200}>
+                                <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
+                                    <div style={{ backgroundColor: vColor.startsWith('#') ? vColor : '#' + vColor, color: 'white', padding: '10px 18px', borderRadius: '25px', display: 'inline-block', fontSize: '1.3rem', fontWeight: '900', marginBottom: '12px' }}>
+                                        {v.sn || v.route_short_name || '?'}
+                                    </div>
+                                    <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{v.h || v.trip_headsign || 'Bus Route'}</div>
+                                    <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
+                                        <div><strong style={{ color: '#aaa', fontSize: '0.7rem' }}>SPEED:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
+                                    </div>
+                                </div>
+                            </Popup>
+                        </Marker>
                     );
                 })}
 
-                {/* User Location Marker */}
                 {userLoc && (
                     <Marker position={userLoc} icon={userLocationIcon} zIndexOffset={1000}>
-                        <Popup>
-                            <div style={{ textAlign: 'center', fontWeight: 'bold' }}>You are here</div>
-                        </Popup>
+                        <Popup><div>You are here</div></Popup>
                     </Marker>
                 )}
-
             </MapContainer>
         </div>
     );

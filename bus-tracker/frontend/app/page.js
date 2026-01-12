@@ -26,11 +26,17 @@ export default function Home() {
     setTimeout(() => setToast(null), duration);
   }, []);
 
-  // 0. Mobile-aware initial state
+  // 0. Mobile-aware initial state & Resize handling
   useEffect(() => {
-    if (window.innerWidth >= 768) {
-      setIsSidebarOpen(true); // Open by default only on desktop
-    }
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // 1. Fetch initial data (Parallelized)
