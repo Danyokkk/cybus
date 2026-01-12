@@ -190,14 +190,10 @@ export default function Home() {
         </div>
       )}
 
-      {!isSidebarOpen && (
-        <button
-          className="mobile-menu-toggle"
-          onClick={() => setIsSidebarOpen(true)}
-          aria-label="Toggle Menu"
-        >
-          🍔
-        </button>
+      {toast && (
+        <div className="toast-pilling">
+          {toast}
+        </div>
       )}
 
       <div className="map-container">

@@ -14,22 +14,18 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
 
     return (
         <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
-            {/* Mobile Pull Handle */}
-            <div className="sidebar-handle" onClick={() => setIsOpen(true)}>
-                <div className="handle-bar"></div>
-            </div>
+            <button
+                className="sidebar-toggle-tab"
+                onClick={() => setIsOpen(!isOpen)}
+                aria-label={isOpen ? "Close Sidebar" : "Open Sidebar"}
+            >
+                {isOpen ? '‹' : '›'}
+            </button>
 
             <div className="sidebar-header">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                         <h2 style={{ fontSize: '1.6rem', margin: 0 }}>CyBus</h2>
-                        {/* Mobile Close Button */}
-                        <button
-                            className="mobile-close-btn"
-                            onClick={() => setIsOpen(false)}
-                        >
-                            ✕
-                        </button>
                     </div>
                     <select
                         value={language}
