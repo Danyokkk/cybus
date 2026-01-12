@@ -105,10 +105,8 @@ export default function Home() {
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
-    setLoading(true);
     if (!route) {
       if (selectedRouteId === null) {
-        setLoading(false);
         return; // Already null, avoid redundant work
       }
       setSelectedRouteId(null);
@@ -121,7 +119,6 @@ export default function Home() {
       } catch (err) { console.error(err); }
     } else {
       if (selectedRouteId === route.route_id) {
-        setLoading(false);
         return; // Avoid double loading same route
       }
       setSelectedRouteId(route.route_id);
@@ -132,16 +129,12 @@ export default function Home() {
         console.log('Route Detailed Data:', data);
         setStops(data.stops || []);
         setShapes(data.shapes || []);
-        if (!data.shapes || data.shapes.length === 0) {
-          console.warn('No shapes found for route:', route.route_id);
-        }
       } catch (err) {
         console.error('Error fetching route details:', err);
         setShapes([]);
       }
     }
-    setLoading(false);
-  }, []); // Handlers are stable
+  }, [selectedRouteId, routes]); // Handlers are stable
 
   // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = useCallback((v) => {
