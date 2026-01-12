@@ -289,7 +289,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     // My Location Logic - Robust for iOS (V55)
     const handleMyLocation = () => {
-        console.log("CYBUS_VERSION: V58 (Reliability) - Triggered");
+        console.log("CYBUS_VERSION: V59 (Nexus) - Triggered");
         if (!navigator.geolocation) {
             if (showToast) showToast(t.notSupported || "Geolocation not supported");
             return;
@@ -319,18 +319,20 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
             // User Denied
             if (err.code === 1) {
-                if (showToast) showToast(t.permissionDenied || "Permission Denied 🔒");
+                if (showToast) showToast("Check Permissions 🔒");
                 setLocLoading(false);
                 return;
             }
 
             // If high accuracy failed (Timeout or Position Unavailable), try low accuracy
             if (err.code === 3 || err.code === 2 || err.code === 0) {
-                if (showToast) showToast(t.lowAccuracyTry || "Finding you... 🛰️");
+                const hint = err.code === 3 ? "Finding you... (Try Outdoor) 🧭" : "Enable Precise Location 🛰️";
+                if (showToast) showToast(hint);
+
                 navigator.geolocation.getCurrentPosition(success, (err2) => {
                     setLocLoading(false);
                     console.warn(`Fallback (Low Accuracy) failed:`, err2);
-                    if (showToast) showToast(t.signalTooWeak || "Signal too weak 🧭");
+                    if (showToast) showToast("Signal too weak 🧭");
                 }, { enableHighAccuracy: false, timeout: 8000 });
                 return;
             }

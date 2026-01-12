@@ -227,12 +227,44 @@ body {
 /* Responsive Overrides */
 @media (max-width: 768px) {
   .sidebar {
-    display: none !important;
-    /* Completely hide sidebar on mobile as requested */
+    display: flex !important;
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 2000;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    width: 85%;
+    margin: 0;
+    border-radius: 0 20px 20px 0;
+    transform: translateX(-105%);
   }
 
-  .main-container.sidebar-open {
-    padding-left: 0;
+  .main-container.sidebar-open .sidebar {
+    transform: translateX(0) !important;
+  }
+
+  /* Floating Mobile Toggle */
+  .mobile-menu-toggle {
+    position: fixed;
+    top: 25px;
+    left: 25px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(10, 10, 46, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-size: 1.2rem;
+    animation: toast-up 0.5s ease-out;
   }
 }
 

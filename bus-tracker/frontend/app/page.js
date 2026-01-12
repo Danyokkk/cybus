@@ -17,7 +17,7 @@ export default function Home() {
   const [selectedRouteColor, setSelectedRouteColor] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to false for mobile-first
   const [toast, setToast] = useState(null);
 
   // Helper to show toasts
@@ -28,8 +28,8 @@ export default function Home() {
 
   // 0. Mobile-aware initial state
   useEffect(() => {
-    if (window.innerWidth < 768) {
-      setIsSidebarOpen(false);
+    if (window.innerWidth >= 768) {
+      setIsSidebarOpen(true); // Open by default only on desktop
     }
   }, []);
 
@@ -189,6 +189,16 @@ export default function Home() {
         <div className="toast-pilling">
           {toast}
         </div>
+      )}
+
+      {!isSidebarOpen && (
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setIsSidebarOpen(true)}
+          aria-label="Toggle Menu"
+        >
+          🍔
+        </button>
       )}
 
       <div className="map-container">
