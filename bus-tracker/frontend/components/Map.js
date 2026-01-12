@@ -1,6 +1,6 @@
 'use client';
 
-import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents, LayersControl } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents, LayersControl, useMap, ZoomControl } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
@@ -264,7 +264,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
                         <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>ID:</strong> <span style={{ fontFamily: 'monospace', color: '#fff' }}>{id}</span></div>
                         <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Operator:</strong> <span style={{ color: '#fff' }}>{agency || 'CPT'}</span></div>
                         <div style={{ marginBottom: '6px', color: '#4834d4' }}>
-                            <strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>{t.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
+                            <strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>{t?.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
                         </div>
                     </div>
                 </div>

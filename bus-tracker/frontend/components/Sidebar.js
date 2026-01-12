@@ -65,7 +65,7 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                     onClick={() => onSelectRoute(null)}
                 >
                     <div className="route-info">
-                        <strong style={{ fontSize: '0.85rem' }}>{t.allRoutes}</strong>
+                        <strong style={{ fontSize: '0.85rem' }}>{t?.allRoutes}</strong>
                     </div>
                 </button>
                 {filteredRoutes.map(route => (
