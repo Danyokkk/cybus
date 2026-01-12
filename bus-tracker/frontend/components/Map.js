@@ -329,16 +329,25 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         const paddedBounds = bounds.pad(buffer);
 
         // Filter vehicles
-        const filteredVehicles = vehicles.filter(v => {
-            const lat = v.lt || v.lat;
-            const lon = v.ln || v.lon;
-            return paddedBounds.contains([lat, lon]);
-        });
-        setVisibleVehicles(filteredVehicles);
+        if (Array.isArray(vehicles)) {
+            const filteredVehicles = vehicles.filter(v => {
+                if (!v) return false;
+                const lat = v.lt !== undefined ? v.lt : v.lat;
+                const lon = v.ln !== undefined ? v.ln : v.lon;
+                if (lat === undefined || lon === undefined) return false;
+                try {
+                    return paddedBounds.contains([lat, lon]);
+                } catch (e) { return false; }
+            });
+            setVisibleVehicles(filteredVehicles);
+        }
 
         // Filter stops
-        if (showStops && zoom >= 14) {
-            const filteredStops = stops.filter(s => paddedBounds.contains([s.lat, s.lon]));
+        if (showStops && zoom >= 14 && Array.isArray(stops)) {
+            const filteredStops = stops.filter(s =>
+                s && s.lat !== undefined && s.lon !== undefined &&
+                paddedBounds.contains([s.lat, s.lon])
+            );
             setVisibleStops(filteredStops);
         } else {
             setVisibleStops([]);
@@ -352,7 +361,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     // Instant Spawn Logic
     useEffect(() => {
-        if (vehicles.length > 0 && isFirstLoad) {
+        if (Array.isArray(vehicles) && vehicles.length > 0 && isFirstLoad) {
             vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
             const timer = setTimeout(() => setIsFirstLoad(false), 1000);
             return () => clearTimeout(timer);
