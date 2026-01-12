@@ -1,0 +1,107 @@
+'use client';
+
+import { useState } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+
+export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen, setIsOpen }) {
+    const [searchTerm, setSearchTerm] = useState('');
+    const { language, setLanguage, t } = useLanguage();
+
+    const filteredRoutes = routes.filter(route =>
+        route.short_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        route.long_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    return (
+        <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+            {/* Mobile Pull Handle */}
+            <div className="sidebar-handle" onClick={() => setIsOpen(true)}>
+                <div className="handle-bar"></div>
+            </div>
+
+            <div className="sidebar-header">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <h2 style={{ fontSize: '1.6rem', margin: 0 }}>CyBus</h2>
+                        {/* Mobile Close Button */}
+                        <button
+                            className="mobile-close-btn"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        style={{
+                            padding: '4px 10px',
+                            borderRadius: '12px',
+                            border: '1px solid rgba(255,255,255,0.05)',
+                            background: 'rgba(255,255,255,0.03)',
+                            color: '#777',
+                            fontSize: '0.65rem',
+                            outline: 'none',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="en">EN</option>
+                        <option value="el">EL</option>
+                        <option value="ru">RU</option>
+                    </select>
+                </div>
+                <input
+                    type="text"
+                    placeholder={t.searchPlaceholder || 'Search...'}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="search-input"
+                />
+            </div>
+
+            <div className="route-list">
+                <button
+                    className={`route-item ${!selectedRouteId ? 'active' : ''}`}
+                    onClick={() => onSelectRoute(null)}
+                >
+                    <div className="route-info">
+                        <strong style={{ fontSize: '0.85rem' }}>{t.allRoutes}</strong>
+                    </div>
+                </button>
+                {filteredRoutes.map(route => (
+                    <button
+                        key={route.route_id}
+                        className={`route-item ${selectedRouteId === route.route_id ? 'active' : ''}`}
+                        onClick={() => onSelectRoute(route)}
+                    >
+                        <div className="route-badge" style={{
+                            backgroundColor: `#${route.color || '0a0a2e'}`,
+                            color: `#${route.text_color || 'FFFFFF'}`
+                        }}>
+                            {route.short_name}
+                        </div>
+                        <div className="route-info" style={{ textAlign: 'left' }}>
+                            <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{route.long_name}</span>
+                        </div>
+                    </button>
+                ))}
+            </div>
+
+            <div className="sidebar-footer">
+                <a
+                    href="https://t.me/daqxn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ textDecoration: 'none' }}
+                >
+                    <div className="daan1k-credit">
+                        made by @daan1k
+                    </div>
+                </a>
+            </div>
+            <style jsx>{`
+                /* Deep Nebula Refinement */
+            `}</style>
+        </div>
+    );
+}

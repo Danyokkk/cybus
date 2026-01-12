@@ -1,0 +1,16 @@
+{
+    "name": "Cyprus Bus Tracker",
+    "short_name": "CyBus",
+    "description": "Real-time bus tracking for Cyprus",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#0070f3",
+    "icons": [
+        {
+            "src": "/icon.svg",
+            "sizes": "any",
+            "type": "image/svg+xml"
+        }
+    ]
+}
