@@ -226,93 +226,86 @@ body {
 
 /* Responsive Overrides */
 @media (max-width: 768px) {
-  :root {
-    --sidebar-width: 100vw;
-  }
-
   .sidebar {
-    top: 0;
-    left: 0;
-    bottom: 0;
-    margin: 0;
-    width: 90vw;
-    border-radius: 0 40px 40px 0;
+    display: none !important;
+    /* Completely hide sidebar on mobile as requested */
   }
 
-  .sidebar.closed {
-    transform: translateX(calc(-100% + 40px));
+  .main-container.sidebar-open {
+    padding-left: 0;
+  }
+}
+
+.sidebar.closed {
+  transform: translateX(110%);
+}
+}
+
+/* Main Loading Overlay - Deep Nebula Style */
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #000;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.loader-logo {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: -2px;
+  animation: loader-pulse 2s ease-in-out infinite;
+}
+
+.loader-bar-container {
+  width: 200px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.loader-bar-progress {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--nebula-accent), transparent);
+  animation: loader-sweep 1.5s infinite;
+}
+
+@keyframes loader-pulse {
+
+  0%,
+  100% {
+    transform: scale(0.98);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.02);
     opacity: 1;
   }
-
-  /* Pull Handle - Mobile Only */
-  .sidebar-handle {
-    display: flex !important;
-    position: absolute;
-    top: 50%;
-    right: 0;
-    transform: translateY(-50%);
-    width: 40px;
-    height: 100%;
-    background: transparent;
-    cursor: pointer;
-    z-index: 5000;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .handle-bar {
-    width: 4px;
-    height: 60px;
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
-    margin-right: 8px;
-    transition: 0.3s;
-  }
-
-  .sidebar.open .sidebar-handle {
-    display: none !important;
-  }
-
-  .mobile-close-btn {
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    width: 32px;
-    height: 32px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 50%;
-    color: #fff;
-    font-size: 0.8rem;
-    cursor: pointer;
-  }
-
-  .mobile-sidebar-toggle {
-    display: none !important;
-  }
-
-  /* Smaller buttons for mobile */
-  .stops-toggle-btn {
-    padding: 8px 16px !important;
-    font-size: 0.7rem !important;
-    border-radius: 12px !important;
-    gap: 6px !important;
-  }
-
-  .stops-toggle-btn span {
-    font-size: 1rem !important;
-  }
 }
 
-/* Hide pull-handle and close btn on desktop */
-.sidebar-handle,
-.mobile-close-btn {
-  display: none;
-}
+@keyframes loader-sweep {
+  0% {
+    left: -100%;
+  }
 
-/* Mobile Credit Bar */
-.mobile-credit-bar {
-  display: none;
+  100% {
+    left: 100%;
+  }
 }
 
 @media (max-width: 768px) {

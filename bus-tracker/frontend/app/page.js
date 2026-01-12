@@ -26,19 +26,30 @@ export default function Home() {
     }
   }, []);
 
-  // 1. Fetch initial data
+  // 1. Fetch initial data (Parallelized)
   useEffect(() => {
-    Promise.all([
-      fetch('https://cyfinal.onrender.com/api/stops').then(res => res.json()),
-      fetch('https://cyfinal.onrender.com/api/routes').then(res => res.json())
-    ]).then(([stopsData, routesData]) => {
-      setStops(stopsData);
-      setRoutes(routesData);
-      setLoading(false);
-    }).catch(err => {
-      console.error('Error fetching initial data:', err);
-      setLoading(false);
-    });
+    const fetchData = async () => {
+      try {
+        const [stopsRes, routesRes] = await Promise.all([
+          fetch('https://cyfinal.onrender.com/api/stops'),
+          fetch('https://cyfinal.onrender.com/api/routes')
+        ]);
+
+        const [stopsData, routesData] = await Promise.all([
+          stopsRes.json(),
+          routesRes.json()
+        ]);
+
+        setStops(stopsData);
+        setRoutes(routesData);
+      } catch (err) {
+        console.error('Error fetching initial data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // 2. Poll Vehicles
@@ -57,7 +68,14 @@ export default function Home() {
             });
           }
         })
-        .catch(err => console.error('Error fetching vehicles:', err));
+        .catch(err => {
+          // Silence transient network errors
+          if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
+            console.warn('Network interrupted, retrying...');
+          } else {
+            console.error('Error fetching vehicles:', err);
+          }
+        });
     };
 
     fetchVehicles();
@@ -143,8 +161,15 @@ export default function Home() {
         setIsOpen={setIsSidebarOpen}
       />
 
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loader-logo">CyBus</div>
+          <div className="loader-bar-container">
+            <div className="loader-bar-progress"></div>
+          </div>
+        </div>
+      )}
       <div className="map-container">
-        {loading && <div className="loading-overlay">Loading...</div>}
         <BusMap
           stops={stops}
           shapes={shapes}

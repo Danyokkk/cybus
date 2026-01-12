@@ -281,6 +281,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     const [visibleStops, setVisibleStops] = useState([]);
     const [userLoc, setUserLoc] = useState(null);
     const [locLoading, setLocLoading] = useState(false);
+    const [isSatellite, setIsSatellite] = useState(true);
     const seenVehicles = useRef(new Set());
     const filterTimeout = useRef(null);
 
@@ -344,40 +345,61 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     // 2. Viewport Filtering Component (Debounced)
     const ViewportFilter = () => {
-        const map = useMapEvents({
-            move: () => debouncedUpdate(),
-            zoomend: () => {
+        const map = useMap();
+
+        useMapEvents({
+            moveend: () => {
                 setMapZoom(map.getZoom());
                 debouncedUpdate();
             },
+            zoomend: () => {
+                setMapZoom(map.getZoom());
+                debouncedUpdate();
+            }
         });
 
         const debouncedUpdate = () => {
             if (filterTimeout.current) clearTimeout(filterTimeout.current);
             filterTimeout.current = setTimeout(() => {
                 updateVisibleElements(map);
-            }, 250); // Increased debounce: 250ms for mobile stability
+            }, 250);
         };
 
         const updateVisibleElements = (m) => {
             const bounds = m.getBounds();
+            const zoom = m.getZoom();
+            const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+            // More aggressive filtering for mobile
+            const buffer = isMobile ? 0.05 : 0.2;
+            const paddedBounds = bounds.pad(buffer);
 
             // Vehicles
             const filteredVehicles = vehicles.filter(v => {
                 const lat = v.lt || v.lat;
                 const lon = v.ln || v.lon;
-                return bounds.contains([lat, lon]);
+                return paddedBounds.contains([lat, lon]);
             });
             setVisibleVehicles(filteredVehicles);
 
             // Stops (Only if showStops is true and Zoom >= 14)
-            if (showStops && m.getZoom() >= 14) {
-                const filteredStops = stops.filter(s => bounds.contains([s.lat, s.lon]));
+            if (showStops && zoom >= 14) {
+                const filteredStops = stops.filter(s => paddedBounds.contains([s.lat, s.lon]));
                 setVisibleStops(filteredStops);
             } else {
                 setVisibleStops([]);
             }
         };
+
+        // Auto-Zoom to Route Shapes
+        useEffect(() => {
+            if (shapes && shapes.length > 0 && map) {
+                const allPoints = shapes.flat();
+                if (allPoints.length > 0) {
+                    map.fitBounds(allPoints, { padding: [50, 50], animate: true });
+                }
+            }
+        }, [shapes, map]);
 
         // Initial update
         useEffect(() => {
@@ -397,6 +419,26 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             {/* UI Controls - Floating Right */}
             <div style={{ position: 'absolute', top: '25px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button
+                    onClick={() => setIsSatellite(!isSatellite)}
+                    className="stops-toggle-btn"
+                    style={{
+                        padding: '10px 20px',
+                        borderRadius: '16px',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontWeight: '900',
+                        fontSize: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '10px',
+                        letterSpacing: '0.5px'
+                    }}
+                >
+                    <span style={{ fontSize: '1.2rem' }}>{isSatellite ? '🏙️' : '🛰️'}</span>
+                    {isSatellite ? (t.streetView || 'Street') : (t.satelliteView || 'Satellite')}
+                </button>
+
+                <button
                     onClick={() => setShowStops(!showStops)}
                     className={`stops-toggle-btn ${showStops ? 'active' : ''}`}
                     style={{
@@ -413,7 +455,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     }}
                 >
                     <span style={{ fontSize: '1.2rem' }}>{showStops ? '✕' : '🚏'}</span>
-                    {showStops ? 'Hide Stops' : 'Show Stops'}
+                    {showStops ? (t.hideStops || 'Hide Stops') : (t.showStops || 'Show Stops')}
                 </button>
 
                 <button
@@ -432,8 +474,8 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                         letterSpacing: '0.5px'
                     }}
                 >
-                    <span style={{ fontSize: '1.2rem' }}>{locLoading ? '⌛' : '🛰️'}</span>
-                    {locLoading ? 'Finding...' : 'My Location'}
+                    <span style={{ fontSize: '1.2rem' }}>{locLoading ? '⌛' : '🎯'}</span>
+                    {locLoading ? (t.finding || 'Finding...') : (t.myLocation || 'My Location')}
                 </button>
             </div>
 
@@ -443,17 +485,28 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 style={{ height: '100%', width: '100%' }}
                 preferCanvas={true}
                 ref={mapRef}
+                zoomControl={false}
             >
+                <ZoomControl position="bottomright" />
                 <ViewportFilter />
 
                 {/* Performance optimized Tile Layers: Directly rendered without LayersControl overhead */}
-                <TileLayer
-                    attribution='&copy; Esri'
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-                />
-                <TileLayer
-                    url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-                />
+                {isSatellite ? (
+                    <>
+                        <TileLayer
+                            attribution='&copy; Esri'
+                            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                        />
+                        <TileLayer
+                            url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                        />
+                    </>
+                ) : (
+                    <TileLayer
+                        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                    />
+                )}
 
                 {/* Shapes - Only render if a route is selected to save memory */}
                 {shapes && shapes.length > 0 && shapes.map((shape, index) => {

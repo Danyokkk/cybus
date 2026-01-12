@@ -15,7 +15,13 @@ export const translations = {
         addToFavorites: "Add to Favorites",
         removeFromFavorites: "Remove from Favorites",
         disclaimer: "Data from Open Data Portal. Not an official app.",
-        zoomInToSeeStops: "Zoom in to see stops"
+        zoomInToSeeStops: "Zoom in to see stops",
+        streetView: "Street",
+        satelliteView: "Satellite",
+        showStops: "Show Stops",
+        hideStops: "Hide Stops",
+        myLocation: "My Location",
+        finding: "Finding..."
     },
     el: {
         searchPlaceholder: "Αναζήτηση διαδρομών...",
@@ -33,7 +39,13 @@ export const translations = {
         addToFavorites: "Προσθήκη στα Αγαπημένα",
         removeFromFavorites: "Αφαίρεση από Αγαπημένα",
         disclaimer: "Δεδομένα από Open Data Portal. Ανεπίσημη εφαρμογή.",
-        zoomInToSeeStops: "Μεγεθύνετε για να δείτε τις στάσεις"
+        zoomInToSeeStops: "Μεγεθύνετε για να δείτε τις στάσεις",
+        streetView: "Χάρτης",
+        satelliteView: "Δορυφόρος",
+        showStops: "Στάσεις",
+        hideStops: "Απόκρυψη",
+        myLocation: "Τοποθεσία",
+        finding: "Αναζήτηση..."
     },
     ru: {
         searchPlaceholder: "Поиск маршрутов...",
@@ -51,6 +63,12 @@ export const translations = {
         addToFavorites: "Добавить в избранное",
         removeFromFavorites: "Удалить из избранного",
         disclaimer: "Данные от Open Data Portal. Неофициальное приложение.",
-        zoomInToSeeStops: "Приблизьте карту, чтобы увидеть остановки"
+        zoomInToSeeStops: "Приблизьте карту, чтобы увидеть остановки",
+        streetView: "Карта",
+        satelliteView: "Спутник",
+        showStops: "Остановки",
+        hideStops: "Скрыть",
+        myLocation: "Где я",
+        finding: "Поиск..."
     }
 };
