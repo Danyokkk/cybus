@@ -483,6 +483,11 @@ body {
   will-change: transform;
 }
 
+/* Disable transition during map zoom/move to prevent "flying" markers */
+.map-moving .custom-bus-marker-container {
+  transition: none !important;
+}
+
 .balloon-bus-marker {
   display: flex;
   flex-direction: column;

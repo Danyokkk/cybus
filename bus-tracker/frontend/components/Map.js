@@ -280,17 +280,27 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
 
 const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute }) => {
     useMapEvents({
+        movestart: () => {
+            if (map?._container) map._container.classList.add('map-moving');
+        },
         moveend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
+            setTimeout(() => {
+                if (map?._container) map._container.classList.remove('map-moving');
+            }, 500);
+        },
+        zoomstart: () => {
+            if (map?._container) map._container.classList.add('map-moving');
         },
         zoomend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
+            setTimeout(() => {
+                if (map?._container) map._container.classList.remove('map-moving');
+            }, 500);
         },
         popupclose: (e) => {
-            // Only reset if it's the bus filter we want to clear.
-            // Bus popups have the 'bus-popup' class.
             if (e.popup.options.className === 'bus-popup') {
                 if (onSelectRoute) onSelectRoute(null);
             }
