@@ -382,4 +382,91 @@ app.get('/api/trips', (req, res) => {
 
 app.get('/api/vehicle_positions', (req, res) => res.json(vehiclePositions));
 
+// --- Route Planner Logic (V1 - Direct Connections) ---
+function getDistance(lat1, lon1, lat2, lon2) {
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+}
+
+app.get('/api/plan-route', (req, res) => {
+  const { lat1, lon1, lat2, lon2 } = req.query;
+  if (!lat1 || !lon1 || !lat2 || !lon2) {
+    return res.status(400).json({ error: "Missing coordinates" });
+  }
+
+  const startLat = parseFloat(lat1);
+  const startLon = parseFloat(lon1);
+  const endLat = parseFloat(lat2);
+  const endLon = parseFloat(lon2);
+
+  // 1. Find Stops near Origin (within 1km)
+  const startStops = stops.filter(s => getDistance(startLat, startLon, s.lat, s.lon) < 1.0)
+    .sort((a, b) => getDistance(startLat, startLon, a.lat, a.lon) - getDistance(startLat, startLon, b.lat, b.lon))
+    .slice(0, 20); // Top 20 nearest stops
+
+  // 2. Find Stops near Destination (within 1km)
+  const endStops = stops.filter(s => getDistance(endLat, endLon, s.lat, s.lon) < 1.0)
+    .sort((a, b) => getDistance(endLat, endLon, a.lat, a.lon) - getDistance(endLat, endLon, b.lat, b.lon))
+    .slice(0, 20);
+
+  // 3. Find Matching Routes
+  let matches = [];
+
+  startStops.forEach(startStop => {
+    // Find all routes passing through this start stop
+    // We scan routeStops, but since it's a map we can iterate Active Trips or Routes
+    // Optimization: Iterate Routes and check if they contain both stops 
+    // Better: We pre-computed routeStops[routeId] as a Set of StopIDs
+  });
+
+  // Re-approach: Iterate all known routes and check if they have a stop in Start AND a stop in End
+  Object.keys(routeStops).forEach(routeId => {
+    const routeStopSet = routeStops[routeId];
+
+    const validStart = startStops.find(s => routeStopSet.has(s.stop_id));
+    const validEnd = endStops.find(s => routeStopSet.has(s.stop_id));
+
+    if (validStart && validEnd) {
+      // It's a match! Check direction (basic: index check if we had order, but Set doesn't have order)
+      // For V1 we assume if both are on the route, it's valid.
+      const routeDetails = routes.find(r => r.route_id === routeId);
+
+      const walk1 = getDistance(startLat, startLon, validStart.lat, validStart.lon).toFixed(2);
+      const walk2 = getDistance(endLat, endLon, validEnd.lat, validEnd.lon).toFixed(2);
+
+      if (routeDetails) {
+        matches.push({
+          route: routeDetails,
+          from: validStart,
+          to: validEnd,
+          walk_start: walk1,
+          walk_end: walk2,
+          total_walk: (parseFloat(walk1) + parseFloat(walk2)).toFixed(2)
+        });
+      }
+    }
+  });
+
+  // Sort by minimal walking distance
+  matches.sort((a, b) => a.total_walk - b.total_walk);
+
+  // Deduplicate by route short name
+  const uniqueMatches = [];
+  const seenRoutes = new Set();
+  for (const m of matches) {
+    if (!seenRoutes.has(m.route.short_name)) {
+      seenRoutes.add(m.route.short_name);
+      uniqueMatches.push(m);
+    }
+  }
+
+  res.json(uniqueMatches.slice(0, 5)); // Return top 5 options
+});
+
 app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
