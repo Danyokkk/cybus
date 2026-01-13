@@ -204,7 +204,10 @@ export default function Home() {
           onSelectRoute={handleSelectRoute}
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}
-          vehicles={vehicles}
+          vehicles={selectedRouteId
+            ? vehicles.filter(v => (v.r || v.route_id) === selectedRouteId)
+            : vehicles
+          }
           showToast={showToast}
         />
       </div>

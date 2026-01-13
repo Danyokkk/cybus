@@ -278,7 +278,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes }) => {
+const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute }) => {
     useMapEvents({
         moveend: () => {
             setMapZoom(map.getZoom());
@@ -287,6 +287,13 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes }) => {
         zoomend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
+        },
+        popupclose: (e) => {
+            // Only reset if it's the bus filter we want to clear.
+            // Bus popups have the 'bus-popup' class.
+            if (e.popup.options.className === 'bus-popup') {
+                if (onSelectRoute) onSelectRoute(null);
+            }
         }
     });
 
@@ -434,6 +441,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     setMapZoom={setMapZoom}
                     updateVisibleElements={updateVisibleElements}
                     shapes={shapes}
+                    onSelectRoute={onSelectRoute}
                 />
 
                 {isSatellite ? (
