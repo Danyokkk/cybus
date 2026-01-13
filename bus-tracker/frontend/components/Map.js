@@ -308,7 +308,12 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
         if (shapes && shapes.length > 0 && map) {
             const allPoints = shapes.flat();
             if (allPoints.length > 0) {
-                map.fitBounds(allPoints, { padding: [50, 50], animate: true });
+                // Large padding and maxZoom to prevent zooming out too far on small routes
+                map.fitBounds(allPoints, {
+                    padding: [70, 70],
+                    animate: true,
+                    maxZoom: 15
+                });
             }
         }
     }, [shapes, map]);
@@ -496,9 +501,9 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 center={[35.1264, 33.4299]}
                 zoom={10}
                 style={{ height: '100%', width: '100%' }}
-                preferCanvas={true}
-                ref={mapRef}
                 zoomControl={false}
+                ref={mapRef}
+                preferCanvas={true} // Performance boost: draw markers on canvas instead of SVG
             >
                 <ZoomControl position="bottomright" />
                 <MapEvents
