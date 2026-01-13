@@ -392,7 +392,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             e.preventDefault(); // Stop any other handlers
 
             if (!navigator.geolocation) {
-                alert("Geolocation is not supported by your browser");
+                if (showToast) showToast("Geolocation is not supported by your browser");
                 return;
             }
 
@@ -408,8 +408,9 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 },
                 (err) => {
                     setLocLoading(false);
-                    console.error("Geo error:", err);
-                    alert("Location access denied. Check Settings > Privacy > Location Services > Safari Websites.");
+                    console.warn("Geo error:", err);
+                    // Standard toast instead of intrusive alert
+                    if (showToast) showToast("Location access denied. Check browser settings.");
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
@@ -417,7 +418,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
         btn.addEventListener('click', handleLocClick);
         return () => btn.removeEventListener('click', handleLocClick);
-    }, []);
+    }, [showToast]);
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
