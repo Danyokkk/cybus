@@ -478,8 +478,8 @@ body {
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
-  transition: transform 2s linear !important;
-  /* Matches server polling interval for seamless driving */
+  transition: transform 1s linear !important;
+  /* Faster 1s transition for snapier driving */
   will-change: transform;
 }
 

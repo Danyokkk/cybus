@@ -92,7 +92,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 2000);
+    const interval = setInterval(fetchVehicles, 1000); // Sync with server at 1s
     return () => {
       isCancelled = true;
       clearInterval(interval);

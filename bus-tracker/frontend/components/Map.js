@@ -286,9 +286,7 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
         moveend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
-            setTimeout(() => {
-                if (map?._container) map._container.classList.remove('map-moving');
-            }, 500);
+            if (map?._container) map._container.classList.remove('map-moving');
         },
         zoomstart: () => {
             if (map?._container) map._container.classList.add('map-moving');
@@ -296,9 +294,7 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
         zoomend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
-            setTimeout(() => {
-                if (map?._container) map._container.classList.remove('map-moving');
-            }, 500);
+            if (map?._container) map._container.classList.remove('map-moving');
         },
         popupclose: (e) => {
             if (e.popup.options.className === 'bus-popup') {
