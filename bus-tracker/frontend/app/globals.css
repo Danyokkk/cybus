@@ -245,16 +245,22 @@ body {
 }
 
 /* Minimalist Map Controls */
+/* Aesthetic Circular Map Controls */
 .stops-toggle-btn {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur) !important;
   border: 1px solid var(--glass-border) !important;
-  border-radius: 20px !important;
+  border-radius: 50% !important;
   color: #fff !important;
-  padding: 12px 24px !important;
+  width: 44px !important;
+  height: 44px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   box-shadow: var(--shadow-quantum) !important;
   font-weight: 900 !important;
-  font-size: 0.8rem !important;
+  font-size: 1.2rem !important;
   transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1) !important;
 }
 
@@ -270,9 +276,19 @@ body {
     left: 0 !important;
     top: 0 !important;
     bottom: 0 !important;
-    width: 80% !important;
+    width: 85% !important;
     border-radius: 0 40px 40px 0 !important;
     margin: 0 !important;
+    z-index: 9999 !important;
+  }
+
+  /* Ensure toggle is visible on mobile */
+  .sidebar-toggle-tab {
+    width: 40px;
+    height: 50px;
+    right: -40px;
+    top: 30%;
+    font-size: 1.2rem;
   }
 }
 
