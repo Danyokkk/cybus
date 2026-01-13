@@ -409,8 +409,15 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 (err) => {
                     setLocLoading(false);
                     console.warn("Geo error:", err);
-                    // Standard toast instead of intrusive alert
-                    if (showToast) showToast("Location access denied. Check browser settings.");
+
+                    if (err.code === 1) { // PERMISSION_DENIED
+                        if (showToast) showToast("Location access denied. Check browser settings.");
+                    } else if (err.code === 3) { // TIMEOUT
+                        // Often occurs if GPS is slow, but we might have a cached position or the map already updated
+                        console.warn("Location timeout - usually fine if position was already found.");
+                    } else {
+                        if (showToast) showToast("Could not determine location. Try again.");
+                    }
                 },
                 { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
             );
