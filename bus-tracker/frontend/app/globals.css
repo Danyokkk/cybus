@@ -478,6 +478,9 @@ body {
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
+  transition: transform 2s linear !important;
+  /* Matches server polling interval for seamless driving */
+  will-change: transform;
 }
 
 .balloon-bus-marker {

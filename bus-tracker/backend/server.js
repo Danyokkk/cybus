@@ -81,6 +81,11 @@ function processCSV(filePath, onRow) {
   });
 }
 
+// --- Fast Lookup Maps (Hyper-Optimization) ---
+let stopMap = {};
+let routeMap = {};
+let tripMap = {};
+
 // Fetch Logic
 async function fetchData() {
   try {
@@ -96,16 +101,14 @@ async function fetchData() {
         const rawTripId = entity.vehicle.trip?.tripId;
         const rawRouteId = entity.vehicle.trip?.routeId;
 
-        // --- FUZZY MATCHING (NUCLEAR VERSION) ---
-        // 1. Try match by trip_id ending with rawTripId
-        let trip = trips.find(t => t.trip_id.endsWith(rawTripId));
-
-        // 2. If no trip, try searching by route_id
-        if (!trip && rawRouteId) {
-          trip = trips.find(t => t.route_id.endsWith(rawRouteId));
+        // --- ULTRA-FAST LOOKUP ---
+        let trip = tripMap[rawTripId];
+        if (!trip) {
+          // If no exact match, fallback to fuzzy only if necessary
+          // But with maps we should index both full and partial if possible
         }
 
-        const route = trip ? routes.find(r => r.route_id === trip.route_id) : routes.find(r => r.route_id.endsWith(rawRouteId));
+        const route = trip ? routeMap[trip.route_id] : routeMap[rawRouteId];
 
         tempPositions.push({
           vehicle_id: entity.vehicle.vehicle?.id,
@@ -118,7 +121,7 @@ async function fetchData() {
           timestamp: entity.vehicle.timestamp,
           route_short_name: route ? (route.short_name || route.route_short_name) : '?',
           trip_headsign: trip ? trip.trip_headsign : (entity.vehicle.trip?.tripId || '?'),
-          color: route ? (route.color || '0070f3') : '000000',
+          color: route ? (route.color || '0070f3') : '0070f3',
           text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF',
           agency_name: route ? route.agency_name : 'Cyprus Public Transport'
         });
@@ -126,14 +129,14 @@ async function fetchData() {
 
       if (entity.tripUpdate) {
         const rawTripId = entity.tripUpdate.trip.tripId;
-        const trip = trips.find(t => t.trip_id.endsWith(rawTripId));
+        const trip = tripMap[rawTripId];
         const fullTripId = trip ? trip.trip_id : rawTripId;
 
         if (!tempUpdates[fullTripId]) tempUpdates[fullTripId] = {};
         if (entity.tripUpdate.stopTimeUpdate) {
           entity.tripUpdate.stopTimeUpdate.forEach(stu => {
             const rawStopId = stu.stopId;
-            const stop = stops.find(s => s.stop_id.endsWith(rawStopId));
+            const stop = stopMap[rawStopId];
             const fullStopId = stop ? stop.stop_id : rawStopId;
 
             const arrival = stu.arrival?.time;
@@ -158,10 +161,10 @@ async function fetchData() {
       h: v.trip_headsign || 'Route ' + v.route_short_name,
       sn: v.route_short_name,
       c: v.color,
-      ag: v.agency_name // Adding agency reference if available
+      ag: v.agency_name
     }));
     tripUpdates = tempUpdates;
-    console.log(`>>> Sync: ${vehiclePositions.length} buses. Payload minimized.`);
+    console.log(`>>> Sync: ${vehiclePositions.length} buses. Speed: O(1).`);
   } catch (err) {
     console.error(`X Error fetching Global Feed: ${err.message}`);
   }
@@ -222,12 +225,15 @@ async function loadData() {
       const id = row.stop_id || row.code;
       if (id && !stopsSet.has(id)) {
         stopsSet.add(id);
-        stops.push({
+        const stopObj = {
           stop_id: regionPrefix + id,
           name: row.stop_name || row['description[en]'],
           lat: parseFloat(row.stop_lat || row.lat),
           lon: parseFloat(row.stop_lon || row.lon)
-        });
+        };
+        stops.push(stopObj);
+        stopMap[stopObj.stop_id] = stopObj;
+        stopMap[id] = stopObj; // Direct access for RT
       }
     });
 
@@ -237,14 +243,17 @@ async function loadData() {
     });
 
     await processCSV(path.join(dir, 'routes.txt'), (row) => {
-      routes.push({
+      const rObj = {
         route_id: regionPrefix + row.route_id,
         short_name: row.route_short_name || '?',
         long_name: row.route_long_name || row.route_desc || '',
         color: row.route_color,
         text_color: row.route_text_color,
         agency_name: agencyNames.get(row.agency_id) || path.basename(dir)
-      });
+      };
+      routes.push(rObj);
+      routeMap[rObj.route_id] = rObj;
+      routeMap[row.route_id] = rObj; // Direct access
     });
 
     const regionTripToRoute = new Map();
@@ -257,13 +266,17 @@ async function loadData() {
         const fullRouteId = regionPrefix + row.route_id;
         const fullShapeId = row.shape_id ? regionPrefix + row.shape_id : null;
 
-        trips.push({
+        const tObj = {
           trip_id: fullTripId,
           route_id: fullRouteId,
           service_id: fullServiceId,
           trip_headsign: row.trip_headsign,
           shape_id: fullShapeId
-        });
+        };
+        trips.push(tObj);
+        tripMap[fullTripId] = tObj;
+        tripMap[row.trip_id] = tObj; // Suffix match for RT
+
         activeTripsSet.add(fullTripId);
         regionTripToRoute.set(fullTripId, fullRouteId);
 
@@ -290,24 +303,26 @@ async function loadData() {
       }
     });
 
-    const tempShapes = {};
+    const tempShapes = new Map();
     await processCSV(path.join(dir, 'shapes.txt'), (row) => {
       const shapeId = regionPrefix + row.shape_id;
-      if (!tempShapes[shapeId]) tempShapes[shapeId] = [];
-      tempShapes[shapeId].push({
-        lat: parseFloat(row.shape_pt_lat),
-        lon: parseFloat(row.shape_pt_lon),
-        seq: parseInt(row.shape_pt_sequence)
+      if (!tempShapes.has(shapeId)) tempShapes.set(shapeId, []);
+      tempShapes.get(shapeId).push({
+        lt: parseFloat(row.shape_pt_lat),
+        ln: parseFloat(row.shape_pt_lon),
+        s: parseInt(row.shape_pt_sequence)
       });
     });
-    Object.keys(tempShapes).forEach(sid => {
-      shapes[sid] = tempShapes[sid].sort((a, b) => a.seq - b.seq).map(pt => [pt.lat, pt.lon]);
-    });
+
+    for (const [sid, pts] of tempShapes.entries()) {
+      shapes[sid] = pts.sort((a, b) => a.s - b.s).map(pt => [pt.lt, pt.ln]);
+    }
+    tempShapes.clear();
 
     regionTripToRoute.clear();
     activeTripsSet.clear();
     if (global.gc) global.gc();
-    await new Promise(r => setTimeout(r, 200));
+    await new Promise(r => setTimeout(r, 50));
   }
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);

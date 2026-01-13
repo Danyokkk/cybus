@@ -190,12 +190,6 @@ export default function Home() {
         </div>
       )}
 
-      {toast && (
-        <div className="toast-pilling">
-          {toast}
-        </div>
-      )}
-
       <div className="map-container">
         <BusMap
           stops={stops}

@@ -496,6 +496,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                             position={[v.lt || v.lat, v.ln || v.lon]}
                             icon={createBusIcon(v.sn || v.route_short_name, v.b !== undefined ? v.b : v.bearing, vColor.startsWith('#') ? vColor : '#' + vColor, mapZoom)}
                             eventHandlers={{ click: () => onVehicleClick(v) }}
+                            className="smooth-move"
                         >
                             <Popup className="bus-popup" minWidth={200}>
                                 <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
