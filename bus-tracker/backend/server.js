@@ -112,7 +112,7 @@ async function fetchData() {
 
         if (sn === '30' && (agency.includes('EMEL') || agency.includes('ΕΜΕΛ') || agency.includes('Limassol'))) {
           fare = '€2.00';
-        } else if (sn === '56' && (agency.includes('OSYPA') || agency.includes('ΟΣΥΠΑ') || agency.includes('Pafos') || agency.includes('Paphos'))) {
+        } else if (sn === '56' && (agency.includes('INTERCITY') || agency.includes('OSYPA') || agency.includes('ΟΣΥΠΑ') || agency.includes('Pafos') || agency.includes('Paphos'))) {
           fare = '€5.00';
         }
 
