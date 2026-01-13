@@ -314,13 +314,23 @@ body {
     z-index: 9999 !important;
   }
 
-  /* Ensure toggle is visible on mobile */
+  /* Fix sidebar transform on mobile to be cleaner */
+  .sidebar.closed {
+    transform: translateX(-100%) !important;
+  }
+
+  /* Ensure toggle is visible on mobile - Make it larger and stick out more */
   .sidebar-toggle-tab {
-    width: 40px;
-    height: 50px;
-    right: -40px;
+    width: 60px;
+    /* Increased from 40px */
+    height: 60px;
+    right: -60px;
+    /* Increased from -40px to match width */
     top: 30%;
-    font-size: 1.2rem;
+    font-size: 1.5rem;
+    /* Larger icon */
+    border-radius: 0 20px 20px 0;
+    /* Keep consistent shape */
   }
 }
 

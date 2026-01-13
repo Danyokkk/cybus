@@ -378,6 +378,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const { latitude, longitude } = pos.coords;
+                // Successfully got location
                 setUserLoc([latitude, longitude]);
                 setLocLoading(false);
                 setShowStops(true);
@@ -385,16 +386,19 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             },
             (err) => {
                 setLocLoading(false);
-                console.warn(err);
-                if (err.code === 1) { // Permission Denied
-                    alert("Please enable Location Services for this website in your browser settings (iOS: Settings > Privacy > Location Services).");
-                } else if (err.code === 2) {
-                    alert("Location unavailable. Try moving to a clear area.");
+                console.warn("Geolocation warning:", err);
+
+                // Only alert for unexpected strict errors.
+                // If code is 1 (Permission Denied), the browser usually handles the UI or the user has explicitly blocked it.
+                // We show a helpful toast or alert ONLY if we are sure it failed.
+                if (err.code === 1) {
+                    alert("Location access denied. Please check your browser settings to allow location access for this site.");
                 } else {
-                    alert("Could not fetch location. Error: " + err.message);
+                    // For timeouts (3) or unavailable (2), we might retry or just inform gently.
+                    alert("Unable to retrieve location. Please check your GPS settings or try again.");
                 }
             },
-            { enableHighAccuracy: true, timeout: 10000 }
+            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
         );
     };
 
