@@ -110,9 +110,9 @@ async function fetchData() {
         const sn = route ? (route.short_name || route.route_short_name) : null;
         const agency = route ? route.agency_name : '';
 
-        if (sn === '30' && agency.includes('EMEL')) {
+        if (sn === '30' && (agency.includes('EMEL') || agency.includes('ΕΜΕΛ') || agency.includes('Limassol'))) {
           fare = '€2.00';
-        } else if (sn === '56' && (agency.includes('OSYPA') || agency.includes('Pafos'))) {
+        } else if (sn === '56' && (agency.includes('OSYPA') || agency.includes('ΟΣΥΠΑ') || agency.includes('Pafos') || agency.includes('Paphos'))) {
           fare = '€5.00';
         }
 
