@@ -381,6 +381,8 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         }
     }, [vehicles, isFirstLoad]);
 
+    const geoInProgress = useRef(false);
+
     // Geolocation - Strict iOS Compliance
     // We attach a raw DOM event listener in useEffect to bypass React synthetic events
     // just in case strict mode requires "real" events.
@@ -389,7 +391,12 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         if (!btn) return;
 
         const handleLocClick = (e) => {
-            e.preventDefault(); // Stop any other handlers
+            e.preventDefault();
+
+            if (geoInProgress.current) {
+                console.log("Geolocation already in progress, skipping redundant request.");
+                return;
+            }
 
             if (!navigator.geolocation) {
                 if (showToast) showToast("Geolocation is not supported by your browser");
@@ -397,35 +404,50 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             }
 
             setLocLoading(true);
+            geoInProgress.current = true;
 
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude } = pos.coords;
                     setUserLoc([latitude, longitude]);
                     setLocLoading(false);
+                    geoInProgress.current = false;
                     setShowStops(true);
                     if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
                 },
                 (err) => {
                     setLocLoading(false);
-                    console.warn("Geo error:", err);
+                    geoInProgress.current = false;
 
+                    // Log the raw error for debugging
+                    console.warn("Geolocation Debug Info:", {
+                        code: err.code,
+                        message: err.message,
+                        hasUserLoc: !!userLoc
+                    });
+
+                    // Only warn if we don't have a location yet or it's a hard block
                     if (err.code === 1) { // PERMISSION_DENIED
-                        if (showToast) showToast("Location access denied. Check browser settings.");
+                        if (!userLoc && showToast) {
+                            showToast("Location access denied. Check browser/OS settings.");
+                        }
                     } else if (err.code === 3) { // TIMEOUT
-                        // Often occurs if GPS is slow, but we might have a cached position or the map already updated
-                        console.warn("Location timeout - usually fine if position was already found.");
+                        console.warn("Location timeout - common with slow GPS fixes.");
                     } else {
-                        if (showToast) showToast("Could not determine location. Try again.");
+                        if (!userLoc && showToast) showToast("Could not find location. Try again.");
                     }
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                {
+                    enableHighAccuracy: true,
+                    timeout: 15000, // Slightly longer timeout 
+                    maximumAge: 30000 // Allow 30s old cached position for faster lock
+                }
             );
         };
 
         btn.addEventListener('click', handleLocClick);
         return () => btn.removeEventListener('click', handleLocClick);
-    }, [showToast]);
+    }, [showToast, userLoc]);
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
