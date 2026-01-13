@@ -579,7 +579,9 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                                     <div style={{ textAlign: 'left', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                                         <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Vehicle:</strong> {v.id || 'N/A'}</div>
                                         <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Speed:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
-                                        <div style={{ color: '#44bd32', fontWeight: 'bold' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px', fontWeight: 'normal' }}>Fare:</strong> €2.00</div>
+                                        {v.f && (
+                                            <div style={{ color: '#44bd32', fontWeight: 'bold' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px', fontWeight: 'normal' }}>Fare:</strong> {v.f}</div>
+                                        )}
                                     </div>
                                 </div>
                             </Popup>

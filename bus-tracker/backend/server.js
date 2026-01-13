@@ -103,12 +103,18 @@ async function fetchData() {
 
         // --- ULTRA-FAST LOOKUP ---
         let trip = tripMap[rawTripId];
-        if (!trip) {
-          // If no exact match, fallback to fuzzy only if necessary
-          // But with maps we should index both full and partial if possible
-        }
-
         const route = trip ? routeMap[trip.route_id] : routeMap[rawRouteId];
+
+        // --- DYNAMIC FARE MAPPING ---
+        let fare = null;
+        const sn = route ? (route.short_name || route.route_short_name) : null;
+        const agency = route ? route.agency_name : '';
+
+        if (sn === '30' && agency.includes('EMEL')) {
+          fare = '€2.00';
+        } else if (sn === '56' && (agency.includes('OSYPA') || agency.includes('Pafos'))) {
+          fare = '€5.00';
+        }
 
         // Determine best display names
         const routeShortName = route ? (route.short_name || route.route_short_name) : '??';
@@ -128,7 +134,8 @@ async function fetchData() {
           trip_headsign: headsign,
           color: route ? (route.color || '0070f3') : '0070f3',
           text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF',
-          agency_name: route ? route.agency_name : 'Cyprus Public Transport'
+          agency_name: route ? route.agency_name : 'Cyprus Public Transport',
+          fare: fare
         });
       }
 
@@ -165,7 +172,8 @@ async function fetchData() {
       h: v.trip_headsign,
       sn: v.route_short_name,
       c: v.color,
-      rn: v.route_long_name // Added route long name
+      rn: v.route_long_name,
+      f: v.fare // Added fare field
     }));
     tripUpdates = tempUpdates;
     console.log(`>>> Sync: ${vehiclePositions.length} buses. Speed: O(1).`);
