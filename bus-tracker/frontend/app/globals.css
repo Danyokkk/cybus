@@ -534,10 +534,11 @@ body {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: rgba(0, 0, 0, 0.2) !important;
-  /* Slight background to show touch area */
+  background: rgba(0, 0, 0, 0.3) !important;
   border-radius: 0 30px 0 20px !important;
-  /* Match popup corner */
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+  touch-action: none !important;
 }
 
 /* Marker transitions removed for performance */
