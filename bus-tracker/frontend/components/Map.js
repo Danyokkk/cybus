@@ -375,6 +375,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             return;
         }
         setLocLoading(true);
+        // Simple, robust geolocation request
         navigator.geolocation.getCurrentPosition(
             (pos) => {
                 const { latitude, longitude } = pos.coords;
@@ -386,19 +387,10 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             },
             (err) => {
                 setLocLoading(false);
-                console.warn("Geolocation warning:", err);
-
-                // Only alert for unexpected strict errors.
-                // If code is 1 (Permission Denied), the browser usually handles the UI or the user has explicitly blocked it.
-                // We show a helpful toast or alert ONLY if we are sure it failed.
-                if (err.code === 1) {
-                    alert("Location access denied. Please check your browser settings to allow location access for this site.");
-                } else {
-                    // For timeouts (3) or unavailable (2), we might retry or just inform gently.
-                    alert("Unable to retrieve location. Please check your GPS settings or try again.");
-                }
+                console.error("Geo error:", err);
+                alert("Location access denied or unavailable.");
             },
-            { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
         );
     };
 
