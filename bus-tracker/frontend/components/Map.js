@@ -561,7 +561,13 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                                     <div style={{ backgroundColor: vColor.startsWith('#') ? vColor : '#' + vColor, color: 'white', padding: '10px 18px', borderRadius: '25px', display: 'inline-block', fontSize: '1.3rem', fontWeight: '900', marginBottom: '12px' }}>
                                         {v.sn || v.route_short_name || '?'}
                                     </div>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{v.h || v.trip_headsign || 'Bus Route'}</div>
+                                    {/* Hide headsign if it looks like a long raw number ID */}
+                                    {v.h && !/^\d{5,}$/.test(v.h) && (
+                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{v.h}</div>
+                                    )}
+                                    {(!v.h || /^\d{5,}$/.test(v.h)) && (
+                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>Bus Route</div>
+                                    )}
                                     <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
                                         <div><strong style={{ color: '#aaa', fontSize: '0.7rem' }}>SPEED:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
                                     </div>

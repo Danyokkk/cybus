@@ -110,6 +110,10 @@ async function fetchData() {
 
         const route = trip ? routeMap[trip.route_id] : routeMap[rawRouteId];
 
+        // Determine best display names
+        const routeShortName = route ? (route.short_name || route.route_short_name) : '??';
+        const headsign = trip ? trip.trip_headsign : (route ? route.long_name : 'Cyprus Bus');
+
         tempPositions.push({
           vehicle_id: entity.vehicle.vehicle?.id,
           trip_id: trip ? trip.trip_id : rawTripId,
@@ -119,8 +123,8 @@ async function fetchData() {
           bearing: entity.vehicle.position?.bearing,
           speed: entity.vehicle.position?.speed,
           timestamp: entity.vehicle.timestamp,
-          route_short_name: route ? (route.short_name || route.route_short_name) : '?',
-          trip_headsign: trip ? trip.trip_headsign : (entity.vehicle.trip?.tripId || '?'),
+          route_short_name: routeShortName,
+          trip_headsign: headsign,
           color: route ? (route.color || '0070f3') : '0070f3',
           text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF',
           agency_name: route ? route.agency_name : 'Cyprus Public Transport'
@@ -152,16 +156,14 @@ async function fetchData() {
     // Minimized payload for bandwidth efficiency
     vehiclePositions = tempPositions.map(v => ({
       id: v.vehicle_id,
-      t: v.trip_id,
       r: v.route_id,
-      lt: v.lat,
-      ln: v.lon,
-      b: v.bearing,
-      s: v.speed || 0,
-      h: v.trip_headsign || 'Route ' + v.route_short_name,
+      lt: v.lt || v.lat,
+      ln: v.ln || v.lon,
+      b: v.b !== undefined ? v.b : v.bearing,
+      s: v.s !== undefined ? v.s : (v.speed || 0),
+      h: v.trip_headsign,
       sn: v.route_short_name,
-      c: v.color,
-      ag: v.agency_name
+      c: v.color
     }));
     tripUpdates = tempUpdates;
     console.log(`>>> Sync: ${vehiclePositions.length} buses. Speed: O(1).`);
