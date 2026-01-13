@@ -368,31 +368,43 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         }
     }, [vehicles, isFirstLoad]);
 
-    // Geolocation handlers...
-    const handleMyLocation = () => {
-        if (!navigator.geolocation) {
-            alert(t.notSupported || "Geolocation not supported");
-            return;
-        }
-        setLocLoading(true);
-        // Simple, robust geolocation request
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                const { latitude, longitude } = pos.coords;
-                // Successfully got location
-                setUserLoc([latitude, longitude]);
-                setLocLoading(false);
-                setShowStops(true);
-                if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
-            },
-            (err) => {
-                setLocLoading(false);
-                console.error("Geo error:", err);
-                alert("Location access denied or unavailable.");
-            },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-        );
-    };
+    // Geolocation - Strict iOS Compliance
+    // We attach a raw DOM event listener in useEffect to bypass React synthetic events
+    // just in case strict mode requires "real" events.
+    useEffect(() => {
+        const btn = document.getElementById('my-location-btn');
+        if (!btn) return;
+
+        const handleLocClick = (e) => {
+            e.preventDefault(); // Stop any other handlers
+
+            if (!navigator.geolocation) {
+                alert("Geolocation is not supported by your browser");
+                return;
+            }
+
+            setLocLoading(true);
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    setUserLoc([latitude, longitude]);
+                    setLocLoading(false);
+                    setShowStops(true);
+                    if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
+                },
+                (err) => {
+                    setLocLoading(false);
+                    console.error("Geo error:", err);
+                    alert("Location access denied. Check Settings > Privacy > Location Services > Safari Websites.");
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        };
+
+        btn.addEventListener('click', handleLocClick);
+        return () => btn.removeEventListener('click', handleLocClick);
+    }, []);
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
@@ -403,7 +415,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`} title={showStops ? t.hideStops : t.showStops}>
                     <span>{showStops ? '✕' : '🚏'}</span>
                 </button>
-                <button onClick={handleMyLocation} className="stops-toggle-btn" title={t.myLocation}>
+                <button id="my-location-btn" className="stops-toggle-btn" title={t.myLocation}>
                     <span>{locLoading ? '⌛' : '🎯'}</span>
                 </button>
             </div>
