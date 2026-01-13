@@ -371,7 +371,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     // Geolocation handlers...
     const handleMyLocation = () => {
         if (!navigator.geolocation) {
-            if (showToast) showToast(t.notSupported || "Geolocation not supported");
+            alert(t.notSupported || "Geolocation not supported");
             return;
         }
         setLocLoading(true);
@@ -383,14 +383,24 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 setShowStops(true);
                 if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
             },
-            () => setLocLoading(false),
+            (err) => {
+                setLocLoading(false);
+                console.warn(err);
+                if (err.code === 1) { // Permission Denied
+                    alert("Please enable Location Services for this website in your browser settings (iOS: Settings > Privacy > Location Services).");
+                } else if (err.code === 2) {
+                    alert("Location unavailable. Try moving to a clear area.");
+                } else {
+                    alert("Could not fetch location. Error: " + err.message);
+                }
+            },
             { enableHighAccuracy: true, timeout: 10000 }
         );
     };
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-            <div style={{ position: 'absolute', top: '25px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t.streetView : t.satelliteView}>
                     <span>{isSatellite ? '🏙️' : '🛰️'}</span>
                 </button>

@@ -262,11 +262,43 @@ body {
   font-weight: 900 !important;
   font-size: 1.2rem !important;
   transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1) !important;
+  position: relative;
 }
 
 .stops-toggle-btn:hover {
   transform: translateY(-2px);
   border-color: var(--nebula-accent) !important;
+}
+
+/* Tooltip on Hover */
+.stops-toggle-btn:hover::after {
+  content: attr(title);
+  position: absolute;
+  right: 55px;
+  /* Appears to the left of the button */
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(10, 10, 46, 0.9);
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) translateX(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+  }
 }
 
 /* Responsive Overrides */
