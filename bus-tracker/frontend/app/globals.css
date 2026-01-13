@@ -522,18 +522,22 @@ body {
 
 /* Larger Close Button for Mobile Accessibility */
 .leaflet-container a.leaflet-popup-close-button {
-  width: 60px !important;
-  height: 60px !important;
-  font-size: 40px !important;
-  line-height: 60px !important;
+  width: 80px !important;
+  height: 80px !important;
+  font-size: 50px !important;
+  line-height: 80px !important;
   color: #fff !important;
   font-weight: 300;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  top: 5px !important;
-  right: 5px !important;
+  top: 0 !important;
+  right: 0 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  background: rgba(0, 0, 0, 0.2) !important;
+  /* Slight background to show touch area */
+  border-radius: 0 30px 0 20px !important;
+  /* Match popup corner */
 }
 
 /* Marker transitions removed for performance */
