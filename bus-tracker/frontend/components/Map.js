@@ -425,6 +425,18 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 <button id="my-location-btn" className="stops-toggle-btn" title={t.myLocation}>
                     <span>{locLoading ? '⌛' : '🎯'}</span>
                 </button>
+                <button
+                    onClick={() => {
+                        if (confirm("Reboot site and refresh all data?")) {
+                            window.location.reload(true);
+                        }
+                    }}
+                    className="stops-toggle-btn"
+                    title="Force Reload Site"
+                    style={{ opacity: 0.6, transform: 'scale(0.85)' }}
+                >
+                    <span style={{ fontSize: '1rem' }}>🔃</span>
+                </button>
             </div>
 
             <MapContainer

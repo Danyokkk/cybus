@@ -520,25 +520,33 @@ body {
   background: var(--nebula-deep) !important;
 }
 
-/* Larger Close Button for Mobile Accessibility */
+/* Refined Close Button for Mobile Accessibility */
 .leaflet-container a.leaflet-popup-close-button {
-  width: 80px !important;
-  height: 80px !important;
-  font-size: 50px !important;
-  line-height: 80px !important;
+  width: 44px !important;
+  height: 44px !important;
+  font-size: 24px !important;
+  line-height: 44px !important;
   color: #fff !important;
   font-weight: 300;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  top: 0 !important;
-  right: 0 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  top: 4px !important;
+  right: 4px !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  background: rgba(0, 0, 0, 0.3) !important;
-  border-radius: 0 30px 0 20px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px);
+  border-radius: 50% !important;
+  /* Circular for better look */
   z-index: 99999 !important;
   pointer-events: auto !important;
   touch-action: none !important;
+  transition: background 0.2s ease;
+}
+
+.leaflet-container a.leaflet-popup-close-button:active {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(0.9);
 }
 
 /* Marker transitions removed for performance */
