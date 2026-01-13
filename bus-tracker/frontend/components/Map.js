@@ -391,14 +391,14 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
             <div style={{ position: 'absolute', top: '25px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn">
-                    <span>{isSatellite ? '🏙️' : '🛰️'}</span> {isSatellite ? (t.streetView || 'Street') : (t.satelliteView || 'Satellite')}
+                <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t.streetView : t.satelliteView}>
+                    <span>{isSatellite ? '🏙️' : '🛰️'}</span>
                 </button>
-                <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`}>
-                    <span>{showStops ? '✕' : '🚏'}</span> {showStops ? (t.hideStops || 'Hide Stops') : (t.showStops || 'Show Stops')}
+                <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`} title={showStops ? t.hideStops : t.showStops}>
+                    <span>{showStops ? '✕' : '🚏'}</span>
                 </button>
-                <button onClick={handleMyLocation} className="stops-toggle-btn">
-                    <span>{locLoading ? '⌛' : '🎯'}</span> {locLoading ? (t.finding || 'Finding...') : (t.myLocation || 'My Location')}
+                <button onClick={handleMyLocation} className="stops-toggle-btn" title={t.myLocation}>
+                    <span>{locLoading ? '⌛' : '🎯'}</span>
                 </button>
             </div>
 
