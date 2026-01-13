@@ -124,6 +124,7 @@ async function fetchData() {
           speed: entity.vehicle.position?.speed,
           timestamp: entity.vehicle.timestamp,
           route_short_name: routeShortName,
+          route_long_name: route ? route.long_name : 'Cyprus Public Transport',
           trip_headsign: headsign,
           color: route ? (route.color || '0070f3') : '0070f3',
           text_color: route ? (route.text_color || 'FFFFFF') : 'FFFFFF',
@@ -163,7 +164,8 @@ async function fetchData() {
       s: v.s !== undefined ? v.s : (v.speed || 0),
       h: v.trip_headsign,
       sn: v.route_short_name,
-      c: v.color
+      c: v.color,
+      rn: v.route_long_name // Added route long name
     }));
     tripUpdates = tempUpdates;
     console.log(`>>> Sync: ${vehiclePositions.length} buses. Speed: O(1).`);

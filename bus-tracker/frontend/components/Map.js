@@ -556,20 +556,30 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                             eventHandlers={{ click: () => onVehicleClick(v) }}
                             className="smooth-move"
                         >
-                            <Popup className="bus-popup" minWidth={200}>
-                                <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
-                                    <div style={{ backgroundColor: vColor.startsWith('#') ? vColor : '#' + vColor, color: 'white', padding: '10px 18px', borderRadius: '25px', display: 'inline-block', fontSize: '1.3rem', fontWeight: '900', marginBottom: '12px' }}>
-                                        {v.sn || v.route_short_name || '?'}
+                            <Popup className="bus-popup" minWidth={220}>
+                                <div style={{ textAlign: 'center', padding: '10px 5px' }}>
+                                    {/* Route ID Badge */}
+                                    <div style={{ backgroundColor: vColor.startsWith('#') ? vColor : '#' + vColor, color: 'white', padding: '10px 20px', borderRadius: '30px', display: 'inline-block', fontSize: '1.6rem', fontWeight: '900', marginBottom: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
+                                        {v.sn}
                                     </div>
-                                    {/* Hide headsign if it looks like a long raw number ID */}
-                                    {v.h && !/^\d{5,}$/.test(v.h) && (
-                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{v.h}</div>
+
+                                    {/* Headsign (Destination) */}
+                                    <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fff', marginBottom: '4px', lineHeight: '1.2' }}>
+                                        {v.h && !/^\d{5,}$/.test(v.h) ? v.h : 'Bus Route'}
+                                    </div>
+
+                                    {/* Route Long Name (Line Description) */}
+                                    {v.rn && (
+                                        <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginBottom: '16px', fontStyle: 'italic', padding: '0 10px' }}>
+                                            {v.rn}
+                                        </div>
                                     )}
-                                    {(!v.h || /^\d{5,}$/.test(v.h)) && (
-                                        <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>Bus Route</div>
-                                    )}
-                                    <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
-                                        <div><strong style={{ color: '#aaa', fontSize: '0.7rem' }}>SPEED:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
+
+                                    {/* Technical Details Grid */}
+                                    <div style={{ textAlign: 'left', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                                        <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Vehicle:</strong> {v.id || 'N/A'}</div>
+                                        <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Speed:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
+                                        <div style={{ color: '#44bd32', fontWeight: 'bold' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px', fontWeight: 'normal' }}>Fare:</strong> €2.00</div>
                                     </div>
                                 </div>
                             </Popup>
