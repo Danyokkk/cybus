@@ -382,6 +382,8 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     }, [vehicles, isFirstLoad]);
 
     const geoInProgress = useRef(false);
+    const userLocRef = useRef(null);
+    const pendingErrorTimeout = useRef(null);
 
     // Geolocation - Strict iOS Compliance
     // We attach a raw DOM event listener in useEffect to bypass React synthetic events
@@ -393,10 +395,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         const handleLocClick = (e) => {
             e.preventDefault();
 
-            if (geoInProgress.current) {
-                console.log("Geolocation already in progress, skipping redundant request.");
-                return;
-            }
+            if (geoInProgress.current) return;
 
             if (!navigator.geolocation) {
                 if (showToast) showToast("Geolocation is not supported by your browser");
@@ -406,10 +405,24 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             setLocLoading(true);
             geoInProgress.current = true;
 
+            // Clear any previous pending error
+            if (pendingErrorTimeout.current) {
+                clearTimeout(pendingErrorTimeout.current);
+                pendingErrorTimeout.current = null;
+            }
+
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude } = pos.coords;
+
+                    // Cancel any deferred error if success arrives
+                    if (pendingErrorTimeout.current) {
+                        clearTimeout(pendingErrorTimeout.current);
+                        pendingErrorTimeout.current = null;
+                    }
+
                     setUserLoc([latitude, longitude]);
+                    userLocRef.current = [latitude, longitude];
                     setLocLoading(false);
                     geoInProgress.current = false;
                     setShowStops(true);
@@ -419,35 +432,39 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     setLocLoading(false);
                     geoInProgress.current = false;
 
-                    // Log the raw error for debugging
-                    console.warn("Geolocation Debug Info:", {
-                        code: err.code,
-                        message: err.message,
-                        hasUserLoc: !!userLoc
-                    });
+                    console.warn("Geolocation Event:", { code: err.code, hasLoc: !!userLocRef.current });
 
-                    // Only warn if we don't have a location yet or it's a hard block
+                    // 1. If we already found the user, ignore any transient errors
+                    if (userLocRef.current) return;
+
+                    // 2. Distinguish errors
                     if (err.code === 1) { // PERMISSION_DENIED
-                        if (!userLoc && showToast) {
-                            showToast("Location access denied. Check browser/OS settings.");
-                        }
+                        // Delay the error toast. If success fires soon after, we cancel this.
+                        pendingErrorTimeout.current = setTimeout(() => {
+                            if (!userLocRef.current && showToast) {
+                                showToast("Location access denied. Check browser/OS settings.");
+                            }
+                        }, 1000); // 1s grace period for browsers that fire both
                     } else if (err.code === 3) { // TIMEOUT
-                        console.warn("Location timeout - common with slow GPS fixes.");
+                        console.warn("Location timeout.");
                     } else {
-                        if (!userLoc && showToast) showToast("Could not find location. Try again.");
+                        if (showToast) showToast("Could not find location. Try again.");
                     }
                 },
                 {
                     enableHighAccuracy: true,
-                    timeout: 15000, // Slightly longer timeout 
-                    maximumAge: 30000 // Allow 30s old cached position for faster lock
+                    timeout: 15000,
+                    maximumAge: 30000
                 }
             );
         };
 
         btn.addEventListener('click', handleLocClick);
-        return () => btn.removeEventListener('click', handleLocClick);
-    }, [showToast, userLoc]);
+        return () => {
+            btn.removeEventListener('click', handleLocClick);
+            if (pendingErrorTimeout.current) clearTimeout(pendingErrorTimeout.current);
+        };
+    }, [showToast]);
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
