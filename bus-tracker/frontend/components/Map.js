@@ -130,10 +130,10 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
             <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', color: '#ddd' }}>
                 <thead>
                     <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#fff', opacity: 0.6, fontSize: '0.7rem', textTransform: 'uppercase' }}>
-                        <th style={{ padding: '8px 4px' }}>⏳ Time</th>
+                        <th style={{ padding: '8px 4px' }}>⏳ In</th>
                         <th style={{ padding: '8px 4px' }}>🚌 Route</th>
                         <th style={{ padding: '8px 4px' }}>📍 Dest.</th>
-                        <th style={{ padding: '8px 4px' }}>Status</th>
+                        <th style={{ padding: '8px 4px' }}>⏰ Arrive</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -146,7 +146,7 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                             const busTime = new Date();
                             busTime.setHours(h, m, 0);
                             const diff = Math.floor((busTime - now) / 60000);
-                            const timeDisplay = diff >= 0 ? `${diff}m` : arr.arrival_time.slice(0, 5);
+                            const timeDisplay = diff >= 0 ? `${diff}m` : 'Now';
 
                             const routeInfo = routes.find(r => r.short_name === arr.route_short_name || r.route_short_name === arr.route_short_name);
 
@@ -174,8 +174,8 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '10px 4px', color: '#bbb' }}>{arr.trip_headsign}</td>
-                                    <td style={{ padding: '10px 4px', color: arr.is_realtime ? '#fff' : '#666', fontWeight: 'bold' }}>
-                                        {arr.is_realtime ? '● Live' : 'Sched.'}
+                                    <td style={{ padding: '10px 4px', color: '#fff', fontWeight: 'bold' }}>
+                                        {arr.arrival_time.slice(0, 5)}
                                     </td>
                                 </tr>
                             );
