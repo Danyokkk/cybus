@@ -478,8 +478,8 @@ body {
 .custom-bus-marker-container {
   background: transparent !important;
   border: none !important;
-  transition: transform 1.5s linear !important;
-  /* 1.5s for extra smoothness as requested */
+  transition: transform 3s linear !important;
+  /* 3s for extra smoothness to match polling */
   will-change: transform;
 }
 

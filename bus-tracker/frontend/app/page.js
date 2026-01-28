@@ -39,25 +39,47 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // 1. Fetch initial data (Parallelized)
+  // 1. Fetch initial data (Parallelized with Caching)
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const [stopsRes, routesRes] = await Promise.all([
-          fetch('https://cyfinal.onrender.com/api/stops'),
-          fetch('https://cyfinal.onrender.com/api/routes')
-        ]);
+        // Cached Data Check
+        const cachedStops = localStorage.getItem('cybus_stops');
+        const cachedRoutes = localStorage.getItem('cybus_routes');
+        const cacheTime = localStorage.getItem('cybus_cache_time');
+        const isCacheValid = cacheTime && (Date.now() - parseInt(cacheTime) < 24 * 60 * 60 * 1000); // 24h validity
 
-        const [stopsData, routesData] = await Promise.all([
-          stopsRes.json(),
-          routesRes.json()
-        ]);
+        if (cachedStops && cachedRoutes && isCacheValid) {
+          setStops(JSON.parse(cachedStops));
+          setRoutes(JSON.parse(cachedRoutes));
+          setLoading(false); // Immediate load complete
+          // Optional: Background refresh could go here if needed
+        } else {
+          // Fresh Fetch
+          const [stopsRes, routesRes] = await Promise.all([
+            fetch('https://cyfinal.onrender.com/api/stops'),
+            fetch('https://cyfinal.onrender.com/api/routes')
+          ]);
 
-        if (Array.isArray(stopsData)) setStops(stopsData);
-        if (Array.isArray(routesData)) setRoutes(routesData);
+          const [stopsData, routesData] = await Promise.all([
+            stopsRes.json(),
+            routesRes.json()
+          ]);
+
+          if (Array.isArray(stopsData)) {
+            setStops(stopsData);
+            localStorage.setItem('cybus_stops', JSON.stringify(stopsData));
+          }
+          if (Array.isArray(routesData)) {
+            setRoutes(routesData);
+            localStorage.setItem('cybus_routes', JSON.stringify(routesData));
+          }
+          localStorage.setItem('cybus_cache_time', Date.now().toString());
+          setLoading(false);
+        }
       } catch (err) {
         console.error('Error fetching initial data:', err);
-      } finally {
         setLoading(false);
       }
     };
@@ -75,8 +97,8 @@ export default function Home() {
           if (!isCancelled) {
             setVehicles(prev => {
               if (!Array.isArray(data)) return prev;
-              // Only update if data actually changed (length or first few entries)
-              if (prev.length === data.length && JSON.stringify(prev[0]) === JSON.stringify(data[0])) return prev;
+              // Simple check: if empty, or same reference, don't update (React handles this mostly)
+              // We REMOVED the buggy "prev[0] === data[0]" check which caused freezes.
               return data;
             });
           }
@@ -92,7 +114,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 1000); // Sync with server at 1s
+    const interval = setInterval(fetchVehicles, 3000); // Optimized to 3s
     return () => {
       isCancelled = true;
       clearInterval(interval);
