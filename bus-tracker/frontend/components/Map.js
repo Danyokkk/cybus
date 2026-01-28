@@ -380,14 +380,14 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         updateVisibleElements();
     }, [vehicles, showStops, stops]);
 
-    // Instant Spawn Logic
+    // Trigger visibility update whenever vehicles data changes or on mount
     useEffect(() => {
+        updateVisibleElements();
         if (Array.isArray(vehicles) && vehicles.length > 0 && isFirstLoad) {
             vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
-            const timer = setTimeout(() => setIsFirstLoad(false), 1000);
-            return () => clearTimeout(timer);
+            setIsFirstLoad(false);
         }
-    }, [vehicles, isFirstLoad]);
+    }, [vehicles, updateVisibleElements]);
 
     const geoInProgress = useRef(false);
     const userLocRef = useRef(null);

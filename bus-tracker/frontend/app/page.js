@@ -87,24 +87,28 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. Poll Vehicles
+  // 2. Poll Vehicles (with Caching)
   useEffect(() => {
     let isCancelled = false;
+
+    // Load cached vehicles immediately for "Instance Spawn"
+    const cachedVehicles = localStorage.getItem('cybus_vehicles');
+    const vCacheTime = localStorage.getItem('cybus_v_cache_time');
+    if (cachedVehicles && vCacheTime && (Date.now() - parseInt(vCacheTime) < 2 * 60 * 1000)) { // 2 min cache
+      setVehicles(JSON.parse(cachedVehicles));
+    }
+
     const fetchVehicles = () => {
       fetch('https://cyfinal.onrender.com/api/vehicle_positions')
         .then(res => res.json())
         .then(data => {
-          if (!isCancelled) {
-            setVehicles(prev => {
-              if (!Array.isArray(data)) return prev;
-              // Simple check: if empty, or same reference, don't update (React handles this mostly)
-              // We REMOVED the buggy "prev[0] === data[0]" check which caused freezes.
-              return data;
-            });
+          if (!isCancelled && Array.isArray(data)) {
+            setVehicles(data);
+            localStorage.setItem('cybus_vehicles', JSON.stringify(data));
+            localStorage.setItem('cybus_v_cache_time', Date.now().toString());
           }
         })
         .catch(err => {
-          // Silence transient network errors
           if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
             console.warn('Network interrupted, retrying...');
           } else {
@@ -114,7 +118,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 3000); // Optimized to 3s
+    const interval = setInterval(fetchVehicles, 3000);
     return () => {
       isCancelled = true;
       clearInterval(interval);
