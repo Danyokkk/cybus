@@ -130,10 +130,10 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
             <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', color: '#ddd' }}>
                 <thead>
                     <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#fff', opacity: 0.6, fontSize: '0.7rem', textTransform: 'uppercase' }}>
-                        <th style={{ padding: '8px 4px' }}>⏰ Arrive</th>
-                        <th style={{ padding: '8px 4px' }}>⏳ In</th>
-                        <th style={{ padding: '8px 4px' }}>🚌 Route</th>
-                        <th style={{ padding: '8px 4px' }}>📍 Dest.</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>⏰ Arrive</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>⏳ In</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>🚌 Route</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>📍 Dest.</th>
                     </tr>
                 </thead>
                 <tbody>
