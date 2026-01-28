@@ -149,6 +149,8 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                             const timeDisplay = diff >= 0 ? `${diff}m` : 'Now';
 
                             const routeInfo = routes.find(r => r.short_name === arr.route_short_name || r.route_short_name === arr.route_short_name);
+                            const rColor = routeInfo ? (routeInfo.color || routeInfo.route_color) : '4834d4';
+                            const badgeColor = rColor.startsWith('#') ? rColor : `#${rColor}`;
 
                             return (
                                 <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
@@ -160,14 +162,15 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
                                                 if (routeInfo) onSelectRoute(routeInfo);
                                             }}
                                             style={{
-                                                background: 'rgba(72, 52, 212, 0.2)',
+                                                backgroundColor: badgeColor,
                                                 padding: '4px 8px',
                                                 borderRadius: '6px',
-                                                border: '1px solid rgba(72, 52, 212, 0.4)',
+                                                border: `1px solid rgba(255,255,255,0.2)`,
                                                 color: '#fff',
                                                 cursor: routeInfo ? 'pointer' : 'default',
                                                 fontSize: '0.8rem',
-                                                fontWeight: '900'
+                                                fontWeight: '900',
+                                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
                                             }}
                                         >
                                             {arr.route_short_name}
