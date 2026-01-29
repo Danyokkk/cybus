@@ -1,6 +1,7 @@
 import './globals.css';
 import { LanguageProvider } from '../context/LanguageContext';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/react';
 
 export const metadata = {
   title: 'CyBus | Live Cyprus Bus Tracker',
@@ -31,6 +32,7 @@ export default function RootLayout({ children }) {
         <LanguageProvider>
           {children}
           <SpeedInsights />
+          <Analytics />
         </LanguageProvider>
       </body>
     </html>
