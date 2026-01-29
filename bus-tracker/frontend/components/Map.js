@@ -231,8 +231,8 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15
 };
 
 // Memoized Bus Marker Component to prevent re-renders unless data changes
-const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle }) => {
-    const routeInfo = useMemo(() => null, []); // Placeholder or logic to find route if needed, but we have color/shortName from backend
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle, mapZoom }) => {
+    const routeInfo = useMemo(() => null, []);
 
     const vColor = color || '#44bd32';
     // Text color logic could be simplified or passed from props
@@ -241,7 +241,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, bearing, vColor, 15)} // Default zoom scale in popup
+            icon={createBusIcon(shortName, bearing, vColor, mapZoom || 15)}
             className="smooth-move"
             eventHandlers={{
                 click: () => {
@@ -514,45 +514,29 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     </Marker>
                 ))}
 
+                {/* Optimized Memoized Bus Markers */}
                 {vehicles && vehicles.length > 0 && vehicles.map((v, i) => {
                     const vId = v.id || v.vehicle_id;
-                    const vColor = v.c || '44bd32';
                     const vLat = v.lt || v.lat;
                     const vLon = v.ln || v.lon;
-
                     if (vLat === undefined || vLon === undefined) return null;
 
                     return (
-                        <Marker
+                        <BusMarker
                             key={`bus-${vId || i}`}
-                            position={[vLat, vLon]}
-                            icon={createBusIcon(v.sn || v.route_short_name, v.b !== undefined ? v.b : v.bearing, vColor.startsWith('#') ? vColor : '#' + vColor, mapZoom)}
-                            eventHandlers={{ click: () => onVehicleClick(v) }}
-                            className="smooth-move"
-                        >
-                            <Popup className="bus-popup" minWidth={220}>
-                                <div style={{ textAlign: 'center', padding: '10px 5px' }}>
-                                    <div style={{ backgroundColor: vColor.startsWith('#') ? vColor : '#' + vColor, color: 'white', padding: '10px 20px', borderRadius: '30px', display: 'inline-block', fontSize: '1.6rem', fontWeight: '900', marginBottom: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
-                                        {v.sn}
-                                    </div>
-                                    <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fff', marginBottom: '4px', lineHeight: '1.2' }}>
-                                        {v.h && !/^\d{5,}$/.test(v.h) ? v.h : 'Bus Route'}
-                                    </div>
-                                    {v.rn && (
-                                        <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginBottom: '16px', fontStyle: 'italic', padding: '0 10px' }}>
-                                            {v.rn}
-                                        </div>
-                                    )}
-                                    <div style={{ textAlign: 'left', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
-                                        <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Vehicle:</strong> {v.id || 'N/A'}</div>
-                                        <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Speed:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
-                                        {v.f && (
-                                            <div style={{ color: '#44bd32', fontWeight: 'bold' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px', fontWeight: 'normal' }}>Fare:</strong> {v.f}</div>
-                                        )}
-                                    </div>
-                                </div>
-                            </Popup>
-                        </Marker>
+                            id={vId}
+                            lat={vLat}
+                            lon={vLon}
+                            bearing={v.b !== undefined ? v.b : v.bearing}
+                            shortName={v.sn || v.route_short_name}
+                            color={v.c}
+                            speed={v.s}
+                            headsign={v.h}
+                            agency={v.ag}
+                            onVehicleClick={onVehicleClick}
+                            rawVehicle={v}
+                            mapZoom={mapZoom} // Pass zoom for scaling, but component is memoized
+                        />
                     );
                 })}
 
