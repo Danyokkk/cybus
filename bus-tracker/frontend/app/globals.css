@@ -477,8 +477,8 @@ body {
 /* Bus Marker Styles */
 .custom-bus-marker-container {
   background: transparent !important;
-  border: none !important;
-  transition: transform 3s linear !important;
+  /* Smooth movement for bus markers - align with 1s polling */
+  transition: transform 1s linear !important;
   /* 3s for extra smoothness to match polling */
   will-change: transform;
 }
