@@ -234,7 +234,7 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15
 const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle, mapZoom }) => {
     const routeInfo = useMemo(() => null, []);
 
-    const vColor = color || '#44bd32';
+    const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
     // Text color logic could be simplified or passed from props
     const vTextColor = 'white';
 
