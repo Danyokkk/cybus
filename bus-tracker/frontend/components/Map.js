@@ -328,7 +328,6 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     const [showStops, setShowStops] = useState(false);
     const [isFirstLoad, setIsFirstLoad] = useState(true);
     const [mapZoom, setMapZoom] = useState(10);
-    const [visibleVehicles, setVisibleVehicles] = useState([]);
     const [visibleStops, setVisibleStops] = useState([]);
     const [userLoc, setUserLoc] = useState(null);
     const [locLoading, setLocLoading] = useState(false);
@@ -338,8 +337,8 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
     const mapRef = useRef(null);
     const { t } = useLanguage();
 
-    // 1. Map Events Handling Logic
-    const updateVisibleElements = useCallback(() => {
+    // 1. Map Events Handling Logic (Stops only, Vehicles are handled directly)
+    const updateVisibleStops = useCallback(() => {
         if (!mapRef.current) return;
         const m = mapRef.current;
         const bounds = m.getBounds();
@@ -349,21 +348,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         const buffer = isMobile ? 0.05 : 0.15;
         const paddedBounds = bounds.pad(buffer);
 
-        // Filter vehicles
-        if (Array.isArray(vehicles)) {
-            const filteredVehicles = vehicles.filter(v => {
-                if (!v) return false;
-                const lat = v.lt !== undefined ? v.lt : v.lat;
-                const lon = v.ln !== undefined ? v.ln : v.lon;
-                if (lat === undefined || lon === undefined) return false;
-                try {
-                    return paddedBounds.contains([lat, lon]);
-                } catch (e) { return false; }
-            });
-            setVisibleVehicles(filteredVehicles);
-        }
-
-        // Filter stops
+        // Filter stops only
         if (showStops && zoom >= 14 && Array.isArray(stops)) {
             const filteredStops = stops.filter(s =>
                 s && s.lat !== undefined && s.lon !== undefined &&
@@ -373,38 +358,33 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         } else {
             setVisibleStops([]);
         }
-    }, [vehicles, showStops, stops]);
+    }, [showStops, stops]);
 
     // Update visibility when source data or settings change
     useEffect(() => {
-        updateVisibleElements();
-    }, [vehicles, showStops, stops]);
+        updateVisibleStops();
+    }, [showStops, stops, updateVisibleStops]);
 
-    // Trigger visibility update whenever vehicles data changes or on mount
+    // Trigger update on vehicles change for "seen" logic and first load removal
     useEffect(() => {
-        updateVisibleElements();
         if (Array.isArray(vehicles) && vehicles.length > 0 && isFirstLoad) {
             vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
             setIsFirstLoad(false);
         }
-    }, [vehicles, updateVisibleElements]);
+    }, [vehicles, isFirstLoad]);
 
     const geoInProgress = useRef(false);
     const userLocRef = useRef(null);
     const pendingErrorTimeout = useRef(null);
 
     // Geolocation - Strict iOS Compliance
-    // We attach a raw DOM event listener in useEffect to bypass React synthetic events
-    // just in case strict mode requires "real" events.
     useEffect(() => {
         const btn = document.getElementById('my-location-btn');
         if (!btn) return;
 
         const handleLocClick = (e) => {
             e.preventDefault();
-
             if (geoInProgress.current) return;
-
             if (!navigator.geolocation) {
                 if (showToast) showToast("Geolocation is not supported by your browser");
                 return;
@@ -413,7 +393,6 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             setLocLoading(true);
             geoInProgress.current = true;
 
-            // Clear any previous pending error
             if (pendingErrorTimeout.current) {
                 clearTimeout(pendingErrorTimeout.current);
                 pendingErrorTimeout.current = null;
@@ -422,8 +401,6 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
                     const { latitude, longitude } = pos.coords;
-
-                    // Cancel any deferred error if success arrives
                     if (pendingErrorTimeout.current) {
                         clearTimeout(pendingErrorTimeout.current);
                         pendingErrorTimeout.current = null;
@@ -439,31 +416,20 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 (err) => {
                     setLocLoading(false);
                     geoInProgress.current = false;
-
-                    console.warn("Geolocation Event:", { code: err.code, hasLoc: !!userLocRef.current });
-
-                    // 1. If we already found the user, ignore any transient errors
                     if (userLocRef.current) return;
-
-                    // 2. Distinguish errors
-                    if (err.code === 1) { // PERMISSION_DENIED
-                        // Delay the error toast. If success fires soon after, we cancel this.
+                    if (err.code === 1) {
                         pendingErrorTimeout.current = setTimeout(() => {
                             if (!userLocRef.current && showToast) {
                                 showToast("Location access denied. Check browser/OS settings.");
                             }
-                        }, 1000); // 1s grace period for browsers that fire both
-                    } else if (err.code === 3) { // TIMEOUT
+                        }, 1000);
+                    } else if (err.code === 3) {
                         console.warn("Location timeout.");
                     } else {
                         if (showToast) showToast("Could not find location. Try again.");
                     }
                 },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 15000,
-                    maximumAge: 30000
-                }
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
             );
         };
 
@@ -506,13 +472,13 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
                 ref={mapRef}
-                preferCanvas={true} // Performance boost: draw markers on canvas instead of SVG
+                preferCanvas={true}
             >
                 <ZoomControl position="bottomright" />
                 <MapEvents
                     map={mapRef.current}
                     setMapZoom={setMapZoom}
-                    updateVisibleElements={updateVisibleElements}
+                    updateVisibleElements={updateVisibleStops}
                     shapes={shapes}
                     onSelectRoute={onSelectRoute}
                 />
@@ -548,37 +514,35 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     </Marker>
                 ))}
 
-                {visibleVehicles.map((v, i) => {
+                {vehicles && vehicles.length > 0 && vehicles.map((v, i) => {
                     const vId = v.id || v.vehicle_id;
                     const vColor = v.c || '44bd32';
+                    const vLat = v.lt || v.lat;
+                    const vLon = v.ln || v.lon;
+
+                    if (vLat === undefined || vLon === undefined) return null;
+
                     return (
                         <Marker
                             key={`bus-${vId || i}`}
-                            position={[v.lt || v.lat, v.ln || v.lon]}
+                            position={[vLat, vLon]}
                             icon={createBusIcon(v.sn || v.route_short_name, v.b !== undefined ? v.b : v.bearing, vColor.startsWith('#') ? vColor : '#' + vColor, mapZoom)}
                             eventHandlers={{ click: () => onVehicleClick(v) }}
                             className="smooth-move"
                         >
                             <Popup className="bus-popup" minWidth={220}>
                                 <div style={{ textAlign: 'center', padding: '10px 5px' }}>
-                                    {/* Route ID Badge */}
                                     <div style={{ backgroundColor: vColor.startsWith('#') ? vColor : '#' + vColor, color: 'white', padding: '10px 20px', borderRadius: '30px', display: 'inline-block', fontSize: '1.6rem', fontWeight: '900', marginBottom: '14px', boxShadow: '0 4px 15px rgba(0,0,0,0.3)' }}>
                                         {v.sn}
                                     </div>
-
-                                    {/* Headsign (Destination) */}
                                     <div style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fff', marginBottom: '4px', lineHeight: '1.2' }}>
                                         {v.h && !/^\d{5,}$/.test(v.h) ? v.h : 'Bus Route'}
                                     </div>
-
-                                    {/* Route Long Name (Line Description) */}
                                     {v.rn && (
                                         <div style={{ fontSize: '0.85rem', fontWeight: '500', color: 'rgba(255,255,255,0.7)', marginBottom: '16px', fontStyle: 'italic', padding: '0 10px' }}>
                                             {v.rn}
                                         </div>
                                     )}
-
-                                    {/* Technical Details Grid */}
                                     <div style={{ textAlign: 'left', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
                                         <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Vehicle:</strong> {v.id || 'N/A'}</div>
                                         <div style={{ color: '#fff' }}><strong style={{ color: '#aaa', fontSize: '0.75rem', textTransform: 'uppercase', marginRight: '8px' }}>Speed:</strong> {(v.s ? (v.s * 3.6).toFixed(1) : '0.0')} km/h</div>
@@ -601,3 +565,5 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         </div>
     );
 }
+
+

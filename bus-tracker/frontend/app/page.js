@@ -10,6 +10,11 @@ const BusMap = dynamic(() => import('../components/Map'), {
 });
 
 export default function Home() {
+  // Pre-warm the backend as early as possible
+  useEffect(() => {
+    fetch('https://cyfinal.onrender.com/api/vehicle_positions', { method: 'HEAD', mode: 'no-cors' }).catch(() => { });
+  }, []);
+
   const [stops, setStops] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [shapes, setShapes] = useState([]);
