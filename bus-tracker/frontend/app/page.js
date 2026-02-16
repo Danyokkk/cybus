@@ -111,6 +111,8 @@ export default function Home() {
             setVehicles(data);
             localStorage.setItem('cybus_vehicles', JSON.stringify(data));
             localStorage.setItem('cybus_v_cache_time', Date.now().toString());
+            // Clear loading if vehicles start coming in
+            if (loading) setLoading(false);
           }
         })
         .catch(err => {
@@ -123,7 +125,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    const interval = setInterval(fetchVehicles, 1000);
+    const interval = setInterval(fetchVehicles, 5000); // 5s sync for performance
     return () => {
       isCancelled = true;
       clearInterval(interval);
@@ -207,10 +209,15 @@ export default function Home() {
       />
 
       {loading && (
-        <div className="loading-overlay">
-          <div className="loader-logo">CyBus</div>
-          <div className="loader-bar-container">
-            <div className="loader-bar-progress"></div>
+        <div className="loading-overlay" style={{ background: '#000' }}>
+          <div className="loader-logo" style={{ color: '#ff0033', textTransform: 'uppercase', letterSpacing: '4px' }}>
+            Initializing
+          </div>
+          <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '10px' }}>
+            Waking up server (may take 30s)...
+          </div>
+          <div className="loader-bar-container" style={{ marginTop: '20px' }}>
+            <div className="loader-bar-progress" style={{ background: 'linear-gradient(90deg, transparent, #ff0033, transparent)' }}></div>
           </div>
         </div>
       )}

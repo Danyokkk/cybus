@@ -32,10 +32,10 @@ const busIcon = new L.Icon({
 // Deep Nebula "Ultra-Visible" Purple Stop Icon
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background: linear-gradient(135deg, #4834d4, #6a0572); width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 15px #4834d4, 0 0 25px rgba(72, 52, 212, 0.4); display: flex; align-items: center; justify-content: center;"><div style="width: 6px; height: 6px; background: white; border-radius: 50%;"></div></div>',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -12]
+    html: '<div style="background: linear-gradient(135deg, #ff0033, #600000); width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #ff0033; display: flex; align-items: center; justify-content: center;"><div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div></div>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+    popupAnchor: [0, -10]
 });
 
 // User Location "Radar" Icon - Fat Neon Green
@@ -349,7 +349,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
         const paddedBounds = bounds.pad(buffer);
 
         // Filter stops only
-        if (showStops && zoom >= 14 && Array.isArray(stops)) {
+        if (showStops && zoom >= 15 && Array.isArray(stops)) {
             const filteredStops = stops.filter(s =>
                 s && s.lat !== undefined && s.lon !== undefined &&
                 paddedBounds.contains([s.lat, s.lon])
@@ -500,13 +500,13 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     <Polyline key={`shape-${index}`} positions={shape} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
                 ))}
 
-                {showStops && mapZoom < 14 && (
-                    <div className="zoom-hint-pill">
+                {showStops && mapZoom < 15 && (
+                    <div className="zoom-hint-pill" style={{ borderColor: 'rgba(255,0,51,0.3)' }}>
                         {t.zoomInToSeeStops || 'Zoom in to see stops'}
                     </div>
                 )}
 
-                {showStops && mapZoom >= 14 && visibleStops.map((stop) => (
+                {showStops && mapZoom >= 15 && visibleStops.map((stop) => (
                     <Marker key={`stop-${stop.stop_id}`} position={[stop.lat, stop.lon]} icon={stopIcon}>
                         <Popup minWidth={300}>
                             <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
