@@ -242,10 +242,14 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                         style={{
                             padding: '4px 10px',
                             borderRadius: '12px',
-                            background: 'rgba(255,255,255,0.05)',
-                            color: '#777',
+                            background: 'transparent',
+                            color: '#555',
                             border: 'none',
-                            fontSize: '0.7rem'
+                            fontSize: '0.7rem',
+                            outline: 'none',
+                            appearance: 'none',
+                            cursor: 'pointer',
+                            textAlign: 'center'
                         }}
                     >
                         <option value="en">EN</option>

@@ -167,10 +167,10 @@ body {
 
 /* Minimalist Footer */
 .sidebar-footer {
-  padding: 25px;
+  padding: 20px 25px 30px;
   text-align: center;
-  border-top: 1px solid var(--glass-border);
-  background: rgba(0, 0, 0, 0.2);
+  background: transparent;
+  border-top: none;
 }
 
 .daan1k-credit {
