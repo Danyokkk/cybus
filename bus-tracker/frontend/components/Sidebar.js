@@ -243,18 +243,20 @@ export default function Sidebar({ routes, onSelectRoute, selectedRouteId, isOpen
                             padding: '4px 10px',
                             borderRadius: '12px',
                             background: 'transparent',
-                            color: '#555',
+                            color: '#444',
                             border: 'none',
                             fontSize: '0.7rem',
                             outline: 'none',
                             appearance: 'none',
                             cursor: 'pointer',
-                            textAlign: 'center'
+                            textAlign: 'center',
+                            width: 'auto',
+                            boxShadow: 'none'
                         }}
                     >
-                        <option value="en">EN</option>
-                        <option value="el">EL</option>
-                        <option value="ru">RU</option>
+                        <option value="en" style={{ background: '#000', color: '#fff' }}>EN</option>
+                        <option value="el" style={{ background: '#000', color: '#fff' }}>EL</option>
+                        <option value="ru" style={{ background: '#000', color: '#fff' }}>RU</option>
                     </select>
                 </div>
                 <a
