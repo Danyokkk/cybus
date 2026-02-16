@@ -1,4 +1,7 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100..900&display=swap');
+
 :root {
+  --background: #000000;
   --foreground: #ffffff;
   --sidebar-width: 380px;
 
@@ -8,19 +11,23 @@
   --nebula-accent: #ff0033;
   /* Vibrant Red */
 
-  --glass-bg: rgba(2, 0, 0, 0.95);
-  --glass-blur: blur(30px) saturate(120%);
-  --glass-border: rgba(255, 0, 51, 0.1);
+  --glass-bg: rgba(2, 0, 0, 0.98);
+  --glass-blur: blur(40px) saturate(150%);
+  --glass-border: rgba(255, 0, 51, 0.2);
 
   --shadow-quantum: 0 10px 50px rgba(0, 0, 0, 0.9);
   --shadow-glow: 0 0 20px rgba(255, 0, 51, 0.2);
 }
 
-@font-face {
-  font-family: 'Unbounded';
-  src: url('/fonts/Unbounded-Regular.ttf') format('truetype');
-  font-weight: normal;
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-family: "Montserrat", sans-serif !important;
+  font-optical-sizing: auto;
+  font-weight: 900;
   font-style: normal;
+  -webkit-font-smoothing: antialiased;
 }
 
 @font-face {
@@ -28,14 +35,6 @@
   src: url('/fonts/Unbounded-Bold.ttf') format('truetype');
   font-weight: bold;
   font-style: normal;
-}
-
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-  font-family: 'Courier New', Courier, monospace !important;
-  -webkit-font-smoothing: antialiased;
 }
 
 html,
@@ -471,9 +470,8 @@ body {
 /* Bus Marker Styles */
 .custom-bus-marker-container {
   background: transparent !important;
-  /* Smooth movement for bus markers - align with 1s polling */
-  transition: transform 1s linear !important;
-  /* 3s for extra smoothness to match polling */
+  /* Smooth movement only, but disable during map zoom to prevent lag */
+  transition: transform 0.3s ease-out !important;
   will-change: transform;
 }
 

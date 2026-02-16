@@ -362,7 +362,7 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     // Update visibility when source data or settings change
     useEffect(() => {
-        updateVisibleStops();
+        updateVisibleStops(mapRef.current);
     }, [showStops, stops, updateVisibleStops]);
 
     // Trigger update on vehicles change for "seen" logic and first load removal
@@ -507,11 +507,21 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 )}
 
                 {showStops && mapZoom >= 15 && visibleStops.map((stop) => (
-                    <Marker key={`stop-${stop.stop_id}`} position={[stop.lat, stop.lon]} icon={stopIcon}>
+                    <CircleMarker
+                        key={`stop-${stop.stop_id}`}
+                        center={[stop.lat, stop.lon]}
+                        radius={6}
+                        pathOptions={{
+                            fillColor: '#ff0033',
+                            color: '#fff',
+                            weight: 2,
+                            fillOpacity: 1,
+                        }}
+                    >
                         <Popup minWidth={300}>
                             <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
                         </Popup>
-                    </Marker>
+                    </CircleMarker>
                 ))}
 
                 {/* Optimized Memoized Bus Markers */}
