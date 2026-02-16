@@ -14,7 +14,7 @@
 
 CyBus is a high-performance web application designed to track public transportation across Cyprus in real-time. Built with a focus on **speed**, **reliability**, and a bold **"Red Hacker"** aesthetic.
 
-[**Explore the Demo »**](https://cyfinal.onrender.com)
+[**Explore the Demo »**](https://cyfinal.vercel.app/)
 
 ---
 
