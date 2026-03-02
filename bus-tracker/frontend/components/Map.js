@@ -565,10 +565,10 @@ export default function BusMap({
             </div>
 
             <MapContainer
-                center={[34.7071, 33.0226]}
-                zoom={12}
-                minZoom={9}
-                maxBounds={[[34.0, 31.8], [36.0, 34.8]]}
+                center={[35.1264, 33.4299]}
+                zoom={9}
+                minZoom={8}
+                maxBounds={[[33.8, 31.5], [36.5, 35.5]]}
                 maxBoundsViscosity={1.0}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
