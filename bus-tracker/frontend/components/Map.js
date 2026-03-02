@@ -568,7 +568,7 @@ export default function BusMap({
                 center={[35.1264, 33.4299]}
                 zoom={9}
                 minZoom={8}
-                maxBounds={[[33.8, 31.5], [36.5, 35.5]]}
+                maxBounds={[[32.5, 31.5], [36.5, 35.5]]}
                 maxBoundsViscosity={1.0}
                 style={{ height: '100%', width: '100%' }}
                 zoomControl={false}
