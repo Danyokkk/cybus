@@ -29,13 +29,59 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// Deep Nebula "Ultra-Visible" Purple Stop Icon
+// 3D 🛑 Stop Pin (Style from User Image)
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
-    html: '<div style="background: linear-gradient(135deg, #ff0033, #600000); width: 14px; height: 14px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 10px #ff0033; display: flex; align-items: center; justify-content: center;"><div style="width: 4px; height: 4px; background: white; border-radius: 50%;"></div></div>',
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-    popupAnchor: [0, -10]
+    html: `
+        <div style="
+            position: relative;
+            width: 32px;
+            height: 38px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        ">
+            <!-- Pin Body -->
+            <div style="
+                background: #ff0033; 
+                width: 32px; 
+                height: 32px; 
+                border-radius: 50% 50% 50% 6px; 
+                transform: rotate(-45deg); 
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid white;
+            ">
+                <!-- Inner White Circle -->
+                <div style="
+                    background: white; 
+                    width: 20px; 
+                    height: 20px; 
+                    border-radius: 50%; 
+                    transform: rotate(45deg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+                ">
+                    <span style="font-size: 14px;">🚌</span>
+                </div>
+            </div>
+            <!-- Base Shadow -->
+            <div style="
+                width: 14px;
+                height: 4px;
+                background: rgba(0,0,0,0.3);
+                border-radius: 50%;
+                margin-top: -2px;
+            "></div>
+        </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 38],
+    popupAnchor: [0, -40]
 });
 
 // User Location "Radar" Icon - Fat Neon Green
@@ -46,13 +92,36 @@ const userLocationIcon = L.divIcon({
     iconAnchor: [14, 14]
 });
 
+// Plan Point Icons
+const planStartIcon = L.divIcon({
+    className: 'custom-plan-icon',
+    html: '<div style="background: #39ff14; border: 2px solid white; box-shadow: 0 0 10px #39ff14; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #000; font-size: 10px;">START</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
+const planHubIcon = L.divIcon({
+    className: 'custom-plan-icon',
+    html: '<div style="background: #e056fd; border: 2px solid white; box-shadow: 0 0 10px #e056fd; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 10px;">BUS</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
+const planEndIcon = L.divIcon({
+    className: 'custom-plan-icon',
+    html: '<div style="background: #ff0033; border: 2px solid white; box-shadow: 0 0 10px #ff0033; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 10px;">END</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
 const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setLoading(true);
-        fetch(`https://cyfinal.onrender.com/api/stops/${stop.stop_id}/timetable`)
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+        fetch(`${apiUrl}/api/stops/${stop.stop_id}/timetable`)
             .then(res => res.json())
             .then(data => {
                 const now = new Date();
@@ -281,7 +350,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute }) => {
+const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan }) => {
     useMapEvents({
         movestart: () => {
             if (map?._container) map._container.classList.add('map-moving');
@@ -303,39 +372,58 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
             if (e.popup.options.className === 'bus-popup') {
                 if (onSelectRoute) onSelectRoute(null);
             }
+        },
+        click: () => {
+            // Close sidebar on mobile when clicking anywhere on the map
+            if (window.innerWidth < 768 && setIsOpen) {
+                setIsOpen(false);
+            }
         }
     });
 
-    // Auto-Zoom to Route Shapes
+    // Auto-Zoom logic
     useEffect(() => {
-        if (shapes && shapes.length > 0 && map) {
+        if (!map) return;
+
+        // Priority 1: Selected Plan (specific points)
+        if (selectedPlan) {
+            const points = [
+                [selectedPlan.from.lat, selectedPlan.from.lon],
+                [selectedPlan.to.lat, selectedPlan.to.lon]
+            ];
+            if (selectedPlan.hub) points.push([selectedPlan.hub.lat, selectedPlan.hub.lon]);
+
+            map.fitBounds(points, { padding: [100, 100], animate: true, maxZoom: 16 });
+            return;
+        }
+
+        // Priority 2: Route Shapes
+        if (shapes && shapes.length > 0) {
             const allPoints = shapes.flat();
             if (allPoints.length > 0) {
-                // Large padding and maxZoom to prevent zooming out too far on small routes
-                map.fitBounds(allPoints, {
-                    padding: [70, 70],
-                    animate: true,
-                    maxZoom: 15
-                });
+                map.fitBounds(allPoints, { padding: [70, 70], animate: true, maxZoom: 15 });
             }
         }
-    }, [shapes, map]);
+    }, [shapes, selectedPlan, map]);
 
     return null;
 };
 
-export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColor, onVehicleClick, vehicles, showToast }) {
-    const [showStops, setShowStops] = useState(false);
-    const [isFirstLoad, setIsFirstLoad] = useState(true);
-    const [mapZoom, setMapZoom] = useState(10);
-    const [visibleStops, setVisibleStops] = useState([]);
-    const [userLoc, setUserLoc] = useState(null);
-    const [locLoading, setLocLoading] = useState(false);
-    const [isSatellite, setIsSatellite] = useState(true);
-    const seenVehicles = useRef(new Set());
-
+export default function BusMap({
+    stops, shapes, routes, vehicles, selectedPlan, onSelectRoute, routeColor, onVehicleClick,
+    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen
+}) {
     const mapRef = useRef(null);
     const { t } = useLanguage();
+    const [locLoading, setLocLoading] = useState(false);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const seenVehicles = useRef(new Set());
+
+    // Manage visible stops for performance
+    const [visibleStops, setVisibleStops] = useState([]);
+    const [mapZoom, setMapZoom] = useState(10);
+    const [userLoc, setUserLoc] = useState(null);
+
 
     // 1. Map Events Handling Logic (Stops only, Vehicles are handled directly)
     const updateVisibleStops = useCallback(() => {
@@ -442,7 +530,8 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-            <div style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Desktop Map Controls (hidden via CSS on mobile, but kept in DOM for functional triggers) */}
+            <div className="map-controls-container" style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t.streetView : t.satelliteView}>
                     <span>{isSatellite ? '🏙️' : '🛰️'}</span>
                 </button>
@@ -459,10 +548,9 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                         }
                     }}
                     className="stops-toggle-btn"
-                    title="Force Reload Site"
-                    style={{ opacity: 0.6, transform: 'scale(0.85)' }}
+                    title="Reboot"
                 >
-                    <span style={{ fontSize: '1rem' }}>🔃</span>
+                    <span>🔄</span>
                 </button>
             </div>
 
@@ -481,6 +569,8 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     updateVisibleElements={updateVisibleStops}
                     shapes={shapes}
                     onSelectRoute={onSelectRoute}
+                    selectedPlan={selectedPlan}
+                    setIsOpen={setIsOpen}
                 />
 
                 {isSatellite ? (
@@ -507,21 +597,15 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                 )}
 
                 {showStops && mapZoom >= 15 && visibleStops.map((stop) => (
-                    <CircleMarker
+                    <Marker
                         key={`stop-${stop.stop_id}`}
-                        center={[stop.lat, stop.lon]}
-                        radius={6}
-                        pathOptions={{
-                            fillColor: '#ff0033',
-                            color: '#fff',
-                            weight: 2,
-                            fillOpacity: 1,
-                        }}
+                        position={[stop.lat, stop.lon]}
+                        icon={stopIcon}
                     >
                         <Popup minWidth={300}>
                             <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
                         </Popup>
-                    </CircleMarker>
+                    </Marker>
                 ))}
 
                 {/* Optimized Memoized Bus Markers */}
@@ -554,6 +638,45 @@ export default function BusMap({ stops, shapes, routes, onSelectRoute, routeColo
                     <Marker position={userLoc} icon={userLocationIcon} zIndexOffset={1000}>
                         <Popup><div>You are here</div></Popup>
                     </Marker>
+                )}
+
+                {selectedPlan && (
+                    <>
+                        {/* START POINT */}
+                        <Marker position={[selectedPlan.from.lat, selectedPlan.from.lon]} icon={planStartIcon} zIndexOffset={2000}>
+                            <Popup className="plan-popup">
+                                <div style={{ textAlign: 'center' }}>
+                                    <strong style={{ color: '#39ff14' }}>START HERE</strong><br />
+                                    {selectedPlan.from.name}<br />
+                                    Ride: <b>{selectedPlan.type === 'transfer' ? selectedPlan.route1.short_name : selectedPlan.route.short_name}</b>
+                                </div>
+                            </Popup>
+                        </Marker>
+
+                        {/* TRANSFER HUB */}
+                        {selectedPlan.type === 'transfer' && (
+                            <Marker position={[selectedPlan.hub.lat, selectedPlan.hub.lon]} icon={planHubIcon} zIndexOffset={2000}>
+                                <Popup className="plan-popup">
+                                    <div style={{ textAlign: 'center' }}>
+                                        <strong style={{ color: '#e056fd' }}>CHANGE BUS</strong><br />
+                                        {selectedPlan.hub.name}<br />
+                                        Wait for: <b>{selectedPlan.route2.short_name}</b>
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        )}
+
+                        {/* END POINT */}
+                        <Marker position={[selectedPlan.to.lat, selectedPlan.to.lon]} icon={planEndIcon} zIndexOffset={2000}>
+                            <Popup className="plan-popup">
+                                <div style={{ textAlign: 'center' }}>
+                                    <strong style={{ color: '#ff0033' }}>DESTINATION</strong><br />
+                                    {selectedPlan.to.name}<br />
+                                    Exit here.
+                                </div>
+                            </Popup>
+                        </Marker>
+                    </>
                 )}
             </MapContainer>
         </div>
