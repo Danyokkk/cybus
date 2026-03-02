@@ -279,9 +279,22 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15
                 <div class="balloon-label" style="background-color: ${color};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0) + 180}deg) scale(${scale})">
-                    <svg viewBox="0 0 24 24" fill="white" width="24" height="24">
-                        <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1h8v1a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                        <!-- Bus Chassis -->
+                        <rect x="10" y="5" width="30" height="90" rx="6" fill="${color}" stroke="white" stroke-width="2" />
+                        <!-- Front Windshield -->
+                        <path d="M14 12 Q25 8 36 12 L36 25 Q25 28 14 25 Z" fill="rgba(0,0,0,0.8)" />
+                        <!-- Roof Details -->
+                        <rect x="18" y="40" width="14" height="25" rx="2" fill="rgba(255,255,255,0.2)" />
+                        <!-- Rear Window -->
+                        <rect x="14" y="85" width="22" height="5" rx="1" fill="rgba(0,0,0,0.5)" />
+                        <!-- Side Mirrors -->
+                        <rect x="4" y="18" width="6" height="12" rx="2" fill="${color}" stroke="white" stroke-width="1.5" />
+                        <rect x="40" y="18" width="6" height="12" rx="2" fill="${color}" stroke="white" stroke-width="1.5" />
+                        <!-- Headlights (Glow) -->
+                        <circle cx="15" cy="8" r="2" fill="#fffb00" style="filter: blur(1px);" />
+                        <circle cx="35" cy="8" r="2" fill="#fffb00" style="filter: blur(1px);" />
                     </svg>
                 </div>
             </div>
