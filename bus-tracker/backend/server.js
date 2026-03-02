@@ -7,6 +7,16 @@ const axios = require('axios');
 const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
 
 const app = express();
+const http = require('http');
+const { Server } = require('socket.io');
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
 const PORT = process.env.PORT || 3001;
 
 console.log("--- SERVER VERSION: V24 (HYPER-OPTIMIZED + HQ MAP) ---");
@@ -176,7 +186,11 @@ async function fetchData() {
       f: v.fare // Added fare field
     }));
     tripUpdates = tempUpdates;
-    console.log(`>>> Sync: ${vehiclePositions.length} buses. Speed: O(1).`);
+
+    // Broadcast to all connected clients
+    io.emit('vehiclePositions', vehiclePositions);
+
+    console.log(`>>> Sync: ${vehiclePositions.length} buses. Emitted to ${io.engine.clientsCount} clients.`);
   } catch (err) {
     console.error(`X Error fetching Global Feed: ${err.message}`);
   }
@@ -309,8 +323,10 @@ async function loadData() {
 
         const routeId = regionTripToRoute.get(fullTripId);
         if (routeId) {
-          if (!routeStops[routeId]) routeStops[routeId] = new Set();
-          routeStops[routeId].add(fullStopId);
+          if (!routeStops[routeId]) routeStops[routeId] = [];
+          if (!routeStops[routeId].includes(fullStopId)) {
+            routeStops[routeId].push(fullStopId);
+          }
         }
       }
     });
@@ -339,10 +355,26 @@ async function loadData() {
 
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
   fetchData();
-  setInterval(fetchData, 1000); // 1s sync for maximum speed
+
+  // High-frequency polling for Realtime updates
+  setInterval(fetchData, 3000);
 }
 
 loadData();
+
+// --- WebSocket Events ---
+io.on('connection', (socket) => {
+  console.log(`+ Client connected: ${socket.id}`);
+
+  // Send initial data immediately
+  if (vehiclePositions.length > 0) {
+    socket.emit('vehiclePositions', vehiclePositions);
+  }
+
+  socket.on('disconnect', () => {
+    console.log(`- Client disconnected: ${socket.id}`);
+  });
+});
 
 // --- API ---
 app.get('/api/stops', (req, res) => res.json(stops));
@@ -432,68 +464,148 @@ app.get('/api/plan-route', (req, res) => {
   const endLat = parseFloat(lat2);
   const endLon = parseFloat(lon2);
 
-  // 1. Find Stops near Origin (within 1km)
-  const startStops = stops.filter(s => getDistance(startLat, startLon, s.lat, s.lon) < 1.0)
+  const startStopsFound = stops.filter(s => getDistance(startLat, startLon, s.lat, s.lon) < 3.5)
     .sort((a, b) => getDistance(startLat, startLon, a.lat, a.lon) - getDistance(startLat, startLon, b.lat, b.lon))
-    .slice(0, 20); // Top 20 nearest stops
+    .slice(0, 30);
 
-  // 2. Find Stops near Destination (within 1km)
-  const endStops = stops.filter(s => getDistance(endLat, endLon, s.lat, s.lon) < 1.0)
+  const endStopsFound = stops.filter(s => getDistance(endLat, endLon, s.lat, s.lon) < 3.5)
     .sort((a, b) => getDistance(endLat, endLon, a.lat, a.lon) - getDistance(endLat, endLon, b.lat, b.lon))
-    .slice(0, 20);
+    .slice(0, 30);
 
-  // 3. Find Matching Routes
   let matches = [];
+  const seenDirectRoutes = new Set();
 
-  startStops.forEach(startStop => {
-    // Find all routes passing through this start stop
-    // We scan routeStops, but since it's a map we can iterate Active Trips or Routes
-    // Optimization: Iterate Routes and check if they contain both stops 
-    // Better: We pre-computed routeStops[routeId] as a Set of StopIDs
-  });
-
-  // Re-approach: Iterate all known routes and check if they have a stop in Start AND a stop in End
+  // --- 1. Direct Routes ---
   Object.keys(routeStops).forEach(routeId => {
-    const routeStopSet = routeStops[routeId];
+    const routeStopArray = routeStops[routeId];
+    let startIndex = -1;
+    let foundStartStop = null;
+    for (let i = 0; i < routeStopArray.length; i++) {
+      const potentialStart = startStopsFound.find(s => s.stop_id === routeStopArray[i]);
+      if (potentialStart) { startIndex = i; foundStartStop = potentialStart; break; }
+    }
 
-    const validStart = startStops.find(s => routeStopSet.has(s.stop_id));
-    const validEnd = endStops.find(s => routeStopSet.has(s.stop_id));
+    if (startIndex !== -1) {
+      let foundEndStop = null;
+      for (let i = startIndex + 1; i < routeStopArray.length; i++) {
+        const potentialEnd = endStopsFound.find(s => s.stop_id === routeStopArray[i]);
+        if (potentialEnd) { foundEndStop = potentialEnd; }
+      }
 
-    if (validStart && validEnd) {
-      // It's a match! Check direction (basic: index check if we had order, but Set doesn't have order)
-      // For V1 we assume if both are on the route, it's valid.
-      const routeDetails = routes.find(r => r.route_id === routeId);
-
-      const walk1 = getDistance(startLat, startLon, validStart.lat, validStart.lon).toFixed(2);
-      const walk2 = getDistance(endLat, endLon, validEnd.lat, validEnd.lon).toFixed(2);
-
-      if (routeDetails) {
-        matches.push({
-          route: routeDetails,
-          from: validStart,
-          to: validEnd,
-          walk_start: walk1,
-          walk_end: walk2,
-          total_walk: (parseFloat(walk1) + parseFloat(walk2)).toFixed(2)
-        });
+      if (foundEndStop) {
+        const routeDetails = routes.find(r => r.route_id === routeId);
+        if (routeDetails) {
+          seenDirectRoutes.add(routeDetails.short_name);
+          matches.push({
+            type: 'direct',
+            route: routeDetails,
+            from: foundStartStop,
+            to: foundEndStop,
+            total_walk: (parseFloat(getDistance(startLat, startLon, foundStartStop.lat, foundStartStop.lon)) +
+              parseFloat(getDistance(endLat, endLon, foundEndStop.lat, foundEndStop.lon))).toFixed(2)
+          });
+        }
       }
     }
   });
 
-  // Sort by minimal walking distance
-  matches.sort((a, b) => a.total_walk - b.total_walk);
+  // --- 2. Transfer Routes (1 Transfer) ---
+  if (matches.length < 5) {
+    const startRoutesMap = {};
+    const endRoutesMap = {};
 
-  // Deduplicate by route short name
-  const uniqueMatches = [];
-  const seenRoutes = new Set();
-  for (const m of matches) {
-    if (!seenRoutes.has(m.route.short_name)) {
-      seenRoutes.add(m.route.short_name);
-      uniqueMatches.push(m);
+    Object.keys(routeStops).forEach(rId => {
+      const sStop = startStopsFound.find(s => routeStops[rId].includes(s.stop_id));
+      if (sStop) startRoutesMap[rId] = sStop;
+
+      const eStop = endStopsFound.find(s => routeStops[rId].includes(s.stop_id));
+      if (eStop) endRoutesMap[rId] = eStop;
+    });
+
+    const startRIds = Object.keys(startRoutesMap);
+    const endRIds = Object.keys(endRoutesMap);
+
+    for (const r1Id of startRIds) {
+      for (const r2Id of endRIds) {
+        if (r1Id === r2Id) continue;
+
+        const r1Stops = routeStops[r1Id];
+        const r2Stops = routeStops[r2Id];
+        const r1StartStop = startRoutesMap[r1Id];
+        const r1StartIndex = r1Stops.indexOf(r1StartStop.stop_id);
+
+        const r2EndStop = endRoutesMap[r2Id];
+        const r2EndIndex = r2Stops.indexOf(r2EndStop.stop_id);
+
+        // Optimization: slice to look only at relevant segments
+        const r1Segment = r1Stops.slice(r1StartIndex + 1);
+        const r2Segment = r2Stops.slice(0, r2EndIndex);
+
+        let fuzzyHub = null;
+        for (const s1Id of r1Segment.slice(0, 40)) { // Limit search depth
+          const s1 = stopMap[s1Id];
+          if (!s1) continue;
+
+          // Check if any stop in R2 segment is physically close to s1
+          const found = r2Segment.find(s2Id => {
+            const s2 = stopMap[s2Id];
+            return s2 && getDistance(s1.lat, s1.lon, s2.lat, s2.lon) < 0.3; // 300m
+          });
+
+          if (found) {
+            fuzzyHub = stopMap[found];
+            break;
+          }
+        }
+
+        if (fuzzyHub) {
+          const route1 = routes.find(r => r.route_id === r1Id);
+          const route2 = routes.find(r => r.route_id === r2Id);
+
+          if (route1 && route2) {
+            matches.push({
+              type: 'transfer',
+              route1,
+              route2,
+              from: r1StartStop,
+              hub: fuzzyHub,
+              to: r2EndStop,
+              total_walk: (parseFloat(getDistance(startLat, startLon, r1StartStop.lat, r1StartStop.lon)) +
+                parseFloat(getDistance(endLat, endLon, r2EndStop.lat, r2EndStop.lon))).toFixed(2)
+            });
+          }
+        }
+        if (matches.length >= 10) break;
+      }
+      if (matches.length >= 10) break;
     }
   }
 
-  res.json(uniqueMatches.slice(0, 5)); // Return top 5 options
+  const tripDistance = getDistance(startLat, startLon, endLat, endLon);
+
+  // Sort by minimal walking distance, but prioritize Intercity for long trips
+  matches.sort((a, b) => {
+    if (tripDistance > 20) {
+      const isAInter = (a.type === 'direct' ? a.route.long_name : a.route1.long_name).includes('Intercity');
+      const isBInter = (b.type === 'direct' ? b.route.long_name : b.route1.long_name).includes('Intercity');
+      if (isAInter && !isBInter) return -1;
+      if (!isAInter && isBInter) return 1;
+    }
+    return a.total_walk - b.total_walk;
+  });
+
+  // Deduplicate by route combinations
+  const finalResults = [];
+  const seenResults = new Set();
+  for (const m of matches) {
+    const key = m.type === 'direct' ? m.route.short_name : `${m.route1.short_name}_${m.route2.short_name}`;
+    if (!seenResults.has(key)) {
+      seenResults.add(key);
+      finalResults.push(m);
+    }
+  }
+
+  res.json(finalResults.slice(0, 5));
 });
 
-app.listen(PORT, () => console.log(`Backend running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Backend running on port ${PORT} (WebSocket Ready)`));
