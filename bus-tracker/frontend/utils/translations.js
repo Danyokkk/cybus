@@ -21,7 +21,15 @@ export const translations = {
         showStops: "Show Stops",
         hideStops: "Hide Stops",
         myLocation: "My Location",
-        finding: "Finding..."
+        finding: "Finding...",
+        plannerTab: "Route Planner",
+        fromPlaceholder: "From (e.g. Limassol Marina)",
+        toPlaceholder: "To (e.g. My Mall)",
+        analyzing: "Analyzing routes...",
+        findRoute: "Find Best Path",
+        noRoutesFound: "No routes found within 3.5km of these points. Try more specific addresses.",
+        plannerHint: "Select locations from the dropdown to plan your journey.",
+        myLocation: "My current location"
     },
     el: {
         searchPlaceholder: "Αναζήτηση διαδρομών...",
@@ -45,7 +53,15 @@ export const translations = {
         showStops: "Στάσεις",
         hideStops: "Απόκρυψη",
         myLocation: "Τοποθεσία",
-        finding: "Αναζήτηση..."
+        finding: "Αναζήτηση...",
+        plannerTab: "Σχεδιασμός",
+        fromPlaceholder: "Από (π.χ. Μαρίνα Λεμεσού)",
+        toPlaceholder: "Προς (π.χ. My Mall)",
+        analyzing: "Ανάλυση διαδρομών...",
+        findRoute: "Εύρεση Διαδρομής",
+        noRoutesFound: "Δεν βρέθηκαν διαδρομές σε ακτίνα 3.5χλμ.",
+        plannerHint: "Επιλέξτε τοποθεσίες από τη λίστα για να σχεδιάσετε τη διαδρομή σας.",
+        myLocation: "Η τοποθεσία μου"
     },
     ru: {
         searchPlaceholder: "Поиск маршрутов...",
@@ -69,6 +85,14 @@ export const translations = {
         showStops: "Остановки",
         hideStops: "Скрыть",
         myLocation: "Где я",
-        finding: "Поиск..."
+        finding: "Поиск...",
+        plannerTab: "Маршрут",
+        fromPlaceholder: "Откуда (напр. Лимассол Марина)",
+        toPlaceholder: "Куда (напр. My Mall)",
+        analyzing: "Анализ маршрутов...",
+        findRoute: "Найти путь",
+        noRoutesFound: "Маршруты не найдены в радиусе 3.5 км. Попробуйте уточнить адрес.",
+        plannerHint: "Выберите адреса из списка, чтобы построить маршрут.",
+        myLocation: "Мое местоположение"
     }
 };
