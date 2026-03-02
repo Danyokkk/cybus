@@ -280,28 +280,23 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15
                     ${routeShortName || '?'}
                 </div>
                 <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
-                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 64px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
                         <!-- Bus Chassis -->
-                        <rect x="10" y="5" width="30" height="90" rx="6" fill="${color}" stroke="white" stroke-width="2" />
+                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${color}" stroke="white" stroke-width="4" />
                         <!-- Front Windshield -->
-                        <path d="M14 12 Q25 8 36 12 L36 25 Q25 28 14 25 Z" fill="rgba(0,0,0,0.8)" />
+                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
                         <!-- Roof Details -->
-                        <rect x="18" y="40" width="14" height="25" rx="2" fill="rgba(255,255,255,0.2)" />
-                        <!-- Rear Window -->
-                        <rect x="14" y="85" width="22" height="5" rx="1" fill="rgba(0,0,0,0.5)" />
-                        <!-- Side Mirrors -->
-                        <rect x="4" y="18" width="6" height="12" rx="2" fill="${color}" stroke="white" stroke-width="1.5" />
-                        <rect x="40" y="18" width="6" height="12" rx="2" fill="${color}" stroke="white" stroke-width="1.5" />
-                        <!-- Headlights (Glow) -->
-                        <circle cx="15" cy="8" r="2" fill="#fffb00" style="filter: blur(1px);" />
-                        <circle cx="35" cy="8" r="2" fill="#fffb00" style="filter: blur(1px);" />
+                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                        <!-- Headlights -->
+                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
                     </svg>
                 </div>
             </div>
         `,
-        iconSize: [60, 90],
-        iconAnchor: [30, 70],
-        popupAnchor: [0, -70]
+        iconSize: [40, 60],
+        iconAnchor: [20, 50],
+        popupAnchor: [0, -50]
     });
 
     iconCache.set(key, icon);
