@@ -1,7 +1,9 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
+import { io } from 'socket.io-client';
+import { useLanguage } from '../context/LanguageContext';
 
 // Dynamic import for BusMap component
 const BusMap = dynamic(() => import('../components/Map'), {
@@ -12,17 +14,24 @@ const BusMap = dynamic(() => import('../components/Map'), {
 export default function Home() {
   // Pre-warm the backend as early as possible
   useEffect(() => {
-    fetch('https://cyfinal.onrender.com/api/vehicle_positions', { method: 'HEAD', mode: 'no-cors' }).catch(() => { });
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+    fetch(`${apiUrl}/api/vehicle_positions`, { method: 'HEAD', mode: 'no-cors' }).catch(() => { });
   }, []);
 
+  const { language, setLanguage, t } = useLanguage();
   const [stops, setStops] = useState([]);
   const [routes, setRoutes] = useState([]);
   const [shapes, setShapes] = useState([]);
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedRouteColor, setSelectedRouteColor] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to false for mobile-first
+  const [activeTab, setActiveTab] = useState('routes');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [showStops, setShowStops] = useState(false);
+  const [isSatellite, setIsSatellite] = useState(true); // Default to satellite view as requested
   const [toast, setToast] = useState(null);
 
   // Helper to show toasts
@@ -62,9 +71,10 @@ export default function Home() {
           // Optional: Background refresh could go here if needed
         } else {
           // Fresh Fetch
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
           const [stopsRes, routesRes] = await Promise.all([
-            fetch('https://cyfinal.onrender.com/api/stops'),
-            fetch('https://cyfinal.onrender.com/api/routes')
+            fetch(`${apiUrl}/api/stops`),
+            fetch(`${apiUrl}/api/routes`)
           ]);
 
           const [stopsData, routesData] = await Promise.all([
@@ -92,45 +102,28 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. Poll Vehicles (with Caching)
+  // 2. WebSocket Real-time Sync
   useEffect(() => {
-    let isCancelled = false;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+    const socket = io(apiUrl);
 
-    // Load cached vehicles immediately for "Instance Spawn"
-    const cachedVehicles = localStorage.getItem('cybus_vehicles');
-    const vCacheTime = localStorage.getItem('cybus_v_cache_time');
-    if (cachedVehicles && vCacheTime && (Date.now() - parseInt(vCacheTime) < 2 * 60 * 1000)) { // 2 min cache
-      setVehicles(JSON.parse(cachedVehicles));
-    }
+    socket.on('connect', () => {
+      console.log('CONNECTED TO WEBSOCKET');
+    });
 
-    const fetchVehicles = () => {
-      fetch('https://cyfinal.onrender.com/api/vehicle_positions')
-        .then(res => res.json())
-        .then(data => {
-          if (!isCancelled && Array.isArray(data)) {
-            setVehicles(data);
-            localStorage.setItem('cybus_vehicles', JSON.stringify(data));
-            localStorage.setItem('cybus_v_cache_time', Date.now().toString());
-            // Clear loading if vehicles start coming in
-            if (loading) setLoading(false);
-          }
-        })
-        .catch(err => {
-          if (err.name === 'TypeError' && err.message === 'Failed to fetch') {
-            console.warn('Network interrupted, retrying...');
-          } else {
-            console.error('Error fetching vehicles:', err);
-          }
-        });
-    };
+    socket.on('vehiclePositions', (data) => {
+      if (Array.isArray(data)) {
+        setVehicles(data);
+        localStorage.setItem('cybus_vehicles', JSON.stringify(data));
+        localStorage.setItem('cybus_v_cache_time', Date.now().toString());
+        if (loading) setLoading(false);
+      }
+    });
 
-    fetchVehicles();
-    const interval = setInterval(fetchVehicles, 5000); // 5s sync for performance
     return () => {
-      isCancelled = true;
-      clearInterval(interval);
+      socket.disconnect();
     };
-  }, []);
+  }, [loading]);
 
   // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = useCallback(async (route) => {
@@ -144,9 +137,11 @@ export default function Home() {
       }
       setSelectedRouteId(null);
       setSelectedRouteColor(null);
+      setSelectedPlan(null);
       setShapes([]);
       try {
-        const res = await fetch('https://cyfinal.onrender.com/api/stops');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+        const res = await fetch(`${apiUrl}/api/stops`);
         const data = await res.json();
         setStops(data);
       } catch (err) { console.error(err); }
@@ -157,7 +152,8 @@ export default function Home() {
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
       try {
-        const res = await fetch(`https://cyfinal.onrender.com/api/routes/${route.route_id}`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+        const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
         const data = await res.json();
         console.log('Route Detailed Data:', data);
         setStops(data.stops || []);
@@ -168,6 +164,13 @@ export default function Home() {
       }
     }
   }, [selectedRouteId, routes]); // Handlers are stable
+
+  const handleSelectPlan = useCallback((plan) => {
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
+    setSelectedPlan(plan);
+    const route = plan?.type === 'transfer' ? plan.route1 : plan?.route;
+    if (route) handleSelectRoute(route);
+  }, [handleSelectRoute]);
 
   // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = useCallback((v) => {
@@ -196,17 +199,120 @@ export default function Home() {
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-      <div className="mobile-credit-bar">
-        <div className="mobile-daan1k">made by @daan1k</div>
-      </div>
-
       <Sidebar
         routes={routes}
+        stops={stops}
         onSelectRoute={handleSelectRoute}
+        onSelectPlan={handleSelectPlan}
         selectedRouteId={selectedRouteId}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
       />
+
+      {/* Floating Floating Dock - Mobile Exclusive */}
+      <div className="mobile-floating-dock">
+        <div className="dock-container">
+          <button
+            className={`dock-item ${isSidebarOpen && activeTab === 'routes' ? 'active' : ''}`}
+            onClick={() => {
+              if (isSidebarOpen && activeTab === 'routes') {
+                setIsSidebarOpen(false);
+              } else {
+                setIsSidebarOpen(true);
+                setActiveTab('routes');
+              }
+            }}
+          >
+            <span className="icon">🚌</span>
+            <span className="label">Routes</span>
+          </button>
+          <button
+            className={`dock-item ${isSidebarOpen && activeTab === 'planner' ? 'active' : ''}`}
+            onClick={() => {
+              if (isSidebarOpen && activeTab === 'planner') {
+                setIsSidebarOpen(false);
+              } else {
+                setIsSidebarOpen(true);
+                setActiveTab('planner');
+              }
+            }}
+          >
+            <span className="icon">🪄</span>
+            <span className="label">Plan</span>
+          </button>
+          <button
+            className={`dock-item ${showStops ? 'active' : ''}`}
+            onClick={() => setShowStops(!showStops)}
+          >
+            <span className="icon">🚏</span>
+            <span className="label">Stops</span>
+          </button>
+          <button
+            className={`dock-item ${isSatellite ? 'active' : ''}`}
+            onClick={() => setIsSatellite(!isSatellite)}
+          >
+            <span className="icon">🛰️</span>
+            <span className="label">Style</span>
+          </button>
+          <button
+            className="dock-item"
+            id="mobile-location-btn" // For Map.js to listen to
+            onClick={() => {
+              const pcBtn = document.getElementById('my-location-btn');
+              if (pcBtn) pcBtn.click();
+            }}
+          >
+            <span className="icon">🎯</span>
+            <span className="label">Me</span>
+          </button>
+          <button
+            className={`dock-item ${isSettingsOpen ? 'active' : ''}`}
+            onClick={() => { setIsSettingsOpen(!isSettingsOpen); setIsSidebarOpen(false); }}
+          >
+            <span className="icon">⚙️</span>
+            <span className="label">Settings</span>
+          </button>
+        </div>
+      </div>
+
+      {isSettingsOpen && (
+        <div className="settings-drawer shadow-quantum">
+          <div className="settings-header">
+            <h3>Quick Settings</h3>
+            <button className="close-btn" onClick={() => setIsSettingsOpen(false)}>✕</button>
+          </div>
+          <div className="settings-content">
+            <div className="setting-card">
+              <span className="icon">🌍</span>
+              <div className="text">
+                <strong>Language / Язык</strong>
+                <div className="lang-group">
+                  <button className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')}>EN</button>
+                  <button className={language === 'ru' ? 'active' : ''} onClick={() => setLanguage('ru')}>RU</button>
+                  <button className={language === 'el' ? 'active' : ''} onClick={() => setLanguage('el')}>EL</button>
+                </div>
+              </div>
+            </div>
+            <div className="setting-card" onClick={() => { if (confirm("Refresh all data?")) window.location.reload(); }}>
+              <span className="icon">🔄</span>
+              <div className="text">
+                <strong>Reboot System</strong>
+                <p>Reload GTFS & Real-time data</p>
+              </div>
+            </div>
+            <div className="setting-card">
+              <span className="icon">🌐</span>
+              <div className="text">
+                <strong>Join Community</strong>
+                <p>Updates on Telegram @daqxn</p>
+              </div>
+            </div>
+          </div>
+          <div className="bar-credit" style={{ background: 'transparent', marginTop: 'auto' }}>made by @daan1k</div>
+        </div>
+      )}
 
       {loading && (
         <div className="loading-overlay" style={{ background: '#000' }}>
@@ -233,6 +339,7 @@ export default function Home() {
           stops={stops}
           shapes={shapes}
           routes={routes}
+          selectedPlan={selectedPlan}
           onSelectRoute={handleSelectRoute}
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}
@@ -241,6 +348,12 @@ export default function Home() {
             : vehicles
           }
           showToast={showToast}
+          showStops={showStops}
+          setShowStops={setShowStops}
+          isSatellite={isSatellite}
+          setIsSatellite={setIsSatellite}
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
         />
       </div>
     </main>

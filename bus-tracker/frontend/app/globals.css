@@ -5,18 +5,18 @@
   --foreground: #ffffff;
   --sidebar-width: 380px;
 
-  /* Red Hacker Aesthetic */
-  --nebula-deep: #0a0000;
-  --nebula-purple: #300000;
-  --nebula-accent: #ff0033;
-  /* Vibrant Red */
+  /* Toxic Green Hacker Aesthetic */
+  --nebula-deep: #000a00;
+  --nebula-purple: #001f00;
+  --nebula-accent: #39ff14;
+  /* Vibrant Green */
 
-  --glass-bg: rgba(2, 0, 0, 0.98);
+  --glass-bg: rgba(0, 5, 0, 0.95);
   --glass-blur: blur(40px) saturate(150%);
-  --glass-border: rgba(255, 0, 51, 0.2);
+  --glass-border: rgba(57, 255, 20, 0.2);
 
   --shadow-quantum: 0 10px 50px rgba(0, 0, 0, 0.9);
-  --shadow-glow: 0 0 20px rgba(255, 0, 51, 0.2);
+  --shadow-glow: 0 0 20px rgba(57, 255, 20, 0.2);
 }
 
 * {
@@ -297,29 +297,25 @@ body {
 /* Responsive Overrides */
 @media (max-width: 768px) {
   .sidebar {
-    position: fixed !important;
-    left: 0 !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    width: 85% !important;
-    border-radius: 0 40px 40px 0 !important;
-    margin: 0 !important;
-    z-index: 9999 !important;
+    display: none !important;
+    /* Managed by styled-jsx in Sidebar.js */
   }
 
-  /* Fix sidebar transform on mobile to be cleaner */
-  .sidebar.closed {
-    transform: translateX(-100%) !important;
+  .sidebar.is-mobile {
+    display: flex !important;
+    /* Re-enable for the bottom drawer */
   }
 
-  /* Ensure toggle is visible on mobile - Balanced size */
+  .map-controls-container {
+    display: none !important;
+  }
+
   .sidebar-toggle-tab {
-    width: 48px;
-    height: 48px;
-    right: -48px;
-    top: 30%;
-    font-size: 1.2rem;
-    border-radius: 0 16px 16px 0;
+    display: none !important;
+  }
+
+  .toast-pilling {
+    bottom: 100px !important;
   }
 }
 
@@ -436,36 +432,188 @@ body {
   }
 }
 
+/* Premium Floating Mobile Dock */
 @media (max-width: 768px) {
-  .mobile-credit-bar {
-    display: flex;
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 40px;
-    background: rgba(2, 2, 10, 0.8);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid var(--glass-border);
-    z-index: 4000;
-    align-items: center;
-    justify-content: center;
+  .mobile-floating-dock {
+    position: fixed;
+    bottom: 25px;
+    left: 15px;
+    right: 15px;
+    z-index: 10000;
     pointer-events: none;
-    /* Don't block map clicks */
+    display: flex;
+    justify-content: center;
   }
 
-  .mobile-daan1k {
-    font-size: 0.7rem;
+  .dock-container {
+    background: rgba(0, 10, 0, 0.9);
+    backdrop-filter: blur(25px);
+    border: 1px solid rgba(57, 255, 20, 0.3);
+    border-radius: 35px;
+    display: flex;
+    padding: 8px 15px;
+    gap: 12px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.8), 0 0 15px rgba(57, 255, 20, 0.1);
+    pointer-events: auto;
+    width: auto;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+    align-items: center;
+  }
+
+  .dock-container::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dock-item {
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border-radius: 20px;
+    color: #fff;
+    opacity: 0.5;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    min-width: 60px;
+    gap: 4px;
+    cursor: pointer;
+  }
+
+  .dock-item.active {
+    opacity: 1;
+    background: rgba(57, 255, 20, 0.15);
+    color: var(--nebula-accent);
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+  }
+
+  .dock-item .icon {
+    font-size: 1.4rem;
+  }
+
+  .dock-item .label {
+    font-size: 0.55rem;
     font-weight: 900;
-    letter-spacing: 1px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), #fff, rgba(255, 255, 255, 0.4));
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: nebula-shimmer 3s linear infinite;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Settings Bottom Sheet */
+  .settings-drawer {
+    position: fixed;
+    bottom: 100px;
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 5, 0, 0.98);
+    backdrop-filter: blur(30px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    z-index: 9999;
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 15px;
+  }
+
+  .settings-header h3 {
+    font-size: 1.2rem;
+    color: #fff;
+  }
+
+  .close-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .setting-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .setting-card:hover {
+    background: rgba(57, 255, 20, 0.05);
+    border-color: var(--nebula-accent);
+  }
+
+  .setting-card .icon {
+    font-size: 1.5rem;
+  }
+
+  .setting-card .text strong {
+    display: block;
+    font-size: 0.9rem;
+    color: #fff;
+  }
+
+  .setting-card .text p {
+    font-size: 0.7rem;
+    color: #888;
+    margin: 0;
+  }
+
+  .lang-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 5px;
+  }
+
+  .lang-group button {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    cursor: pointer;
+  }
+
+  .lang-group button.active {
+    background: var(--nebula-accent);
+    border-color: var(--nebula-accent);
+    color: #000;
   }
 }
+
 
 /* Bus Marker Styles */
 .custom-bus-marker-container {
@@ -588,4 +736,9 @@ body {
   font-size: 0.8rem;
   box-shadow: var(--shadow-quantum);
   text-transform: uppercase;
+}
+
+
+.custom-stop-icon {
+  pointer-events: auto !important;
 }
