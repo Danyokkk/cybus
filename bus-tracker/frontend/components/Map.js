@@ -11,22 +11,11 @@ import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-// Custom Icon definition
-const customIcon = new L.Icon({
-    iconUrl: iconUrl.src || iconUrl,
+// Standard Leaflet Marker Shadow fix
+L.Icon.Default.mergeOptions({
     iconRetinaUrl: iconRetinaUrl.src || iconRetinaUrl,
+    iconUrl: iconUrl.src || iconUrl,
     shadowUrl: shadowUrl.src || shadowUrl,
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-});
-
-const busIcon = new L.Icon({
-    iconUrl: '/images/bus_blue.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
-    popupAnchor: [0, -16],
 });
 
 // 3D 🛑 Stop Pin (Style from User Image)

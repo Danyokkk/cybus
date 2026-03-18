@@ -19,7 +19,7 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3001;
 
-console.log("--- SERVER VERSION: V24 (HYPER-OPTIMIZED + HQ MAP) ---");
+console.log("--- CYPRUS BUS V2 by daan1k (HYPER-OPTIMIZED) ---");
 
 app.use(cors());
 app.use(express.json());
