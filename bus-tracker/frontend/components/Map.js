@@ -103,9 +103,11 @@ const planEndIcon = L.divIcon({
     iconAnchor: [15, 15]
 });
 
-const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
+const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavorite }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
+
+    const isFav = favorites?.some(f => f.stop_id === stop.stop_id);
 
     useEffect(() => {
         setLoading(true);
@@ -140,8 +142,29 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
     return (
         <div style={{ minWidth: '320px', maxWidth: '350px', color: '#fff' }}>
-            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px' }}>{stop.name}</h3>
-            <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', fontWeight: 'bold' }}>STOP ID: {stop.stop_id}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                <div>
+                    <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px' }}>{stop.name}</h3>
+                    <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', fontWeight: 'bold' }}>STOP ID: {stop.stop_id}</div>
+                </div>
+                <button
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop); }}
+                    style={{
+                        background: 'transparent',
+                        border: 'none',
+                        fontSize: '1.6rem',
+                        cursor: 'pointer',
+                        padding: '5px',
+                        lineHeight: 1,
+                        filter: isFav ? 'drop-shadow(0 0 5px rgba(255,0,51,0.5))' : 'grayscale(1)',
+                        transition: 'transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.2)'}
+                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                >
+                    {isFav ? '❤️' : '🤍'}
+                </button>
+            </div>
 
             {uniqueRoutes.length > 0 && (
                 <div style={{ marginBottom: '10px' }}>
@@ -317,7 +340,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
                 }
             }}
         >
-            <Popup className="bus-popup" minWidth={200}>
+            <Popup className="bus-popup" minWidth={200} autoPan={false}>
                 <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
                     <div style={{
                         backgroundColor: vColor,
@@ -410,7 +433,8 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
 
 export default function BusMap({
     stops, shapes, routes, vehicles, selectedPlan, onSelectRoute, routeColor, onVehicleClick,
-    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen
+    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen,
+    favorites, toggleFavorite
 }) {
     const mapRef = useRef(null);
     const { t } = useLanguage();
@@ -604,8 +628,8 @@ export default function BusMap({
                         position={[stop.lat, stop.lon]}
                         icon={stopIcon}
                     >
-                        <Popup minWidth={300}>
-                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
+                        <Popup minWidth={300} autoPan={false}>
+                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} favorites={favorites} onToggleFavorite={toggleFavorite} />
                         </Popup>
                     </Marker>
                 ))}

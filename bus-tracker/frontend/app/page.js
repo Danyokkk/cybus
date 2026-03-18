@@ -32,6 +32,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showStops, setShowStops] = useState(false);
   const [isSatellite, setIsSatellite] = useState(true); // Default to satellite view as requested
+  const [favorites, setFavorites] = useState([]);
   const [toast, setToast] = useState(null);
 
   // Helper to show toasts
@@ -48,10 +49,38 @@ export default function Home() {
       }
     };
 
+    // Load favorites from local storage
+    const savedFavs = localStorage.getItem('cybus_favorites');
+    if (savedFavs) {
+      try {
+        setFavorites(JSON.parse(savedFavs));
+      } catch (e) {
+        console.error("Error loading favorites", e);
+      }
+    }
+
     handleResize(); // Initial check
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Update localStorage when favorites change
+  useEffect(() => {
+    localStorage.setItem('cybus_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = useCallback((stop) => {
+    setFavorites(prev => {
+      const isFav = prev.some(f => f.stop_id === stop.stop_id);
+      if (isFav) {
+        showToast(`Removed from favorites: ${stop.name}`);
+        return prev.filter(f => f.stop_id !== stop.stop_id);
+      } else {
+        showToast(`Added to favorites: ${stop.name}`);
+        return [...prev, stop];
+      }
+    });
+  }, [showToast]);
 
   // 1. Fetch initial data (Parallelized with Caching)
   useEffect(() => {
@@ -209,9 +238,10 @@ export default function Home() {
         setIsOpen={setIsSidebarOpen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        favorites={favorites}
+        toggleFavorite={toggleFavorite}
       />
 
-      {/* Floating Floating Dock - Mobile Exclusive */}
       <div className="mobile-floating-dock">
         <div className="dock-container">
           <button
@@ -227,6 +257,20 @@ export default function Home() {
           >
             <span className="icon">🚌</span>
             <span className="label">Routes</span>
+          </button>
+          <button
+            className={`dock-item ${isSidebarOpen && activeTab === 'favorites' ? 'active' : ''}`}
+            onClick={() => {
+              if (isSidebarOpen && activeTab === 'favorites') {
+                setIsSidebarOpen(false);
+              } else {
+                setIsSidebarOpen(true);
+                setActiveTab('favorites');
+              }
+            }}
+          >
+            <span className="icon">❤️</span>
+            <span className="label">Favs</span>
           </button>
           <button
             className={`dock-item ${isSidebarOpen && activeTab === 'planner' ? 'active' : ''}`}
@@ -354,6 +398,8 @@ export default function Home() {
           setIsSatellite={setIsSatellite}
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}
+          favorites={favorites}
+          toggleFavorite={toggleFavorite}
         />
       </div>
     </main>

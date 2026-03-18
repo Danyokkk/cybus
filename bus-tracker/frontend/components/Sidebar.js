@@ -185,20 +185,59 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                                     onClick={() => setActiveTab('routes')}
                                     style={{ padding: isMobile ? '4px 8px' : '4px 12px', fontSize: isMobile ? '0.7rem' : '0.75rem' }}
                                 >
-                                    Routes
+                                    {t?.routesTab || 'Routes'}
+                                </button>
+                                <button
+                                    className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`}
+                                    onClick={() => setActiveTab('favorites')}
+                                    style={{ padding: isMobile ? '4px 8px' : '4px 12px', fontSize: isMobile ? '0.7rem' : '0.75rem' }}
+                                >
+                                    {t?.favsTab || '❤️ Favorites'}
                                 </button>
                                 <button
                                     className={`tab-btn ${activeTab === 'planner' ? 'active' : ''}`}
                                     onClick={() => setActiveTab('planner')}
                                     style={{ padding: isMobile ? '4px 8px' : '4px 12px', fontSize: isMobile ? '0.7rem' : '0.75rem' }}
                                 >
-                                    {t.plannerTab || 'Plan'}
+                                    {t?.plannerTab || 'Plan'}
                                 </button>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    {activeTab === 'routes' ? (
+                <div className="sidebar-content" style={{ padding: '0 20px', flex: 1, overflowY: 'auto' }}>
+                    {activeTab === 'favorites' ? (
+                        <div className="favorites-list" style={{ marginTop: '15px' }}>
+                            {favorites.length === 0 ? (
+                                <div style={{ padding: '40px 20px', textAlign: 'center', opacity: 0.5 }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '15px' }}>❤️</div>
+                                    <p style={{ fontSize: '0.8rem' }}>{t.noFavsYet || "No favorite stops yet. Heart ❤️ a stop on the map to see it here!"}</p>
+                                </div>
+                            ) : (
+                                favorites.map(stop => (
+                                    <div key={stop.stop_id} className="plan-card" style={{ display: 'flex', alignItems: 'center', gap: '15px', padding: '15px' }} onClick={() => {
+                                        if (onSelectRoute) onSelectRoute(null);
+                                        const locBtn = document.getElementById('my-location-btn');
+                                        // Focus on stop is handled by page.js if we use setStops with just this one stop or similar
+                                        // For now, it's a list.
+                                    }}>
+                                        <div style={{ fontSize: '1.5rem' }}>🚏</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '0.9rem', fontWeight: '900', color: '#fff' }}>{stop.name}</div>
+                                            <div style={{ fontSize: '0.7rem', color: '#888' }}>ID: {stop.stop_id}</div>
+                                        </div>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); toggleFavorite(stop); }}
+                                            style={{ background: 'transparent', border: 'none', fontSize: '1.2rem', cursor: 'pointer' }}
+                                        >
+                                            ❤️
+                                        </button>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    ) : activeTab === 'routes' ? (
                         <input
                             type="text"
                             placeholder={t.searchPlaceholder || 'Search...'}
