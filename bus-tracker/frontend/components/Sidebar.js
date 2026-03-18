@@ -178,7 +178,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                 <div className="sidebar-header">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '5px' : '15px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '15px' }}>
-                            <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.6rem', margin: 0 }}>CyBus</h2>
+                            <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.6rem', margin: 0 }}>CYPRUS BUS V2</h2>
                             <div className="tab-switcher">
                                 <button
                                     className={`tab-btn ${activeTab === 'routes' ? 'active' : ''}`}

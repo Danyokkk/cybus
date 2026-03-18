@@ -317,7 +317,7 @@ export default function Home() {
       {loading && (
         <div className="loading-overlay" style={{ background: '#000' }}>
           <div className="loader-logo" style={{ color: '#ff0033', textTransform: 'uppercase', letterSpacing: '4px' }}>
-            Initializing
+            CYPRUS BUS V2
           </div>
           <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '10px' }}>
             Waking up server (may take 30s)...

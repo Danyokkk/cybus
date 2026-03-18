@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚌 CyBus Tracker v2.0
+# 🚌 CYPRUS BUS V2
 ### 🔴 THE RED HACKER EDITION 🔴
 
 [![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
