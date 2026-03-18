@@ -10,4 +10,11 @@ crons.interval(
   api.ingest.pollBusData
 );
 
+// Не даем Render заснуть (бесплатный 24/7 хостинг)
+crons.interval(
+  "keep-render-awake",
+  { minutes: 10 },
+  api.ingest.pingRender
+);
+
 export default crons;

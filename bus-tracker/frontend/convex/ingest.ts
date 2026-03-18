@@ -40,3 +40,16 @@ export const pollBusData = action({
     }
   },
 });
+
+export const pingRender = action({
+  args: {},
+  handler: async () => {
+    try {
+      // Pings Render to prevent it from ever sleeping (Free Tier 24/7 Uptime)
+      await fetch("https://cyfinal.onrender.com/api/routes");
+      console.log("Pinged Render to keep it awake!");
+    } catch (e) {
+      console.error("Ping failed", e);
+    }
+  },
+});
