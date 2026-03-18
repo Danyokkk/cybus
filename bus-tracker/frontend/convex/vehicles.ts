@@ -26,6 +26,7 @@ export const updatePositions = mutation({
   handler: async (ctx, { updates }) => {
     const now = Date.now();
     for (const update of updates) {
+      if (!update.vehicle_id) continue;
       const existing = await ctx.db
         .query("vehicle_positions")
         .withIndex("by_vehicle", (q) => q.eq("vehicle_id", update.vehicle_id))
@@ -38,10 +39,10 @@ export const updatePositions = mutation({
       }
     }
 
-    // Optional: cleanup old positions (older than 10 mins)
+    // Automated Cleanup: Remove bus data older than 2 minutes (bus is gone or offline)
     const oldOnes = await ctx.db
       .query("vehicle_positions")
-      .filter((q) => q.lt(q.field("last_update"), now - 10 * 60000))
+      .filter((q) => q.lt(q.field("last_update"), now - 120000))
       .collect();
     for (const old of oldOnes) {
       await ctx.db.delete(old._id);

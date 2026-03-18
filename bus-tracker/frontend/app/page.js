@@ -2,8 +2,9 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
-import { io } from 'socket.io-client';
 import { useLanguage } from '../context/LanguageContext';
+import { useQuery } from "convex/react";
+import { api } from "../convex/_generated/api";
 
 // Dynamic import for BusMap component
 const BusMap = dynamic(() => import('../components/Map'), {
@@ -131,28 +132,16 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. WebSocket Real-time Sync
+  // 2. Convex Real-time Sync
+  const convexVehicles = useQuery(api.vehicles.getVehicles) || [];
+  
+  // Sync the ultra-fast convex data to our local state so Map handles it natively
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
-    const socket = io(apiUrl);
-
-    socket.on('connect', () => {
-      console.log('CONNECTED TO WEBSOCKET');
-    });
-
-    socket.on('vehiclePositions', (data) => {
-      if (Array.isArray(data)) {
-        setVehicles(data);
-        localStorage.setItem('cybus_vehicles', JSON.stringify(data));
-        localStorage.setItem('cybus_v_cache_time', Date.now().toString());
-        if (loading) setLoading(false);
-      }
-    });
-
-    return () => {
-      socket.disconnect();
-    };
-  }, [loading]);
+    if (convexVehicles.length > 0) {
+      setVehicles(convexVehicles);
+      if (loading) setLoading(false);
+    }
+  }, [convexVehicles, loading]);
 
   // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = useCallback(async (route) => {

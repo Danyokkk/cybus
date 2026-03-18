@@ -641,6 +641,10 @@ export default function BusMap({
                     const vLon = v.ln || v.lon;
                     if (vLat === undefined || vLon === undefined) return null;
 
+                    const rId = v.r || v.route_id;
+                    // Dynamically map properties missing from lightweight Convex payload
+                    const route = routes?.find(r => r.route_id === rId);
+
                     return (
                         <BusMarker
                             key={`bus-${vId || i}`}
@@ -648,11 +652,11 @@ export default function BusMap({
                             lat={vLat}
                             lon={vLon}
                             bearing={v.b !== undefined ? v.b : v.bearing}
-                            shortName={v.sn || v.route_short_name}
-                            color={v.c}
-                            speed={v.s}
-                            headsign={v.h}
-                            agency={v.ag}
+                            shortName={v.sn || v.route_short_name || (route ? route.short_name : '??')}
+                            color={v.c || v.color || (route ? route.color : '0070f3')}
+                            speed={v.s || v.speed}
+                            headsign={v.h || v.headsign || (route ? route.long_name : 'Cyprus Bus')}
+                            agency={v.ag || v.agency || (route ? route.agency_name : 'CPT')}
                             onVehicleClick={onVehicleClick}
                             rawVehicle={v}
                             mapZoom={mapZoom} // Pass zoom for scaling, but component is memoized
