@@ -30,7 +30,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to false for mobile-first
   const [activeTab, setActiveTab] = useState('routes');
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showStops, setShowStops] = useState(false);
   const [isSatellite, setIsSatellite] = useState(true); // Default to satellite view as requested
   const [favorites, setFavorites] = useState([]);
@@ -42,14 +41,7 @@ export default function Home() {
     setTimeout(() => setToast(null), duration);
   }, []);
 
-  // 0. Mobile-aware initial state & Resize handling
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        setIsSidebarOpen(true);
-      }
-    };
-
     // Load favorites from local storage safely
     const savedFavs = localStorage.getItem('cybus_favorites');
     if (savedFavs) {
@@ -60,10 +52,6 @@ export default function Home() {
         console.error("Error loading favorites", e);
       }
     }
-
-    handleResize(); // Initial check
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   // Update localStorage when favorites change (skip first render handled by loading effect)
@@ -307,51 +295,21 @@ export default function Home() {
             <span className="label">Me</span>
           </button>
           <button
-            className={`dock-item ${isSettingsOpen ? 'active' : ''}`}
-            onClick={() => { setIsSettingsOpen(!isSettingsOpen); setIsSidebarOpen(false); }}
+            className={`dock-item ${activeTab === 'settings' && isSidebarOpen ? 'active' : ''}`}
+            onClick={() => {
+              if (activeTab === 'settings' && isSidebarOpen) {
+                setIsSidebarOpen(false);
+              } else {
+                setActiveTab('settings');
+                setIsSidebarOpen(true);
+              }
+            }}
           >
             <span className="icon">⚙️</span>
             <span className="label">Settings</span>
           </button>
         </div>
       </div>
-
-      {isSettingsOpen && (
-        <div className="settings-drawer shadow-quantum">
-          <div className="settings-header">
-            <h3>Quick Settings</h3>
-            <button className="close-btn" onClick={() => setIsSettingsOpen(false)}>✕</button>
-          </div>
-          <div className="settings-content">
-            <div className="setting-card">
-              <span className="icon">🌍</span>
-              <div className="text">
-                <strong>Language / Язык</strong>
-                <div className="lang-group">
-                  <button className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')}>EN</button>
-                  <button className={language === 'ru' ? 'active' : ''} onClick={() => setLanguage('ru')}>RU</button>
-                  <button className={language === 'el' ? 'active' : ''} onClick={() => setLanguage('el')}>EL</button>
-                </div>
-              </div>
-            </div>
-            <div className="setting-card" onClick={() => { if (confirm("Refresh all data?")) window.location.reload(); }}>
-              <span className="icon">🔄</span>
-              <div className="text">
-                <strong>Reboot System</strong>
-                <p>Reload GTFS & Real-time data</p>
-              </div>
-            </div>
-            <div className="setting-card">
-              <span className="icon">🌐</span>
-              <div className="text">
-                <strong>Join Community</strong>
-                <p>Updates on Telegram @daqxn</p>
-              </div>
-            </div>
-          </div>
-          <div className="bar-credit" style={{ background: 'transparent', marginTop: 'auto' }}>made by @daan1k</div>
-        </div>
-      )}
 
       {loading && (
         <div className="loading-overlay" style={{ background: '#000' }}>

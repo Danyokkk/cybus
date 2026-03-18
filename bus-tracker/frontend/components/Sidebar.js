@@ -263,16 +263,16 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                                         </div>
                                         <div className="plan-steps">
                                             {plan.type === 'transfer' ? (
-                                                <p>Transfer at {plan.hub.stop_name}</p>
+                                                <p>Transfer at {plan.hub?.name || 'hub'}</p>
                                             ) : (
-                                                <p>Take {plan.route.short_name} to {plan.dest_stop.stop_name}</p>
+                                                <p>Take {plan.route.short_name} to {plan.to?.name || 'destination'}</p>
                                             )}
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         </div>
-                    ) : (
+                    ) : activeTab === 'routes' ? (
                         <div className="routes-container">
                             <div className="search-box">
                                 <input
@@ -305,10 +305,39 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                                 ))}
                             </div>
                         </div>
-                    )}
+                    ) : activeTab === 'settings' ? (
+                        <div className="settings-container">
+                            <div className="setting-card">
+                                <span className="icon">🌍</span>
+                                <div className="text">
+                                    <strong>Language / Язык</strong>
+                                    <div className="lang-group">
+                                        <button className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')}>EN</button>
+                                        <button className={language === 'ru' ? 'active' : ''} onClick={() => setLanguage('ru')}>RU</button>
+                                        <button className={language === 'el' ? 'active' : ''} onClick={() => setLanguage('el')}>EL</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="setting-card" onClick={() => { if (confirm("Refresh all data?")) window.location.reload(); }}>
+                                <span className="icon">🔄</span>
+                                <div className="text">
+                                    <strong>Reboot System</strong>
+                                    <p>Reload GTFS & Real-time data</p>
+                                </div>
+                            </div>
+                            <div className="setting-card" onClick={() => window.open('https://t.me/daqxn', '_blank')}>
+                                <span className="icon">🌐</span>
+                                <div className="text">
+                                    <strong>Join Community</strong>
+                                    <p>Updates on Telegram @daqxn</p>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
 
-                <div className="sidebar-footer">
+                {activeTab !== 'settings' && (
+                  <div className="sidebar-footer">
                     <div className="language-selector">
                         {['en', 'el', 'ru'].map(l => (
                             <button key={l} className={`lang-btn ${language === l ? 'active' : ''}`} onClick={() => setLanguage(l)}>
@@ -316,9 +345,8 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                             </button>
                         ))}
                     </div>
-                    <a href="https://t.me/daqxn" target="_blank" rel="noopener noreferrer" className="daan1k-tag">
-                    </a>
-                </div>
+                  </div>
+                )}
                 <style jsx>{`
                     .sidebar {
                         position: fixed;

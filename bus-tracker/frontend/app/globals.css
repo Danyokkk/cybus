@@ -451,60 +451,13 @@ body {
     letter-spacing: 0.5px;
   }
 
-  /* Settings Bottom Sheet */
-  .settings-drawer {
-    position: fixed;
-    bottom: 100px;
-    left: 20px;
-    right: 20px;
-    background: rgba(0, 5, 0, 0.98);
-    backdrop-filter: blur(30px);
-    border: 1px solid var(--glass-border);
-    border-radius: 30px;
-    z-index: 9999;
-    padding: 25px;
+  /* Settings Sidebar Tab */
+  .settings-container {
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-  }
-
-  @keyframes slideUp {
-    from {
-      transform: translateY(100%);
-      opacity: 0;
-    }
-
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  .settings-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    padding-bottom: 15px;
-  }
-
-  .settings-header h3 {
-    font-size: 1.2rem;
-    color: #fff;
-  }
-
-  .close-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-    color: #fff;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
+    gap: 15px;
+    overflow-y: auto;
   }
 
   .setting-card {
