@@ -54,37 +54,6 @@ body {
   overflow: hidden;
 }
 
-/* Floating Deep Nebula Sidebar - Detached from edges */
-.sidebar {
-  position: absolute;
-  top: 25px;
-  left: 25px;
-  bottom: 25px;
-  width: 320px;
-  /* Slimmer for V43 minimalism */
-  z-index: 2000;
-  display: flex;
-  flex-direction: column;
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--shadow-quantum);
-  border-radius: 40px;
-  /* Symmetrical rounded rectangle */
-  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
-  will-change: transform;
-}
-
-.sidebar.closed {
-  transform: translateX(calc(-100% - 25px));
-  opacity: 1;
-}
-
-.sidebar.open {
-  transform: translateX(0);
-  opacity: 1;
-}
 
 .sidebar-header {
   padding: 30px;
@@ -295,29 +264,10 @@ body {
 }
 
 /* Responsive Overrides */
-@media (max-width: 768px) {
-  .sidebar {
-    display: none !important;
-    /* Managed by styled-jsx in Sidebar.js */
-  }
-
-  .sidebar.is-mobile {
-    display: flex !important;
-    /* Re-enable for the bottom drawer */
-  }
-
-  .map-controls-container {
-    display: none !important;
-  }
-
-  .sidebar-toggle-tab {
-    display: none !important;
-  }
 
   .toast-pilling {
     bottom: 100px !important;
   }
-}
 
 /* Consolidated closure removed - handled in main block */
 
@@ -432,8 +382,7 @@ body {
   }
 }
 
-/* Premium Floating Mobile Dock */
-@media (max-width: 768px) {
+/* Premium Floating Dock (Universal for Desktop & Mobile) */
   .mobile-floating-dock {
     position: fixed;
     bottom: 25px;
@@ -612,7 +561,12 @@ body {
     border-color: var(--nebula-accent);
     color: #000;
   }
-}
+  .lang-group button.active {
+    background: var(--nebula-accent);
+    border-color: var(--nebula-accent);
+    color: #000;
+  }
+
 
 
 /* Bus Marker Styles */

@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../context/LanguageContext';
 import { useQuery } from "convex/react";
@@ -50,11 +50,12 @@ export default function Home() {
       }
     };
 
-    // Load favorites from local storage
+    // Load favorites from local storage safely
     const savedFavs = localStorage.getItem('cybus_favorites');
     if (savedFavs) {
       try {
-        setFavorites(JSON.parse(savedFavs));
+        const parsed = JSON.parse(savedFavs);
+        if (Array.isArray(parsed)) setFavorites(parsed);
       } catch (e) {
         console.error("Error loading favorites", e);
       }
@@ -65,8 +66,13 @@ export default function Home() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Update localStorage when favorites change
+  // Update localStorage when favorites change (skip first render handled by loading effect)
+  const isMounted = useRef(false);
   useEffect(() => {
+    if (!isMounted.current) {
+      isMounted.current = true;
+      return;
+    }
     localStorage.setItem('cybus_favorites', JSON.stringify(favorites));
   }, [favorites]);
 
@@ -376,10 +382,10 @@ export default function Home() {
           onSelectRoute={handleSelectRoute}
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}
-          vehicles={selectedRouteId
-            ? vehicles.filter(v => (v.r || v.route_id) === selectedRouteId)
-            : vehicles
-          }
+          vehicles={useMemo(() => {
+            if (!selectedRouteId) return vehicles;
+            return vehicles.filter(v => (v.r || v.route_id) === selectedRouteId);
+          }, [vehicles, selectedRouteId])}
           showToast={showToast}
           showStops={showStops}
           setShowStops={setShowStops}
