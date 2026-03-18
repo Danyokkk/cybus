@@ -6,34 +6,35 @@ export const pollBusData = action({
   args: {},
   handler: async (ctx) => {
     try {
-      // CyBus GTFS-RT API
-      const url = "http://20.19.98.194:8328/Api/api/gtfs-realtime";
+      // Pull enriched, minimized data from the cybus backend
+      const url = "https://cyfinal.onrender.com/api/vehicle_positions";
       const response = await fetch(url);
       
-      if (!response.ok) throw new Error("GTFS fetch failed");
+      if (!response.ok) throw new Error("Cybus API fetch failed");
       
-      const buffer = await response.arrayBuffer();
-      const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(buffer));
+      const buses = await response.json();
 
-      const updates: any[] = [];
-      feed.entity.forEach((entity: any) => {
-        if (entity.vehicle) {
+      const updates = [];
+      for (const bus of buses) {
+        if (bus.id) {
           updates.push({
-            vehicle_id: entity.vehicle.vehicle?.id || "unknown",
-            lat: entity.vehicle.position?.latitude,
-            lon: entity.vehicle.position?.longitude,
-            bearing: entity.vehicle.position?.bearing,
-            speed: entity.vehicle.position?.speed,
-            route_id: entity.vehicle.trip?.routeId,
-            // Header and colors will be matched on frontend for now
-            // or we could enrich here if routes are in Convex
+            vehicle_id: bus.id,
+            lat: bus.lt,
+            lon: bus.ln,
+            bearing: bus.b,
+            speed: bus.s,
+            route_id: bus.r,
+            route_short_name: bus.sn,
+            color: bus.c,
+            headsign: bus.h,
+            agency: bus.ag || "CPT",
           });
         }
-      });
+      }
 
       if (updates.length > 0) {
         await ctx.runMutation(api.vehicles.updatePositions, { updates });
-        console.log(`Ingested ${updates.length} vehicles to Convex`);
+        console.log(`Ingested ${updates.length} enriched vehicles to Convex`);
       }
     } catch (err) {
       console.error("Poll error:", err);
