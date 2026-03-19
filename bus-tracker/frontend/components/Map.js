@@ -100,75 +100,77 @@ export default function Map({
   const busMarkers = useRef({});
   const stopMarkers = useRef([]);
   const planMarkers = useRef([]);
+  const userMarker = useRef(null);
 
-  // Initialization
+  // Initialization & Style Management
   useEffect(() => {
-    if (map.current) return;
+    if (map.current) {
+      // If map already exists, just update style to avoid re-initializing
+      map.current.setStyle(isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE);
+      return;
+    }
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
       style: isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE,
       center: [33.3613, 35.1856], // Nicosia
       zoom: 13,
-      pitch: 0, // Disable 3D pitch for performance
-      maxBounds: [[32.0, 34.4], [34.7, 35.7]] // Cyprus bounds
+      pitch: 0,
+      maxBounds: [[32.0, 34.4], [34.7, 35.7]]
     });
 
     map.current.addControl(new maplibregl.NavigationControl({ showPitch: false }), 'top-right');
     
-    map.current.on('load', () => {
-      // Add Satellite if needed
-      if (isSatellite) {
+    // Add layers on every style change (including first load)
+    const addLayers = () => {
+      // Route Source & Layers
+      if (!map.current.getSource('route-source')) {
+        map.current.addSource('route-source', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] }
+        });
+
+        map.current.addLayer({
+          id: 'route-line-glow',
+          type: 'line',
+          source: 'route-source',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': routeColor || '#ff0033',
+            'line-width': 8,
+            'line-opacity': 0.3,
+            'line-blur': 4
+          }
+        });
+
+        map.current.addLayer({
+          id: 'route-line',
+          type: 'line',
+          source: 'route-source',
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': routeColor || '#ff0033',
+            'line-width': 4
+          }
+        });
+      }
+
+      // Add Satellite Raster Source if in satellite mode
+      if (isSatellite && !map.current.getSource('satellite')) {
         map.current.addSource('satellite', {
           type: 'raster',
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256
         });
-        map.current.addLayer({
-          id: 'satellite-layer',
-          type: 'raster',
-          source: 'satellite',
-          minzoom: 0,
-          maxzoom: 22
-        });
+        map.current.addLayer({ id: 'satellite-layer', type: 'raster', source: 'satellite' }, 'route-line-glow');
       }
+    };
 
-      // Route Source
-      map.current.addSource('route-source', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] }
-      });
-
-      map.current.addLayer({
-        id: 'route-line-glow',
-        type: 'line',
-        source: 'route-source',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: {
-          'line-color': routeColor || '#ff0033',
-          'line-width': 8,
-          'line-opacity': 0.3,
-          'line-blur': 4
-        }
-      });
-
-      map.current.addLayer({
-        id: 'route-line',
-        type: 'line',
-        source: 'route-source',
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: {
-          'line-color': routeColor || '#ff0033',
-          'line-width': 4
-        }
-      });
-    });
+    map.current.on('style.load', addLayers);
+    map.current.on('load', addLayers);
 
     return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
+      // Only remove if unmounting, not on isSatellite change
     };
   }, [isSatellite]);
 
@@ -246,11 +248,11 @@ export default function Map({
         const el = document.createElement('div');
         el.className = 'bus-marker-v2';
         el.innerHTML = `
-          <div class="bus-balloon" style="background: ${v.color || '#ff0033'}; transform: rotate(${(bearing || 0) - 45}deg)">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="white" style="transform: rotate(45deg)">
+          <div class="bus-balloon" style="background: #000; border: 2px solid ${v.color || '#ff0033'}; box-shadow: 0 0 15px ${v.color || '#ff0033'}; transform: rotate(${(bearing || 0) - 45}deg)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="${v.color || '#ff0033'}" style="transform: rotate(45deg)">
               <path d="M19 17h2v2h-2v-2zm-2 0h-2v2h2v-2zm-4 0h-2v2h2v-2zm-4 0h-2v2h2v-2zm-4 0h-2v2h2v-2zm18-7l-1-2H2L1 10v9h2v-2h18v2h2V10h-1zM4 14H3v-2h1v2zm17 0h-1v-2h1v2zM5 8h14l.5 1H4.5L5 8z"></path>
             </svg>
-            <div class="bus-arrow"></div>
+            <div class="bus-arrow" style="border-right-color: ${v.color || '#ff0033'}"></div>
           </div>
         `;
 
@@ -278,14 +280,14 @@ export default function Map({
     stops.forEach(stop => {
       const el = document.createElement('div');
       el.className = 'stop-marker-v2';
-      el.innerHTML = `<div class="stop-dot">🚌</div>`;
+      el.innerHTML = `<div class="stop-dot"></div>`;
       el.style.cursor = 'pointer';
       
       el.onclick = async () => {
         setSelectedStop(stop);
         setArrivals(null);
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id || stop.id}`);
           const data = await res.json();
           setArrivals(data);
         } catch (e) {
@@ -313,11 +315,20 @@ export default function Map({
           onClick={() => {
             if (map.current) {
               navigator.geolocation.getCurrentPosition(pos => {
+                const { longitude, latitude } = pos.coords;
                 map.current.flyTo({
-                  center: [pos.coords.longitude, pos.coords.latitude],
+                  center: [longitude, latitude],
                   zoom: 15,
                   essential: true
                 });
+
+                // Add or update User Marker
+                if (userMarker.current) userMarker.current.remove();
+                const el = document.createElement('div');
+                el.className = 'user-marker-pulse';
+                userMarker.current = new maplibregl.Marker({ element: el })
+                  .setLngLat([longitude, latitude])
+                  .addTo(map.current);
               });
             }
           }}
@@ -370,32 +381,79 @@ export default function Map({
           cursor: pointer;
         }
         :global(.bus-balloon) {
-          width: 32px;
-          height: 32px;
+          width: 38px;
+          height: 38px;
           border-radius: 50% 50% 50% 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-          border: 2px solid rgba(255,255,255,0.2);
-          transition: transform 0.3s ease-out;
+          position: relative;
+          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 5;
+        }
+        :global(.bus-balloon::before) {
+          content: '';
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border-radius: inherit;
+          background: inherit;
+          filter: blur(8px);
+          opacity: 0.6;
+          z-index: -1;
+        }
+        :global(.bus-arrow) {
+          position: absolute;
+          bottom: -8px;
+          right: -8px;
+          width: 0;
+          height: 0;
+          border-top: 8px solid transparent;
+          border-bottom: 8px solid transparent;
+          border-right: 12px solid #ff0033;
+          transform: rotate(45deg);
         }
         
         :global(.stop-marker-v2) {
           cursor: pointer;
         }
         :global(.stop-dot) {
-          width: 24px;
-          height: 24px;
-          background: rgba(20, 20, 25, 0.8);
-          backdrop-filter: blur(5px);
-          border: 1px solid rgba(255,255,255,0.3);
+          width: 12px;
+          height: 12px;
+          background: #ff0033;
+          border: 2px solid white;
           border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 12px;
-          box-shadow: 0 0 10px rgba(0,0,0,0.5);
+          box-shadow: 0 0 10px #ff0033;
+          transition: all 0.3s ease;
+        }
+        :global(.stop-marker-v2:hover .stop-dot) {
+          transform: scale(1.5);
+          box-shadow: 0 0 20px #ff0033;
+        }
+
+        :global(.user-marker-pulse) {
+          width: 20px;
+          height: 20px;
+          background: #0070f3;
+          border: 2px solid white;
+          border-radius: 50%;
+          box-shadow: 0 0 15px #0070f3;
+          position: relative;
+        }
+        :global(.user-marker-pulse::after) {
+          content: '';
+          position: absolute;
+          top: -10px;
+          left: -10px;
+          width: 40px;
+          height: 40px;
+          border: 2px solid #0070f3;
+          border-radius: 50%;
+          animation: user-pulse 2s infinite;
+        }
+        @keyframes user-pulse {
+          0% { transform: scale(0.5); opacity: 1; }
+          100% { transform: scale(1.5); opacity: 0; }
         }
 
         .map-controls-custom {
