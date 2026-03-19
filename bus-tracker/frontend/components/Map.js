@@ -216,7 +216,7 @@ export default function Map({
     if (!map.current) return;
 
     // Remove obsolete markers
-    const currentIds = new Set(vehicles.map(v => v.id));
+    const currentIds = new Set(vehicles.map(v => v._id || v.vehicle_id || v.id));
     Object.keys(busMarkers.current).forEach(id => {
       if (!currentIds.has(id)) {
         busMarkers.current[id].remove();
@@ -226,13 +226,14 @@ export default function Map({
 
     // Update/Add markers
     vehicles.forEach(v => {
-      const lat = v.lt || v.lat;
-      const lng = v.ln || v.lon;
-      const bearing = v.ag || v.agency;
+      const lat = v.lat || v.lt;
+      const lng = v.lon || v.ln;
+      const bearing = v.bearing || v.ag || 0;
+      const markerId = v._id || v.vehicle_id || v.id;
 
-      if (busMarkers.current[v.id]) {
-        busMarkers.current[v.id].setLngLat([lng, lat]);
-        const el = busMarkers.current[v.id].getElement();
+      if (busMarkers.current[markerId]) {
+        busMarkers.current[markerId].setLngLat([lng, lat]);
+        const el = busMarkers.current[markerId].getElement();
         const balloon = el.querySelector('.bus-balloon');
         if (balloon) balloon.style.transform = `rotate(${bearing - 45}deg)`;
       } else {

@@ -342,7 +342,7 @@ export default function Home() {
           onVehicleClick={handleVehicleClick}
           vehicles={useMemo(() => {
             if (!selectedRouteId) return vehicles;
-            return vehicles.filter(v => (v.r || v.route_id) === selectedRouteId);
+            return vehicles.filter(v => (v.route_id || v.r) === selectedRouteId);
           }, [vehicles, selectedRouteId])}
           showToast={showToast}
           showStops={showStops}
