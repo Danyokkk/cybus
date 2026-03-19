@@ -341,26 +341,36 @@ useEffect(() => {
       el.className = 'stop-marker-v2';
       el.innerHTML = `<div class="stop-pin-v2"><div class="stop-pin-inner">🚌</div></div>`;
       
-      el.onclick = async () => {
+      el.onclick = async (e) => {
+        e.stopPropagation();
+        console.log('Stop Clicked:', stop.stop_id);
         if (activePopup.current) activePopup.current.remove();
         
         const popupNode = document.createElement('div');
         popupNode.id = `popup-${stop.stop_id}`;
+        popupNode.style.minHeight = '100px';
+        popupNode.style.minWidth = '200px';
         
         activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native', closeButton: true })
             .setLngLat([stop.lon, stop.lat])
             .setDOMContent(popupNode)
             .addTo(map.current);
             
-        activePopup.current.on('close', () => setSelectedStop(null));
+        activePopup.current.on('close', () => { 
+            setSelectedStop(null);
+            setPopupPortal(null);
+        });
 
         setArrivals(null);
+        setSelectedStop(stop); // Set this FIRST to ensure the PORTAL has a container
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id || stop.id}/timetable`);
           const data = await res.json();
           setArrivals(data);
-          setSelectedStop(stop);
-        } catch (e) { setArrivals([]); }
+        } catch (e) { 
+          console.error('Stop fetch error:', e);
+          setArrivals([]); 
+        }
       };
 
       const marker = new maplibregl.Marker({ element: el })
@@ -588,19 +598,23 @@ useEffect(() => {
 
         .zoom-hint-pill {
           position: absolute;
-          top: 80px;
+          top: 100px;
           left: 50%;
           transform: translateX(-50%);
-          background: rgba(20, 20, 25, 0.9);
-          backdrop-filter: blur(10px);
-          padding: 8px 16px;
-          border-radius: 20px;
+          background: rgba(20, 20, 25, 0.95);
+          backdrop-filter: blur(15px);
+          padding: 8px 18px;
+          border-radius: 50px;
           color: white;
-          font-weight: bold;
-          font-size: 0.8rem;
+          font-weight: 800;
+          font-size: 0.75rem;
           border: 1px solid #ff0033;
-          z-index: 100;
-          box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+          z-index: 9999;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+          white-space: nowrap;
+          width: fit-content;
+          max-width: 90vw;
+          pointer-events: none;
         }
 
         .map-controls-custom {
