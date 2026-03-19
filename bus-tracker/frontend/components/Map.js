@@ -23,55 +23,53 @@ const CYPRUS_BOUNDS = [[32.2, 34.5], [34.7, 35.7]];
 const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
     const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
 
+    const getMinsRemaining = (arrivalTime) => {
+        if (!arrivalTime) return null;
+        const now = new Date();
+        const [h, m, s] = arrivalTime.split(':').map(Number);
+        const arrival = new Date();
+        arrival.setHours(h || 0, m || 0, s || 0);
+        if (arrival < now) arrival.setDate(arrival.getDate() + 1);
+        const diff = Math.floor((arrival - now) / 60000);
+        return diff >= 0 ? diff : 0;
+    };
+
     return (
-        <div className="timetable-popup-content" style={{ minWidth: '280px', color: '#fff' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
-                <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '900' }}>{stop.name}</h3>
-                    <code style={{ fontSize: '0.7rem', color: '#aaa' }}>{stop.stop_id}</code>
+        <div className="stop-popup-v4">
+            <div className="popup-top">
+                <div className="stop-title-area">
+                    <h3>{stop.name}</h3>
+                    <span className="stop-code">{stop.stop_id}</span>
                 </div>
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop); }}
-                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
-                >
-                    <Heart size={20} fill={isFavorite ? "#ff0033" : "transparent"} color={isFavorite ? "#ff0033" : "#fff"} />
+                <button className="fav-pill-btn" onClick={() => onToggleFavorite(stop)}>
+                    <Heart size={16} fill={isFavorite ? "#ff3366" : "transparent"} color={isFavorite ? "#ff3366" : "#fff"} />
                 </button>
             </div>
 
-            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+            <div className="arrivals-scroll">
                 {!arrivals ? (
-                    <div style={{ padding: '20px', textAlign: 'center' }}>{t.loading || 'Loading...'}</div>
+                    <div className="popup-loading">{t.loading}...</div>
                 ) : arrivals.length === 0 ? (
-                    <div style={{ padding: '20px', textAlign: 'center', color: '#ff0033' }}>{t.no_buses || 'No arrivals'}</div>
+                    <div className="popup-empty">{t.no_buses}</div>
                 ) : (
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <tbody>
-                            {arrivals.slice(0, 10).map((arr, idx) => {
-                                const route = routes?.find(r => r.route_id === arr.route_id);
-                                return (
-                                    <tr key={`${arr.route_id}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                        <td style={{ padding: '8px 0' }}>
-                                            <span 
-                                                onClick={() => route && onSelectRoute(route)}
-                                                style={{ 
-                                                    background: route?.color ? `#${route.color}` : '#ff0033',
-                                                    padding: '2px 8px',
-                                                    borderRadius: '6px',
-                                                    fontWeight: 'bold',
-                                                    fontSize: '0.8rem',
-                                                    cursor: route ? 'pointer' : 'default'
-                                                }}
-                                            >
-                                                {arr.route_short_name}
-                                            </span>
-                                        </td>
-                                        <td style={{ padding: '8px 4px', fontSize: '0.85rem' }}>{arr.trip_headsign}</td>
-                                        <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 'bold' }}>{arr.arrival_time}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                    <div className="bus-list">
+                        {arrivals.slice(0, 10).map((arr, idx) => {
+                            const route = routes?.find(r => String(r.route_id) === String(arr.route_id));
+                            const mins = getMinsRemaining(arr.arrival_time);
+                            return (
+                                <div key={`${arr.route_id}-${idx}`} className="bus-row" onClick={() => route && onSelectRoute(route)}>
+                                    <div className="bus-badge" style={{ background: `#${route?.color || 'ff3366'}` }}>
+                                        {arr.route_short_name}
+                                    </div>
+                                    <div className="bus-dest">{arr.trip_headsign}</div>
+                                    <div className="bus-eta">
+                                        <span className="abs-time">{arr.arrival_time?.slice(0, 5)}</span>
+                                        <span className="rel-time">{mins} min</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
         </div>
@@ -151,14 +149,56 @@ export default function Map({
         });
       }
 
-      // Add Satellite Raster Source if in satellite mode
-      if (isSatellite && !map.current.getSource('satellite')) {
-        map.current.addSource('satellite', {
-          type: 'raster',
-          tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
-          tileSize: 256
+      // Stops Layer (High-Perf Vector)
+      if (!map.current.getSource('stops-source')) {
+        map.current.addSource('stops-source', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] }
         });
-        map.current.addLayer({ id: 'satellite-layer', type: 'raster', source: 'satellite' }, 'route-line');
+
+        // Circle Layer for base
+        map.current.addLayer({
+          id: 'stops-layer',
+          type: 'circle',
+          source: 'stops-source',
+          minzoom: 14,
+          paint: {
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              14, 4,
+              18, 10
+            ],
+            'circle-color': '#ff3366',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
+          }
+        });
+
+        // Click handler
+        map.current.on('click', 'stops-layer', async (e) => {
+            const stop = e.features[0].properties;
+            if (activePopup.current) activePopup.current.remove();
+            
+            const popupNode = document.createElement('div');
+            popupNode.id = `popup-${stop.stop_id}`;
+            
+            activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-v4' })
+                .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                .setDOMContent(popupNode)
+                .addTo(map.current);
+
+            setSelectedStop(null);
+            setArrivals(null);
+            setSelectedStop(stop);
+            try {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id}/timetable`);
+              const data = await res.json();
+              setArrivals(data);
+            } catch (err) { setArrivals([]); }
+        });
+
+        map.current.on('mouseenter', 'stops-layer', () => map.current.getCanvas().style.cursor = 'pointer');
+        map.current.on('mouseleave', 'stops-layer', () => map.current.getCanvas().style.cursor = '');
       }
     };
 
@@ -307,85 +347,25 @@ export default function Map({
   });
 }, [vehicles]);
 
-// Efficient Viewport-based Stop Rendering (Virtualization)
+// Efficient GeoJSON Update for Stops
 useEffect(() => {
-  if (!map.current || !showStops || stops.length === 0) {
-      stopMarkers.current.forEach(m => m.remove());
-      stopMarkers.current = [];
+  if (!map.current) return;
+  const source = map.current.getSource('stops-source');
+  if (!source) return;
+
+  if (!showStops || stops.length === 0) {
+      source.setData({ type: 'FeatureCollection', features: [] });
       return;
   }
 
-  const updateMarkers = () => {
-    if (map.current.getZoom() < 14) {
-        stopMarkers.current.forEach(m => m.remove());
-        stopMarkers.current = [];
-        return;
-    }
-
-    const bounds = map.current.getBounds();
-    // Only render what's in or near the viewport (grid-based approach)
-    const visibleStops = stops.filter(s => 
-        s.lon > bounds._sw.lng - 0.05 && s.lon < bounds._ne.lng + 0.05 &&
-        s.lat > bounds._sw.lat - 0.05 && s.lat < bounds._ne.lat + 0.05
-    );
-
-    // Limit absolute count to prevent lag
-    const maxMarkers = visibleStops.slice(0, 150);
-
-    // Naive diff for performance (could be better with keys)
-    stopMarkers.current.forEach(m => m.remove());
-    stopMarkers.current = [];
-
-    maxMarkers.forEach(stop => {
-      const el = document.createElement('div');
-      el.className = 'stop-marker-v2';
-      el.innerHTML = `<div class="stop-pin-v2"><div class="stop-pin-inner">🚌</div></div>`;
-      
-      el.onclick = async (e) => {
-        e.stopPropagation();
-        console.log('Stop Clicked:', stop.stop_id);
-        if (activePopup.current) activePopup.current.remove();
-        
-        const popupNode = document.createElement('div');
-        popupNode.id = `popup-${stop.stop_id}`;
-        popupNode.style.minHeight = '100px';
-        popupNode.style.minWidth = '200px';
-        
-        activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native', closeButton: true })
-            .setLngLat([stop.lon, stop.lat])
-            .setDOMContent(popupNode)
-            .addTo(map.current);
-            
-        activePopup.current.on('close', () => { 
-            setSelectedStop(null);
-            setPopupPortal(null);
-        });
-
-        setArrivals(null);
-        setSelectedStop(stop); // Set this FIRST to ensure the PORTAL has a container
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id || stop.id}/timetable`);
-          const data = await res.json();
-          setArrivals(data);
-        } catch (e) { 
-          console.error('Stop fetch error:', e);
-          setArrivals([]); 
-        }
-      };
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([stop.lon, stop.lat])
-        .addTo(map.current);
-        
-      stopMarkers.current.push(marker);
-    });
-  };
-
-  updateMarkers();
-  map.current.on('moveend', updateMarkers);
-  return () => {
-      if (map.current) map.current.off('moveend', updateMarkers);
-  };
+  source.setData({
+      type: 'FeatureCollection',
+      features: stops.map(stop => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
+          properties: { ...stop }
+      }))
+  });
 }, [stops, showStops]);
 
   // Handle React Portal-like rendering for Stop Popup content
@@ -597,131 +577,106 @@ useEffect(() => {
         }
 
         .zoom-hint-pill {
-          position: absolute;
+          position: fixed;
           top: 100px;
           left: 50%;
           transform: translateX(-50%);
-          background: rgba(20, 20, 25, 0.95);
-          backdrop-filter: blur(15px);
-          padding: 8px 18px;
-          border-radius: 50px;
+          background: #000;
           color: white;
-          font-weight: 800;
-          font-size: 0.75rem;
-          border: 1px solid #ff0033;
+          padding: 10px 20px;
+          border-radius: 40px;
+          font-weight: bold;
+          font-size: 0.8rem;
+          border: 2px solid #ff3366;
           z-index: 9999;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.8);
-          white-space: nowrap;
-          width: fit-content;
-          max-width: 90vw;
           pointer-events: none;
+          box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+          max-width: 250px;
+          width: auto;
+          text-align: center;
+          white-space: nowrap;
         }
 
-        .map-controls-custom {
-          position: absolute;
-          top: 20px;
-          right: 20px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          z-index: 10;
+        :global(.maplibregl-popup-content) {
+          background: #0f0f15 !important;
+          border-radius: 20px !important;
+          padding: 16px !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.7) !important;
         }
-        
-        .btn-overlay {
-          width: 45px;
-          height: 45px;
-          background: rgba(20, 20, 25, 0.8);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
+
+        .stop-popup-v4 {
           color: white;
-          cursor: pointer;
-          font-size: 1.2rem;
+          width: 300px;
         }
-        .btn-overlay.active {
-          background: #ff0033;
-          border-color: #ff3366;
-        }
-
-        .map-popup-overlay {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(0,0,0,0.3);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-        
-        .map-popup-card {
-          width: 90%;
-          max-width: 350px;
-          background: rgba(20, 20, 25, 0.95);
-          backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 24px;
-          padding: 24px;
-          position: relative;
-        }
-        
-        .close-popup {
-          position: absolute;
-          top: 15px;
-          right: 15px;
-          background: transparent;
-          border: none;
-          color: white;
-          opacity: 0.5;
-        }
-
-        /* Timetable Popup Content styles from original implementation */
-        :global(.popup-header) {
+        .popup-top {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 20px;
+          align-items: center;
+          margin-bottom: 15px;
+          padding-right: 25px;
         }
-        :global(.arrivals-list) {
-          max-height: 300px;
+        .stop-title-area h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          letter-spacing: -0.02em;
+        }
+        .stop-code {
+          font-size: 0.7rem;
+          opacity: 0.5;
+        }
+        .fav-pill-btn {
+          background: rgba(255,255,255,0.05);
+          border: none;
+          padding: 6px;
+          border-radius: 12px;
+          cursor: pointer;
+        }
+        .arrivals-scroll {
+          max-height: 250px;
           overflow-y: auto;
         }
-        :global(.arrival-item) {
+        .bus-row {
           display: flex;
           align-items: center;
           gap: 12px;
-          padding: 12px 0;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          padding: 10px;
+          background: rgba(255,255,255,0.02);
+          margin-bottom: 8px;
+          border-radius: 14px;
           cursor: pointer;
         }
-        :global(.route-badge) {
-          min-width: 40px;
-          height: 40px;
+        .bus-badge {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
           border-radius: 10px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-weight: bold;
-          color: white;
+          font-weight: 800;
+          font-size: 0.9rem;
         }
-        :global(.arrival-details) {
+        .bus-dest {
           flex: 1;
+          font-size: 0.85rem;
+          font-weight: 500;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
-        :global(.time) {
-          color: #ff0033;
-          font-weight: bold;
-          font-size: 0.8rem;
+        .bus-eta {
+          text-align: right;
+        }
+        .abs-time {
           display: block;
+          font-size: 0.85rem;
+          font-weight: 700;
         }
-        :global(.fav-btn) {
-          background: transparent;
-          border: none;
-          cursor: pointer;
+        .rel-time {
+          font-size: 0.7rem;
+          color: #ff3366;
+          font-weight: bold;
         }
       `}</style>
     </div>
