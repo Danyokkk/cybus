@@ -20,56 +20,62 @@ import { useLanguage } from '../context/LanguageContext';
 const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; // Simple white map
 const CYPRUS_BOUNDS = [[32.2, 34.5], [34.7, 35.7]];
 
-const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t }) => {
-  const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
+const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
+    const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
 
-  return (
-    <div className="timetable-popup-content glass-morphism">
-      <div className="popup-header">
-        <div className="stop-info">
-          <h3>{stop.name || 'Bus Stop'}</h3>
-          <span className="stop-id">ID: {stop.stop_id}</span>
-        </div>
-        <button 
-          className={`fav-btn ${isFavorite ? 'active' : ''}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleFavorite(stop);
-          }}
-        >
-          <Heart size={18} fill={isFavorite ? "#ff0033" : "transparent"} color={isFavorite ? "#ff0033" : "white"} />
-        </button>
-      </div>
-
-      <div className="arrivals-list">
-        {!arrivals ? (
-          <div className="loading-arrivals">
-            <div className="spinner-small"></div>
-            <span>{t.loading || 'Loading...'}</span>
-          </div>
-        ) : arrivals.length === 0 ? (
-          <div className="no-arrivals">{t.no_buses || 'No upcoming buses'}</div>
-        ) : (
-          arrivals.slice(0, 10).map((arr, idx) => (
-            <div 
-              key={`${arr.route_id}-${idx}`} 
-              className="arrival-item"
-              onClick={() => onSelectRoute(arr.route_id)}
-            >
-              <div className="route-badge" style={{ backgroundColor: arr.route_color || '#ff0033' }}>
-                {arr.route_short_name}
-              </div>
-              <div className="arrival-details">
-                <span className="dest">{arr.trip_headsign}</span>
-                <span className="time">{arr.arrival_time}</span>
-              </div>
-              <ChevronRight size={14} opacity={0.5} />
+    return (
+        <div className="timetable-popup-content" style={{ minWidth: '280px', color: '#fff' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px' }}>
+                <div>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '900' }}>{stop.name}</h3>
+                    <code style={{ fontSize: '0.7rem', color: '#aaa' }}>{stop.stop_id}</code>
+                </div>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop); }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}
+                >
+                    <Heart size={20} fill={isFavorite ? "#ff0033" : "transparent"} color={isFavorite ? "#ff0033" : "#fff"} />
+                </button>
             </div>
-          ))
-        )}
-      </div>
-    </div>
-  );
+
+            <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                {!arrivals ? (
+                    <div style={{ padding: '20px', textAlign: 'center' }}>{t.loading || 'Loading...'}</div>
+                ) : arrivals.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: '#ff0033' }}>{t.no_buses || 'No arrivals'}</div>
+                ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <tbody>
+                            {arrivals.slice(0, 10).map((arr, idx) => {
+                                const route = routes?.find(r => r.route_id === arr.route_id);
+                                return (
+                                    <tr key={`${arr.route_id}-${idx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <td style={{ padding: '8px 0' }}>
+                                            <span 
+                                                onClick={() => route && onSelectRoute(route)}
+                                                style={{ 
+                                                    background: route?.color ? `#${route.color}` : '#ff0033',
+                                                    padding: '2px 8px',
+                                                    borderRadius: '6px',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '0.8rem',
+                                                    cursor: route ? 'pointer' : 'default'
+                                                }}
+                                            >
+                                                {arr.route_short_name}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '8px 4px', fontSize: '0.85rem' }}>{arr.trip_headsign}</td>
+                                        <td style={{ padding: '8px 0', textAlign: 'right', fontWeight: 'bold' }}>{arr.arrival_time}</td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </div>
+    );
 };
 
 export default function Map({ 
@@ -85,6 +91,7 @@ export default function Map({
   showStops,
   setShowStops,
   isSatellite,
+  setIsSatellite,
   favorites,
   toggleFavorite
 }) {
@@ -101,6 +108,8 @@ export default function Map({
   const stopMarkers = useRef([]);
   const planMarkers = useRef([]);
   const userMarker = useRef(null);
+  const activePopup = useRef(null);
+  const [mapZoom, setMapZoom] = useState(13);
 
   // Initialization & Style Management
   useEffect(() => {
@@ -168,9 +177,13 @@ export default function Map({
 
     map.current.on('style.load', addLayers);
     map.current.on('load', addLayers);
+    map.current.on('zoom', () => setMapZoom(map.current.getZoom()));
 
     return () => {
-      // Only remove if unmounting, not on isSatellite change
+        if (map.current) {
+            map.current.remove();
+            map.current = null;
+        }
     };
   }, [isSatellite]);
 
@@ -242,27 +255,60 @@ export default function Map({
       if (busMarkers.current[markerId]) {
         busMarkers.current[markerId].setLngLat([lng, lat]);
         const el = busMarkers.current[markerId].getElement();
-        const balloon = el.querySelector('.bus-balloon');
-        if (balloon && !isNaN(bearing)) balloon.style.transform = `rotate(${bearing - 45}deg)`;
+        
+        const wrapper = el.querySelector('.rotated-bus-wrapper');
+        if (wrapper && !isNaN(bearing)) {
+            wrapper.style.transform = `rotate(${bearing}deg)`;
+        }
       } else {
+        const busColor = v.color || '#ff0033';
         const el = document.createElement('div');
         el.className = 'bus-marker-v2';
         el.innerHTML = `
-          <div class="bus-balloon" style="background: #000; border: 2px solid ${v.color || '#ff0033'}; box-shadow: 0 0 15px ${v.color || '#ff0033'}; transform: rotate(${(bearing || 0) - 45}deg)">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="${v.color || '#ff0033'}" style="transform: rotate(45deg)">
-              <path d="M19 17h2v2h-2v-2zm-2 0h-2v2h2v-2zm-4 0h-2v2h2v-2zm-4 0h-2v2h2v-2zm-4 0h-2v2h2v-2zm18-7l-1-2H2L1 10v9h2v-2h18v2h2V10h-1zM4 14H3v-2h1v2zm17 0h-1v-2h1v2zM5 8h14l.5 1H4.5L5 8z"></path>
-            </svg>
-            <div class="bus-arrow" style="border-right-color: ${v.color || '#ff0033'}"></div>
-          </div>
+            <div class="balloon-bus-marker">
+                <div class="balloon-label" style="background-color: ${busColor};">
+                    ${v.route_short_name || v.sn || '?'}
+                </div>
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
+                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
+                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                    </svg>
+                </div>
+            </div>
         `;
 
-        el.onclick = () => onVehicleClick?.(v);
+        el.onclick = () => {
+            if (activePopup.current) activePopup.current.remove();
+            
+            const popupEl = document.createElement('div');
+            // Simplified bus popup info
+            popupEl.innerHTML = `
+                <div style="text-align: center; color: #fff; padding: 10px;">
+                    <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
+                        ${v.route_short_name || v.sn || '?'}
+                    </div>
+                    <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${v.vehicle_id}</div>
+                </div>
+            `;
+
+            activePopup.current = new maplibregl.Popup({ closeButton: false, className: 'bus-popup-native' })
+                .setLngLat([lng, lat])
+                .setDOMContent(popupEl)
+                .addTo(map.current);
+            
+            onVehicleClick?.(v);
+        };
 
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([lng, lat])
           .addTo(map.current);
           
-        busMarkers.current[v.id] = marker;
+        busMarkers.current[markerId] = marker;
       }
     });
   }, [vehicles]);
@@ -275,21 +321,36 @@ export default function Map({
     stopMarkers.current.forEach(m => m.remove());
     stopMarkers.current = [];
 
-    if (!showStops) return;
+    if (!showStops || mapZoom < 15) return;
 
     stops.forEach(stop => {
       const el = document.createElement('div');
       el.className = 'stop-marker-v2';
-      el.innerHTML = `<div class="stop-dot"></div>`;
+      el.innerHTML = `
+        <div class="stop-pin-v2">
+            <div class="stop-pin-inner">🚌</div>
+        </div>
+      `;
       el.style.cursor = 'pointer';
       
       el.onclick = async () => {
-        setSelectedStop(stop);
+        if (activePopup.current) activePopup.current.remove();
+        
+        const popupNode = document.createElement('div');
+        popupNode.id = `popup-${stop.stop_id}`;
+        
+        activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native' })
+            .setLngLat([stop.lon, stop.lat])
+            .setDOMContent(popupNode)
+            .addTo(map.current);
+
+        // Fetch data
         setArrivals(null);
         try {
           const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id || stop.id}`);
           const data = await res.json();
           setArrivals(data);
+          setSelectedStop(stop); // This will trigger the useEffect to render React into the DOM node
         } catch (e) {
           console.error(e);
           setArrivals([]);
@@ -302,7 +363,20 @@ export default function Map({
         
       stopMarkers.current.push(marker);
     });
-  }, [stops, showStops]);
+  }, [stops, showStops, mapZoom]);
+
+  // Handle React Portal-like rendering for Stop Popup content
+  const [popupPortal, setPopupPortal] = useState(null);
+  useEffect(() => {
+    if (selectedStop && activePopup.current) {
+        const container = document.getElementById(`popup-${selectedStop.stop_id}`);
+        if (container) {
+            setPopupPortal({ container, stop: selectedStop });
+        }
+    } else {
+        setPopupPortal(null);
+    }
+  }, [selectedStop, arrivals, activePopup.current]);
 
   return (
     <div className="map-wrapper-v2">
@@ -334,33 +408,64 @@ export default function Map({
           }}
          title={t.my_location}
         >
-          <Navigation size={20} />
+          <span>🎯</span>
         </button>
         <button 
           className={`btn-overlay ${showStops ? 'active' : ''}`}
           onClick={() => setShowStops(!showStops)}
           title={t.show_stops}
         >
-          <MapPin size={20} />
+          <span>{showStops ? '✕' : '🚏'}</span>
+        </button>
+        <button 
+          className={`btn-overlay ${isSatellite ? 'active' : ''}`}
+          onClick={() => setIsSatellite(!isSatellite)}
+          title={isSatellite ? t.streetView : t.satelliteView}
+        >
+          <span>{isSatellite ? '🏙️' : '🛰️'}</span>
         </button>
       </div>
 
-      {selectedStop && (
-        <div className="map-popup-overlay" onClick={() => setSelectedStop(null)}>
-          <div className="map-popup-card" onClick={e => e.stopPropagation()}>
-            <button className="close-popup" onClick={() => setSelectedStop(null)}>
-              <X size={20} />
-            </button>
-            <TimetablePopup 
-              stop={selectedStop} 
-              arrivals={arrivals} 
-              onSelectRoute={onSelectRoute}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-              t={t}
-            />
-          </div>
+      {showStops && mapZoom < 15 && (
+        <div className="zoom-hint-pill">
+            {t.zoomInToSeeStops || 'Zoom in to see stops'}
         </div>
+      )}
+
+      {popupPortal && (
+        <div style={{ display: 'none' }}>
+            {/* We use a hidden div to render the React component, but then we might need actual Portal logic or just inject it */}
+        </div>
+      )}
+      
+      {/* Fallback to simple React-based popup if native DOM injection is hard, but let's try the native way first */}
+      {selectedStop && activePopup.current && (
+          <div style={{ display: 'none' }}>
+              {/* This is a trick: the native popup uses a DOM node we provided, we can 'portal' into it if needed, 
+                  but for simplicity let's stick to the custom overlay if the native one is too buggy for React bits.
+                  Actually, the user said "поп ап окна не работают". Let's use the native ones properly.
+              */}
+          </div>
+      )}
+
+      {/* Re-implementing the TimetablePopup inside the Native Popup requires caution. 
+          I'll use a simpler approach: Injecting the React component into the DOM node of the MapLibre Popup.
+      */}
+      {selectedStop && popupPortal && (
+          <React.Fragment>
+              {require('react-dom').createPortal(
+                <TimetablePopup 
+                    stop={selectedStop} 
+                    arrivals={arrivals} 
+                    onSelectRoute={onSelectRoute}
+                    favorites={favorites}
+                    onToggleFavorite={toggleFavorite}
+                    t={t}
+                    routes={routes}
+                />,
+                popupPortal.container
+              )}
+          </React.Fragment>
       )}
 
       <style jsx>{`
@@ -377,58 +482,70 @@ export default function Map({
           height: 100%;
         }
         
-        :global(.bus-marker-v2) {
-          cursor: pointer;
+        :global(.balloon-bus-marker) {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          width: 40px;
+          height: 60px;
         }
-        :global(.bus-balloon) {
-          width: 38px;
+        :global(.balloon-label) {
+          padding: 2px 8px;
+          border-radius: 10px;
+          color: white;
+          font-weight: 900;
+          font-size: 0.7rem;
+          margin-bottom: 2px;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+          border: 1px solid rgba(255,255,255,0.3);
+          white-space: nowrap;
+        }
+        :global(.rotated-bus-wrapper) {
+          transition: transform 0.3s ease;
+        }
+
+        :global(.maplibregl-popup-content) {
+          background: rgba(20, 20, 25, 0.9);
+          backdrop-filter: blur(15px);
+          border: 1px solid rgba(255,255,255,0.1);
+          border-radius: 15px;
+          padding: 15px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        :global(.maplibregl-popup-tip) {
+          border-top-color: rgba(20, 20, 25, 0.9);
+        }
+        :global(.maplibregl-popup-close-button) {
+          color: white;
+          font-size: 1.2rem;
+          padding: 5px;
+        }
+
+        :global(.stop-marker-v2) {
+          cursor: pointer;
+          width: 32px;
           height: 38px;
-          border-radius: 50% 50% 50% 0;
+        }
+        :global(.stop-pin-v2) {
+          background: #ff0033;
+          width: 32px;
+          height: 32px;
+          border-radius: 50% 50% 50% 6px;
+          transform: rotate(-45deg);
+          border: 2px solid white;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
           display: flex;
           align-items: center;
           justify-content: center;
-          position: relative;
-          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-          z-index: 5;
         }
-        :global(.bus-balloon::before) {
-          content: '';
-          position: absolute;
-          width: 100%;
-          height: 100%;
-          border-radius: inherit;
-          background: inherit;
-          filter: blur(8px);
-          opacity: 0.6;
-          z-index: -1;
-        }
-        :global(.bus-arrow) {
-          position: absolute;
-          bottom: -8px;
-          right: -8px;
-          width: 0;
-          height: 0;
-          border-top: 8px solid transparent;
-          border-bottom: 8px solid transparent;
-          border-right: 12px solid #ff0033;
+        :global(.stop-pin-inner) {
           transform: rotate(45deg);
+          color: white;
+          font-size: 14px;
         }
-        
-        :global(.stop-marker-v2) {
-          cursor: pointer;
-        }
-        :global(.stop-dot) {
-          width: 12px;
-          height: 12px;
-          background: #ff0033;
-          border: 2px solid white;
-          border-radius: 50%;
-          box-shadow: 0 0 10px #ff0033;
-          transition: all 0.3s ease;
-        }
-        :global(.stop-marker-v2:hover .stop-dot) {
-          transform: scale(1.5);
-          box-shadow: 0 0 20px #ff0033;
+        :global(.stop-marker-v2:hover .stop-pin-v2) {
+          transform: rotate(-45deg) scale(1.2);
+          box-shadow: 0 6px 15px rgba(255,0,51,0.5);
         }
 
         :global(.user-marker-pulse) {
@@ -456,9 +573,26 @@ export default function Map({
           100% { transform: scale(1.5); opacity: 0; }
         }
 
+        .zoom-hint-pill {
+          position: absolute;
+          top: 80px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: rgba(20, 20, 25, 0.9);
+          backdrop-filter: blur(10px);
+          padding: 8px 16px;
+          border-radius: 20px;
+          color: white;
+          font-weight: bold;
+          font-size: 0.8rem;
+          border: 1px solid #ff0033;
+          z-index: 100;
+          box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+
         .map-controls-custom {
           position: absolute;
-          bottom: 30px;
+          top: 20px;
           right: 20px;
           display: flex;
           flex-direction: column;
@@ -478,6 +612,7 @@ export default function Map({
           justify-content: center;
           color: white;
           cursor: pointer;
+          font-size: 1.2rem;
         }
         .btn-overlay.active {
           background: #ff0033;
