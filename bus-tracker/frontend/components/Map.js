@@ -146,71 +146,11 @@ export default function Map({
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
             'line-color': routeColor?.startsWith('#') ? routeColor : (routeColor ? `#${routeColor}` : '#ff0033'),
-            'line-width': 4
+            'line-width': 5
           }
         });
       }
-
-      // Stops Layer (Vector)
-      if (!map.current.getSource('stops-source')) {
-        map.current.addSource('stops-source', {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [] }
-        });
-
-        // Circle Layer for base
-        map.current.addLayer({
-            id: 'stops-circles',
-            type: 'circle',
-            source: 'stops-source',
-            minzoom: 14,
-            paint: {
-                'circle-radius': 8,
-                'circle-color': '#ff0033',
-                'circle-stroke-width': 2,
-                'circle-stroke-color': '#ffffff'
-            }
-        });
-
-        // Icon Layer for bus icon
-        map.current.addLayer({
-            id: 'stops-icons',
-            type: 'symbol',
-            source: 'stops-source',
-            minzoom: 15,
-            layout: {
-                'text-field': '🚌',
-                'text-size': 12,
-                'text-allow-overlap': true
-            }
-        });
-
-        // Click handler for vector stops
-        map.current.on('click', 'stops-circles', async (e) => {
-            const stop = e.features[0].properties;
-            // Native MapLibre Popup for info
-            if (activePopup.current) activePopup.current.remove();
-            
-            const popupNode = document.createElement('div');
-            popupNode.id = `popup-${stop.stop_id}`;
-            
-            activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native' })
-                .setLngLat([e.lngLat.lng, e.lngLat.lat])
-                .setDOMContent(popupNode)
-                .addTo(map.current);
-
-            setArrivals(null);
-            try {
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id}`);
-              const data = await res.json();
-              setArrivals(data);
-              setSelectedStop(stop);
-            } catch (err) { console.error(err); setArrivals([]); }
-        });
-
-        map.current.on('mouseenter', 'stops-circles', () => { map.current.getCanvas().style.cursor = 'pointer'; });
-        map.current.on('mouseleave', 'stops-circles', () => { map.current.getCanvas().style.cursor = ''; });
-      }
+    };
   
 
       // Add Satellite Raster Source if in satellite mode
@@ -350,11 +290,12 @@ export default function Map({
               </div>
           `;
 
-          activePopup.current = new maplibregl.Popup({ closeButton: false, className: 'bus-popup-native' })
+          activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
               .setLngLat([lng, lat])
               .setDOMContent(popupEl)
               .addTo(map.current);
           
+          activePopup.current.on('close', () => setSelectedStop(null));
           onVehicleClick?.(v);
       };
 
@@ -367,28 +308,75 @@ export default function Map({
   });
 }, [vehicles]);
 
-// Handle Stops (Vector Layer Data Update)
+// Efficient Viewport-based Stop Rendering (Virtualization)
 useEffect(() => {
-  if (!map.current) return;
-
-  const source = map.current.getSource('stops-source');
-  if (!source) return;
-
-  if (!showStops || stops.length === 0) {
-      source.setData({ type: 'FeatureCollection', features: [] });
+  if (!map.current || !showStops || stops.length === 0) {
+      stopMarkers.current.forEach(m => m.remove());
+      stopMarkers.current = [];
       return;
   }
 
-  const geojson = {
-      type: 'FeatureCollection',
-      features: stops.map(stop => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
-          properties: { ...stop }
-      }))
+  const updateMarkers = () => {
+    if (map.current.getZoom() < 14) {
+        stopMarkers.current.forEach(m => m.remove());
+        stopMarkers.current = [];
+        return;
+    }
+
+    const bounds = map.current.getBounds();
+    // Only render what's in or near the viewport (grid-based approach)
+    const visibleStops = stops.filter(s => 
+        s.lon > bounds._sw.lng - 0.05 && s.lon < bounds._ne.lng + 0.05 &&
+        s.lat > bounds._sw.lat - 0.05 && s.lat < bounds._ne.lat + 0.05
+    );
+
+    // Limit absolute count to prevent lag
+    const maxMarkers = visibleStops.slice(0, 150);
+
+    // Naive diff for performance (could be better with keys)
+    stopMarkers.current.forEach(m => m.remove());
+    stopMarkers.current = [];
+
+    maxMarkers.forEach(stop => {
+      const el = document.createElement('div');
+      el.className = 'stop-marker-v2';
+      el.innerHTML = `<div class="stop-pin-v2"><div class="stop-pin-inner">🚌</div></div>`;
+      
+      el.onclick = async () => {
+        if (activePopup.current) activePopup.current.remove();
+        
+        const popupNode = document.createElement('div');
+        popupNode.id = `popup-${stop.stop_id}`;
+        
+        activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native', closeButton: true })
+            .setLngLat([stop.lon, stop.lat])
+            .setDOMContent(popupNode)
+            .addTo(map.current);
+            
+        activePopup.current.on('close', () => setSelectedStop(null));
+
+        setArrivals(null);
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id || stop.id}`);
+          const data = await res.json();
+          setArrivals(data);
+          setSelectedStop(stop);
+        } catch (e) { setArrivals([]); }
+      };
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([stop.lon, stop.lat])
+        .addTo(map.current);
+        
+      stopMarkers.current.push(marker);
+    });
   };
 
-  source.setData(geojson);
+  updateMarkers();
+  map.current.on('moveend', updateMarkers);
+  return () => {
+      if (map.current) map.current.off('moveend', updateMarkers);
+  };
 }, [stops, showStops]);
 
   // Handle React Portal-like rendering for Stop Popup content

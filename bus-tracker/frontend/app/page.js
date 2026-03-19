@@ -192,10 +192,10 @@ export default function Home() {
     const routeId = v.r || v.route_id;
     const routeShortName = v.sn || v.route_short_name;
 
-    // 1. Try match by exact route_id
-    let route = routes.find(r => r.route_id === routeId);
+    // 1. Try match by exact route_id (string-safe)
+    let route = routes.find(r => String(r.route_id) === String(routeId));
 
-    // 2. Fallback: match by short_name if ID fails (sometimes IDs change or are partial)
+    // 2. Fallback: match by short_name if ID fails
     if (!route && routeShortName) {
       console.warn(`Route ID mismatch (${routeId}), trying fallback by name: ${routeShortName}`);
       route = routes.find(r => r.short_name === routeShortName || r.route_short_name === routeShortName);
@@ -207,7 +207,7 @@ export default function Home() {
     } else {
       console.error('Could not find route for vehicle:', v);
     }
-  }, [routes, handleSelectRoute]);
+  }, [routes, handleSelectRoute, stops]);
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
