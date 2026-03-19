@@ -273,7 +273,8 @@ export default function Map({
           </div>
       `;
 
-      el.onclick = () => {
+      el.onclick = (e) => {
+          e.stopPropagation();
           if (activePopup.current) activePopup.current.remove();
           
           const popupEl = document.createElement('div');
@@ -355,7 +356,7 @@ useEffect(() => {
 
         setArrivals(null);
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id || stop.id}`);
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id || stop.id}/timetable`);
           const data = await res.json();
           setArrivals(data);
           setSelectedStop(stop);
