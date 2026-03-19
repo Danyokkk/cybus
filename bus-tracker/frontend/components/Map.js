@@ -139,30 +139,79 @@ export default function Map({
           data: { type: 'FeatureCollection', features: [] }
         });
 
-        map.current.addLayer({
-          id: 'route-line-glow',
-          type: 'line',
-          source: 'route-source',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': routeColor || '#ff0033',
-            'line-width': 8,
-            'line-opacity': 0.3,
-            'line-blur': 4
-          }
-        });
-
-        map.current.addLayer({
+          map.current.addLayer({
           id: 'route-line',
           type: 'line',
           source: 'route-source',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: {
-            'line-color': routeColor || '#ff0033',
+            'line-color': routeColor?.startsWith('#') ? routeColor : (routeColor ? `#${routeColor}` : '#ff0033'),
             'line-width': 4
           }
         });
       }
+
+      // Stops Layer (Vector)
+      if (!map.current.getSource('stops-source')) {
+        map.current.addSource('stops-source', {
+          type: 'geojson',
+          data: { type: 'FeatureCollection', features: [] }
+        });
+
+        // Circle Layer for base
+        map.current.addLayer({
+            id: 'stops-circles',
+            type: 'circle',
+            source: 'stops-source',
+            minzoom: 14,
+            paint: {
+                'circle-radius': 8,
+                'circle-color': '#ff0033',
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+            }
+        });
+
+        // Icon Layer for bus icon
+        map.current.addLayer({
+            id: 'stops-icons',
+            type: 'symbol',
+            source: 'stops-source',
+            minzoom: 15,
+            layout: {
+                'text-field': '🚌',
+                'text-size': 12,
+                'text-allow-overlap': true
+            }
+        });
+
+        // Click handler for vector stops
+        map.current.on('click', 'stops-circles', async (e) => {
+            const stop = e.features[0].properties;
+            // Native MapLibre Popup for info
+            if (activePopup.current) activePopup.current.remove();
+            
+            const popupNode = document.createElement('div');
+            popupNode.id = `popup-${stop.stop_id}`;
+            
+            activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native' })
+                .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                .setDOMContent(popupNode)
+                .addTo(map.current);
+
+            setArrivals(null);
+            try {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id}`);
+              const data = await res.json();
+              setArrivals(data);
+              setSelectedStop(stop);
+            } catch (err) { console.error(err); setArrivals([]); }
+        });
+
+        map.current.on('mouseenter', 'stops-circles', () => { map.current.getCanvas().style.cursor = 'pointer'; });
+        map.current.on('mouseleave', 'stops-circles', () => { map.current.getCanvas().style.cursor = ''; });
+      }
+  
 
       // Add Satellite Raster Source if in satellite mode
       if (isSatellite && !map.current.getSource('satellite')) {
@@ -252,118 +301,95 @@ export default function Map({
         return;
       }
 
-      if (busMarkers.current[markerId]) {
-        busMarkers.current[markerId].setLngLat([lng, lat]);
-        const el = busMarkers.current[markerId].getElement();
-        
-        const wrapper = el.querySelector('.rotated-bus-wrapper');
-        if (wrapper && !isNaN(bearing)) {
-            wrapper.style.transform = `rotate(${bearing}deg)`;
-        }
-      } else {
-        const busColor = v.color || '#ff0033';
-        const el = document.createElement('div');
-        el.className = 'bus-marker-v2';
-        el.innerHTML = `
-            <div class="balloon-bus-marker">
-                <div class="balloon-label" style="background-color: ${busColor};">
-                    ${v.route_short_name || v.sn || '?'}
-                </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
-                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
-                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
-                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
-                    </svg>
-                </div>
-            </div>
-        `;
+    const busColorRaw = (v.color || v.c || 'ff0033');
+    const busColor = busColorRaw.startsWith('#') ? busColorRaw : `#${busColorRaw}`;
 
-        el.onclick = () => {
-            if (activePopup.current) activePopup.current.remove();
-            
-            const popupEl = document.createElement('div');
-            // Simplified bus popup info
-            popupEl.innerHTML = `
-                <div style="text-align: center; color: #fff; padding: 10px;">
-                    <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
-                        ${v.route_short_name || v.sn || '?'}
-                    </div>
-                    <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
-                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${v.vehicle_id}</div>
-                </div>
-            `;
-
-            activePopup.current = new maplibregl.Popup({ closeButton: false, className: 'bus-popup-native' })
-                .setLngLat([lng, lat])
-                .setDOMContent(popupEl)
-                .addTo(map.current);
-            
-            onVehicleClick?.(v);
-        };
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([lng, lat])
-          .addTo(map.current);
-          
-        busMarkers.current[markerId] = marker;
-      }
-    });
-  }, [vehicles]);
-
-  // Handle Stops
-  useEffect(() => {
-    if (!map.current) return;
-
-    // Clear old stops
-    stopMarkers.current.forEach(m => m.remove());
-    stopMarkers.current = [];
-
-    if (!showStops || mapZoom < 15) return;
-
-    stops.forEach(stop => {
-      const el = document.createElement('div');
-      el.className = 'stop-marker-v2';
-      el.innerHTML = `
-        <div class="stop-pin-v2">
-            <div class="stop-pin-inner">🚌</div>
-        </div>
-      `;
-      el.style.cursor = 'pointer';
+    if (busMarkers.current[markerId]) {
+      busMarkers.current[markerId].setLngLat([lng, lat]);
+      const el = busMarkers.current[markerId].getElement();
       
-      el.onclick = async () => {
-        if (activePopup.current) activePopup.current.remove();
-        
-        const popupNode = document.createElement('div');
-        popupNode.id = `popup-${stop.stop_id}`;
-        
-        activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-native' })
-            .setLngLat([stop.lon, stop.lat])
-            .setDOMContent(popupNode)
-            .addTo(map.current);
+      const wrapper = el.querySelector('.rotated-bus-wrapper');
+      if (wrapper && !isNaN(bearing)) {
+          wrapper.style.transform = `rotate(${bearing}deg)`;
+      }
+      
+      const label = el.querySelector('.balloon-label');
+      if (label) label.style.backgroundColor = busColor;
+    } else {
+      const el = document.createElement('div');
+      el.className = 'bus-marker-v2';
+      el.innerHTML = `
+          <div class="balloon-bus-marker">
+              <div class="balloon-label" style="background-color: ${busColor};">
+                  ${v.route_short_name || v.sn || '?'}
+              </div>
+              <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
+                  <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
+                      <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
+                      <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                      <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                      <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                      <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                  </svg>
+              </div>
+          </div>
+      `;
 
-        // Fetch data
-        setArrivals(null);
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stop_arrivals?stop_id=${stop.stop_id || stop.id}`);
-          const data = await res.json();
-          setArrivals(data);
-          setSelectedStop(stop); // This will trigger the useEffect to render React into the DOM node
-        } catch (e) {
-          console.error(e);
-          setArrivals([]);
-        }
+      el.onclick = () => {
+          if (activePopup.current) activePopup.current.remove();
+          
+          const popupEl = document.createElement('div');
+          // Simplified bus popup info
+          popupEl.innerHTML = `
+              <div style="text-align: center; color: #fff; padding: 10px;">
+                  <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
+                      ${v.route_short_name || v.sn || '?'}
+                  </div>
+                  <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
+                  <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${v.vehicle_id}</div>
+              </div>
+          `;
+
+          activePopup.current = new maplibregl.Popup({ closeButton: false, className: 'bus-popup-native' })
+              .setLngLat([lng, lat])
+              .setDOMContent(popupEl)
+              .addTo(map.current);
+          
+          onVehicleClick?.(v);
       };
 
       const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([stop.lon, stop.lat])
+        .setLngLat([lng, lat])
         .addTo(map.current);
         
-      stopMarkers.current.push(marker);
-    });
-  }, [stops, showStops, mapZoom]);
+      busMarkers.current[markerId] = marker;
+    }
+  });
+}, [vehicles]);
+
+// Handle Stops (Vector Layer Data Update)
+useEffect(() => {
+  if (!map.current) return;
+
+  const source = map.current.getSource('stops-source');
+  if (!source) return;
+
+  if (!showStops || stops.length === 0) {
+      source.setData({ type: 'FeatureCollection', features: [] });
+      return;
+  }
+
+  const geojson = {
+      type: 'FeatureCollection',
+      features: stops.map(stop => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
+          properties: { ...stop }
+      }))
+  };
+
+  source.setData(geojson);
+}, [stops, showStops]);
 
   // Handle React Portal-like rendering for Stop Popup content
   const [popupPortal, setPopupPortal] = useState(null);
