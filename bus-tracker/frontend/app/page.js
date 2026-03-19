@@ -31,7 +31,7 @@ export default function Home() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to false for mobile-first
   const [activeTab, setActiveTab] = useState('routes');
   const [showStops, setShowStops] = useState(false);
-  const [isSatellite, setIsSatellite] = useState(true); // Default to satellite view as requested
+  const [isSatellite, setIsSatellite] = useState(false); // Default to simple map for performance
   const [favorites, setFavorites] = useState([]);
   const [toast, setToast] = useState(null);
 

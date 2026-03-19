@@ -153,7 +153,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
 
     return (
         <>
-            <div className={`sidebar ${isOpen ? 'open' : 'closed'}`}>
+            <div className={`sidebar ${isOpen ? 'open' : 'closed'} ${activeTab === 'settings' ? 'full-view' : ''}`}>
                 <div className="sidebar-header">
                     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '10px' }}>
                         <h2 style={{ fontSize: '1.4rem', margin: 0, letterSpacing: '2px', fontWeight: '900' }}>CYPRUS BUS V2</h2>
@@ -364,12 +364,25 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                         border-radius: 40px;
                         z-index: 5000;
                         box-shadow: 0 30px 60px rgba(0,0,0,0.9), 0 0 40px rgba(57, 255, 20, 0.1);
-                        transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
+                        transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
                         display: flex;
                         flex-direction: column;
                         opacity: 0;
                         pointer-events: none;
                         overflow: hidden;
+                    }
+                    .sidebar.full-view {
+                        height: calc(100vh - 110px);
+                        bottom: 100px;
+                        max-width: 500px;
+                        border-radius: 40px 40px 0 0;
+                    }
+                    @media (max-width: 768px) {
+                        .sidebar.full-view {
+                            max-width: 100%;
+                            width: 100%;
+                            border-radius: 40px 40px 0 0;
+                        }
                     }
                     .sidebar.open {
                         transform: translateY(0) translateX(-50%);
@@ -503,6 +516,40 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                     .lang-btn.active { background: #fff; color: #000; border-color: #fff; }
                     .daan1k-tag { font-size: 0.75rem; color: #666; font-weight: 900; text-decoration: none; transition: 0.3s; letter-spacing: 1px; }
                     .daan1k-tag:hover { color: var(--nebula-accent); transform: scale(1.05); }
+
+                    .setting-card {
+                        background: rgba(255, 255, 255, 0.03);
+                        border: 1px solid rgba(255, 255, 255, 0.05);
+                        padding: 20px;
+                        border-radius: 25px;
+                        display: flex;
+                        align-items: center;
+                        gap: 20px;
+                        cursor: pointer;
+                        transition: all 0.2s ease;
+                        margin-bottom: 15px;
+                    }
+                    .setting-card:hover {
+                        background: rgba(57, 255, 20, 0.05);
+                        border-color: var(--nebula-accent);
+                    }
+                    .setting-card .icon { font-size: 1.8rem; }
+                    .setting-card .text strong { display: block; font-size: 1rem; color: #fff; margin-bottom: 4px; }
+                    .setting-card .text p { font-size: 0.75rem; color: #888; margin: 0; }
+                    .lang-group { display: flex; gap: 10px; margin-top: 10px; }
+                    .lang-group button {
+                        background: rgba(255, 255, 255, 0.05);
+                        border: 1px solid rgba(255, 255, 255, 0.1);
+                        color: #fff;
+                        padding: 8px 16px;
+                        border-radius: 12px;
+                        font-size: 0.8rem;
+                        font-weight: 900;
+                        cursor: pointer;
+                        transition: 0.2s;
+                    }
+                    .lang-group button:hover { background: rgba(57, 255, 20, 0.1); }
+                    .lang-group button.active { background: var(--nebula-accent); color: #000; border-color: var(--nebula-accent); }
 
                     @keyframes spin { to { transform: rotate(360deg); } }
                 `}</style>
