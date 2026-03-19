@@ -150,8 +150,6 @@ export default function Map({
           }
         });
       }
-    };
-  
 
       // Add Satellite Raster Source if in satellite mode
       if (isSatellite && !map.current.getSource('satellite')) {
@@ -160,7 +158,7 @@ export default function Map({
           tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'],
           tileSize: 256
         });
-        map.current.addLayer({ id: 'satellite-layer', type: 'raster', source: 'satellite' }, 'route-line-glow');
+        map.current.addLayer({ id: 'satellite-layer', type: 'raster', source: 'satellite' }, 'route-line');
       }
     };
 
