@@ -226,16 +226,22 @@ export default function Map({
 
     // Update/Add markers
     vehicles.forEach(v => {
-      const lat = v.lat || v.lt;
-      const lng = v.lon || v.ln;
-      const bearing = v.bearing || v.ag || 0;
+      const lat = parseFloat(v.lat || v.lt);
+      const lng = parseFloat(v.lon || v.ln);
+      const bearing = parseFloat(v.bearing || v.ag || 0);
       const markerId = v._id || v.vehicle_id || v.id;
+
+      // SAFETY GUARD: skip invalid coordinates to prevent site crash
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn(`Skipping vehicle ${markerId} due to invalid coordinates:`, v);
+        return;
+      }
 
       if (busMarkers.current[markerId]) {
         busMarkers.current[markerId].setLngLat([lng, lat]);
         const el = busMarkers.current[markerId].getElement();
         const balloon = el.querySelector('.bus-balloon');
-        if (balloon) balloon.style.transform = `rotate(${bearing - 45}deg)`;
+        if (balloon && !isNaN(bearing)) balloon.style.transform = `rotate(${bearing - 45}deg)`;
       } else {
         const el = document.createElement('div');
         el.className = 'bus-marker-v2';
