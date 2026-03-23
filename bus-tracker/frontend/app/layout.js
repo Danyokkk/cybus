@@ -1,6 +1,5 @@
 import './globals.css';
 import { LanguageProvider } from '../context/LanguageContext';
-import ConvexClientProvider from './ConvexClientProvider';
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import { Analytics } from '@vercel/analytics/react';
 
@@ -30,13 +29,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning={true}>
       <body suppressHydrationWarning={true}>
-        <ConvexClientProvider>
-          <LanguageProvider>
-            {children}
-            <SpeedInsights />
-            <Analytics />
-          </LanguageProvider>
-        </ConvexClientProvider>
+        <LanguageProvider>
+          {children}
+          <SpeedInsights />
+          <Analytics />
+        </LanguageProvider>
       </body>
     </html>
   );

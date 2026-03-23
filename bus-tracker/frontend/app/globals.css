@@ -54,6 +54,37 @@ body {
   overflow: hidden;
 }
 
+/* Floating Deep Nebula Sidebar - Detached from edges */
+.sidebar {
+  position: absolute;
+  top: 25px;
+  left: 25px;
+  bottom: 25px;
+  width: 320px;
+  /* Slimmer for V43 minimalism */
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-quantum);
+  border-radius: 40px;
+  /* Symmetrical rounded rectangle */
+  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
+  will-change: transform;
+}
+
+.sidebar.closed {
+  transform: translateX(calc(-100% - 25px));
+  opacity: 1;
+}
+
+.sidebar.open {
+  transform: translateX(0);
+  opacity: 1;
+}
 
 .sidebar-header {
   padding: 30px;
@@ -264,10 +295,29 @@ body {
 }
 
 /* Responsive Overrides */
+@media (max-width: 768px) {
+  .sidebar {
+    display: none !important;
+    /* Managed by styled-jsx in Sidebar.js */
+  }
+
+  .sidebar.is-mobile {
+    display: flex !important;
+    /* Re-enable for the bottom drawer */
+  }
+
+  .map-controls-container {
+    display: none !important;
+  }
+
+  .sidebar-toggle-tab {
+    display: none !important;
+  }
 
   .toast-pilling {
     bottom: 100px !important;
   }
+}
 
 /* Consolidated closure removed - handled in main block */
 
@@ -382,7 +432,8 @@ body {
   }
 }
 
-/* Premium Floating Dock (Universal for Desktop & Mobile) */
+/* Premium Floating Mobile Dock */
+@media (max-width: 768px) {
   .mobile-floating-dock {
     position: fixed;
     bottom: 25px;
@@ -451,13 +502,60 @@ body {
     letter-spacing: 0.5px;
   }
 
-  /* Settings Sidebar Tab */
-  .settings-container {
-    padding: 20px;
+  /* Settings Bottom Sheet */
+  .settings-drawer {
+    position: fixed;
+    bottom: 100px;
+    left: 20px;
+    right: 20px;
+    background: rgba(0, 5, 0, 0.98);
+    backdrop-filter: blur(30px);
+    border: 1px solid var(--glass-border);
+    border-radius: 30px;
+    z-index: 9999;
+    padding: 25px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    overflow-y: auto;
+    gap: 20px;
+    animation: slideUp 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 15px;
+  }
+
+  .settings-header h3 {
+    font-size: 1.2rem;
+    color: #fff;
+  }
+
+  .close-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
   }
 
   .setting-card {
@@ -514,12 +612,7 @@ body {
     border-color: var(--nebula-accent);
     color: #000;
   }
-  .lang-group button.active {
-    background: var(--nebula-accent);
-    border-color: var(--nebula-accent);
-    color: #000;
-  }
-
+}
 
 
 /* Bus Marker Styles */
@@ -561,23 +654,52 @@ body {
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
 }
 
-/* MapLibre specific overrides and general map aesthetics */
-.maplibregl-canvas {
-  cursor: crosshair !important;
-}
-
-.maplibregl-popup-content {
+/* Popups as Space Glass */
+.leaflet-popup-content-wrapper {
   background: rgba(10, 10, 46, 0.8) !important;
   backdrop-filter: blur(15px) !important;
   border: 1px solid var(--glass-border) !important;
-  border-radius: 20px !important;
+  border-radius: 30px !important;
   box-shadow: var(--shadow-quantum) !important;
   color: #fff !important;
-  padding: 0 !important;
 }
 
-.maplibregl-popup-tip {
-  border-top-color: rgba(10, 10, 46, 0.8) !important;
+.leaflet-popup-tip {
+  background: var(--nebula-deep) !important;
+}
+
+/* Refined Close Button for Mobile Accessibility */
+.leaflet-container a.leaflet-popup-close-button {
+  width: 44px !important;
+  height: 44px !important;
+  font-size: 24px !important;
+  line-height: 44px !important;
+  color: #fff !important;
+  font-weight: 300;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  top: 4px !important;
+  right: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(5px);
+  border-radius: 50% !important;
+  /* Circular for better look */
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+  touch-action: none !important;
+  transition: background 0.2s ease;
+}
+
+.leaflet-container a.leaflet-popup-close-button:active {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: scale(0.9);
+}
+
+/* Marker transitions removed for performance */
+.leaflet-container {
+  cursor: crosshair !important;
 }
 
 @keyframes sonar {

@@ -1,684 +1,699 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { 
-  Bus, 
-  MapPin, 
-  Navigation, 
-  Heart, 
-  X, 
-  Clock, 
-  ChevronRight, 
-  Info,
-  Navigation2
-} from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, CircleMarker, useMapEvents, LayersControl, useMap, ZoomControl } from 'react-leaflet';
+import MarkerClusterGroup from 'react-leaflet-cluster';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+import { useEffect, useState, useRef, useMemo, memo, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-// Hyper-Engine Config
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; // Simple white map
-const CYPRUS_BOUNDS = [[32.2, 34.5], [34.7, 35.7]];
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png';
+import iconUrl from 'leaflet/dist/images/marker-icon.png';
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
-const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
-    const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
+// Custom Icon definition
+const customIcon = new L.Icon({
+    iconUrl: iconUrl.src || iconUrl,
+    iconRetinaUrl: iconRetinaUrl.src || iconRetinaUrl,
+    shadowUrl: shadowUrl.src || shadowUrl,
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+});
 
-    const getMinsRemaining = (arrivalTime) => {
-        if (!arrivalTime) return null;
-        const now = new Date();
-        const [h, m, s] = arrivalTime.split(':').map(Number);
-        const arrival = new Date();
-        arrival.setHours(h || 0, m || 0, s || 0);
-        if (arrival < now) arrival.setDate(arrival.getDate() + 1);
-        const diff = Math.floor((arrival - now) / 60000);
-        return diff >= 0 ? diff : 0;
-    };
+const busIcon = new L.Icon({
+    iconUrl: '/images/bus_blue.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -16],
+});
+
+// 3D 🛑 Stop Pin (Style from User Image)
+const stopIcon = L.divIcon({
+    className: 'custom-stop-icon',
+    html: `
+        <div style="
+            position: relative;
+            width: 32px;
+            height: 38px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+        ">
+            <!-- Pin Body -->
+            <div style="
+                background: #ff0033; 
+                width: 32px; 
+                height: 32px; 
+                border-radius: 50% 50% 50% 6px; 
+                transform: rotate(-45deg); 
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 2px solid white;
+            ">
+                <!-- Inner White Circle -->
+                <div style="
+                    background: white; 
+                    width: 20px; 
+                    height: 20px; 
+                    border-radius: 50%; 
+                    transform: rotate(45deg);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+                ">
+                    <span style="font-size: 14px;">🚌</span>
+                </div>
+            </div>
+            <!-- Base Shadow -->
+            <div style="
+                width: 14px;
+                height: 4px;
+                background: rgba(0,0,0,0.3);
+                border-radius: 50%;
+                margin-top: -2px;
+            "></div>
+        </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 38],
+    popupAnchor: [0, -40]
+});
+
+// User Location "Radar" Icon - Fat Neon Green
+const userLocationIcon = L.divIcon({
+    className: 'custom-user-location-icon',
+    html: '<div style="background: #39ff14; width: 22px; height: 22px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 20px #39ff14, 0 0 40px rgba(57, 255, 20, 0.4); animation: sonar 2s infinite;"></div>',
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
+});
+
+// Plan Point Icons
+const planStartIcon = L.divIcon({
+    className: 'custom-plan-icon',
+    html: '<div style="background: #39ff14; border: 2px solid white; box-shadow: 0 0 10px #39ff14; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #000; font-size: 10px;">START</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
+const planHubIcon = L.divIcon({
+    className: 'custom-plan-icon',
+    html: '<div style="background: #e056fd; border: 2px solid white; box-shadow: 0 0 10px #e056fd; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 10px;">BUS</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
+const planEndIcon = L.divIcon({
+    className: 'custom-plan-icon',
+    html: '<div style="background: #ff0033; border: 2px solid white; box-shadow: 0 0 10px #ff0033; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 10px;">END</div>',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+});
+
+const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
+    const [arrivals, setArrivals] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        setLoading(true);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+        fetch(`${apiUrl}/api/stops/${stop.stop_id}/timetable`)
+            .then(res => res.json())
+            .then(data => {
+                const now = new Date();
+                const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
+
+                // Filter: Upcoming AND within 60 minutes
+                const upcoming = data.filter(a => {
+                    if (a.arrival_time < currentTime) return false;
+
+                    const [h, m] = a.arrival_time.split(':');
+                    const busTime = new Date();
+                    busTime.setHours(h, m, 0);
+                    const diffMins = (busTime - now) / 60000;
+
+                    return diffMins <= 60;
+                });
+
+                setArrivals(upcoming.slice(0, 10));
+                setLoading(false);
+            })
+            .catch(() => setLoading(false));
+    }, [stop.stop_id]);
+
+    const uniqueRoutes = [...new Set(arrivals.map(a => a.route_short_name))];
+
+    if (loading) return <div style={{ minWidth: '320px', padding: '20px', textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Loading arrivals...</div>;
 
     return (
-        <div className="stop-popup-v4">
-            <div className="popup-top">
-                <div className="stop-title-area">
-                    <h3>{stop.name}</h3>
-                    <span className="stop-code">{stop.stop_id}</span>
-                </div>
-                <button className="fav-pill-btn" onClick={() => onToggleFavorite(stop)}>
-                    <Heart size={16} fill={isFavorite ? "#ff3366" : "transparent"} color={isFavorite ? "#ff3366" : "#fff"} />
-                </button>
-            </div>
+        <div style={{ minWidth: '320px', maxWidth: '350px', color: '#fff' }}>
+            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px' }}>{stop.name}</h3>
+            <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', fontWeight: 'bold' }}>STOP ID: {stop.stop_id}</div>
 
-            <div className="arrivals-scroll">
-                {!arrivals ? (
-                    <div className="popup-loading">{t.loading}...</div>
-                ) : arrivals.length === 0 ? (
-                    <div className="popup-empty">{t.no_buses}</div>
-                ) : (
-                    <div className="bus-list">
-                        {arrivals.slice(0, 10).map((arr, idx) => {
-                            const route = routes?.find(r => String(r.route_id) === String(arr.route_id));
-                            const mins = getMinsRemaining(arr.arrival_time);
+            {uniqueRoutes.length > 0 && (
+                <div style={{ marginBottom: '10px' }}>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '4px' }}>Routes stopping here:</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                        {uniqueRoutes.map(shortName => {
+                            // Match using 'short_name' (from server) or fallback
+                            const routeInfo = routes.find(r => r.short_name === shortName || r.route_short_name === shortName);
+                            // Use 'color' (server) or 'route_color'
+                            const color = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : '#0070f3';
+                            const textColor = routeInfo ? `#${routeInfo.text_color || routeInfo.route_text_color}` : 'white';
+
                             return (
-                                <div key={`${arr.route_id}-${idx}`} className="bus-row" onClick={() => route && onSelectRoute(route)}>
-                                    <div className="bus-badge" style={{ background: `#${route?.color || 'ff3366'}` }}>
-                                        {arr.route_short_name}
-                                    </div>
-                                    <div className="bus-dest">{arr.trip_headsign}</div>
-                                    <div className="bus-eta">
-                                        <span className="abs-time">{arr.arrival_time?.slice(0, 5)}</span>
-                                        <span className="rel-time">{mins} min</span>
-                                    </div>
-                                </div>
+                                <span
+                                    key={shortName}
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent map click
+                                        if (routeInfo) onSelectRoute(routeInfo);
+                                    }}
+                                    style={{
+                                        backgroundColor: color,
+                                        color: textColor,
+                                        padding: '4px 10px',
+                                        borderRadius: '6px',
+                                        fontSize: '0.8rem',
+                                        cursor: routeInfo ? 'pointer' : 'default',
+                                        fontWeight: 'bold',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                                        transition: 'transform 0.1s',
+                                        display: 'inline-block'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                                    title={routeInfo ? `View Route ${shortName}` : ''}
+                                >
+                                    {shortName}
+                                </span>
                             );
                         })}
                     </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', color: '#ddd' }}>
+                <thead>
+                    <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#fff', opacity: 0.6, fontSize: '0.7rem', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>⏰ Arrive</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>⏳ In</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>🚌 Route</th>
+                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>📍 Dest.</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {arrivals.length === 0 ? (
+                        <tr><td colSpan="4" style={{ padding: '15px', textAlign: 'center', color: '#888' }}>No buses in the next hour.</td></tr>
+                    ) : (
+                        arrivals.map((arr, i) => {
+                            const now = new Date();
+                            const [h, m] = arr.arrival_time.split(':');
+                            const busTime = new Date();
+                            busTime.setHours(h, m, 0);
+                            const diff = Math.floor((busTime - now) / 60000);
+                            const timeDisplay = diff >= 0 ? `${diff}m` : 'Now';
+
+                            const routeInfo = routes.find(r => r.short_name === arr.route_short_name || r.route_short_name === arr.route_short_name);
+                            const rColor = routeInfo ? (routeInfo.color || routeInfo.route_color) : '4834d4';
+                            const badgeColor = rColor.startsWith('#') ? rColor : `#${rColor}`;
+
+                            return (
+                                <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                                    <td style={{ padding: '10px 4px', color: '#fff', fontWeight: 'bold' }}>
+                                        {arr.arrival_time.slice(0, 5)}
+                                    </td>
+                                    <td style={{ padding: '10px 4px', fontWeight: '900', color: '#fff' }}>{timeDisplay}</td>
+                                    <td style={{ padding: '10px 4px' }}>
+                                        <span
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (routeInfo) onSelectRoute(routeInfo);
+                                            }}
+                                            style={{
+                                                backgroundColor: badgeColor,
+                                                padding: '4px 8px',
+                                                borderRadius: '6px',
+                                                border: `1px solid rgba(255,255,255,0.2)`,
+                                                color: '#fff',
+                                                cursor: routeInfo ? 'pointer' : 'default',
+                                                fontSize: '0.8rem',
+                                                fontWeight: '900',
+                                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                                            }}
+                                        >
+                                            {arr.route_short_name}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '10px 4px', color: '#bbb' }}>{arr.trip_headsign}</td>
+                                </tr>
+                            );
+                        })
+                    )}
+                </tbody>
+            </table>
         </div>
     );
 };
 
-export default function Map({ 
-  stops = [], 
-  shapes = [], 
-  routes = [], 
-  vehicles = [],
-  selectedPlan,
-  onSelectRoute,
-  routeColor,
-  onVehicleClick,
-  showToast,
-  showStops,
-  setShowStops,
-  isSatellite,
-  setIsSatellite,
-  favorites,
-  toggleFavorite
-}) {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const { t } = useLanguage();
-  
-  const [arrivals, setArrivals] = useState(null);
-  const [selectedStop, setSelectedStop] = useState(null);
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+// Icon Cache to prevent redundant divIcon creation
+const iconCache = new Map();
 
-  // Markers refs for cleanup
-  const busMarkers = useRef({});
-  const stopMarkers = useRef([]);
-  const planMarkers = useRef([]);
-  const userMarker = useRef(null);
-  const activePopup = useRef(null);
-  const [mapZoom, setMapZoom] = useState(13);
+// Custom Bus Icon Generator (Balloon Label + Rotated Bus)
+const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15) => {
+    // Quantize bearing to 10-degree steps to reduce cache size and re-mounts
+    const qBearing = Math.round((bearing || 0) / 10) * 10;
+    // Dynamic scale to keep buses "readable" even when zoomed out (doesn't shrink as much as map)
+    const scale = zoom < 12 ? 0.8 : zoom < 14 ? 0.9 : 1.0;
 
-  // Initialization & Style Management
-  useEffect(() => {
-    if (map.current) {
-      // If map already exists, just update style to avoid re-initializing
-      map.current.setStyle(isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE);
-      return;
-    }
+    const key = `${routeShortName}_${qBearing}_${color}_${scale}`;
+    if (iconCache.has(key)) return iconCache.get(key);
 
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE,
-      center: [33.3613, 35.1856], // Nicosia
-      zoom: 13,
-      pitch: 0,
-      maxBounds: [[32.0, 34.4], [34.7, 35.7]]
+    const icon = L.divIcon({
+        className: 'custom-bus-marker-container',
+        html: `
+            <div class="balloon-bus-marker">
+                <div class="balloon-label" style="background-color: ${color};">
+                    ${routeShortName || '?'}
+                </div>
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
+                        <!-- Bus Chassis -->
+                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${color}" stroke="white" stroke-width="4" />
+                        <!-- Front Windshield -->
+                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                        <!-- Roof Details -->
+                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                        <!-- Headlights -->
+                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                    </svg>
+                </div>
+            </div>
+        `,
+        iconSize: [40, 60],
+        iconAnchor: [20, 50],
+        popupAnchor: [0, -50]
     });
 
-    map.current.addControl(new maplibregl.NavigationControl({ showPitch: false }), 'top-right');
-    
-    // Add layers on every style change (including first load)
-    const addLayers = () => {
-      // Route Source & Layers
-      if (!map.current.getSource('route-source')) {
-        map.current.addSource('route-source', {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [] }
-        });
-
-          map.current.addLayer({
-          id: 'route-line',
-          type: 'line',
-          source: 'route-source',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': routeColor?.startsWith('#') ? routeColor : (routeColor ? `#${routeColor}` : '#ff0033'),
-            'line-width': 5
-          }
-        });
-      }
-
-      // Stops Layer (High-Perf Vector)
-      if (!map.current.getSource('stops-source')) {
-        map.current.addSource('stops-source', {
-          type: 'geojson',
-          data: { type: 'FeatureCollection', features: [] }
-        });
-
-        // Circle Layer for base
-        map.current.addLayer({
-          id: 'stops-layer',
-          type: 'circle',
-          source: 'stops-source',
-          minzoom: 14,
-          paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              14, 4,
-              18, 10
-            ],
-            'circle-color': '#ff3366',
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff'
-          }
-        });
-
-        // Click handler
-        map.current.on('click', 'stops-layer', async (e) => {
-            const stop = e.features[0].properties;
-            if (activePopup.current) activePopup.current.remove();
-            
-            const popupNode = document.createElement('div');
-            popupNode.id = `popup-${stop.stop_id}`;
-            
-            activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-v4' })
-                .setLngLat([e.lngLat.lng, e.lngLat.lat])
-                .setDOMContent(popupNode)
-                .addTo(map.current);
-
-            setSelectedStop(null);
-            setArrivals(null);
-            setSelectedStop(stop);
-            try {
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id}/timetable`);
-              const data = await res.json();
-              setArrivals(data);
-            } catch (err) { setArrivals([]); }
-        });
-
-        map.current.on('mouseenter', 'stops-layer', () => map.current.getCanvas().style.cursor = 'pointer');
-        map.current.on('mouseleave', 'stops-layer', () => map.current.getCanvas().style.cursor = '');
-      }
-    };
-
-    map.current.on('style.load', addLayers);
-    map.current.on('load', addLayers);
-    map.current.on('zoom', () => setMapZoom(map.current.getZoom()));
-
-    return () => {
-        if (map.current) {
-            map.current.remove();
-            map.current = null;
-        }
-    };
-  }, [isSatellite]);
-
-  // Handle Shapes (Routes)
-  useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
-
-    if (shapes.length === 0) {
-      const source = map.current.getSource('route-source');
-      if (source) source.setData({ type: 'FeatureCollection', features: [] });
-      return;
+    iconCache.set(key, icon);
+    // Limit cache size
+    if (iconCache.size > 1000) {
+        const firstKey = iconCache.keys().next().value;
+        iconCache.delete(firstKey);
     }
 
-    const geojson = {
-      type: 'FeatureCollection',
-      features: shapes.map(coords => ({
-        type: 'Feature',
-        geometry: {
-          type: 'LineString',
-          coordinates: coords.map(c => [c[1], c[0]]) // MapLibre uses [lng, lat]
-        }
-      }))
-    };
+    return icon;
+};
 
-    const source = map.current.getSource('route-source');
-    if (source) source.setData(geojson);
+// Memoized Bus Marker Component to prevent re-renders unless data changes
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle, mapZoom }) => {
+    const routeInfo = useMemo(() => null, []);
 
-    // Zoom to route on first load only
-    if (shapes.length > 0 && isFirstLoad) {
-      const allCoords = shapes.flat();
-      const bounds = allCoords.reduce((b, c) => {
-        return [
-          [Math.min(b[0][0], c[1]), Math.min(b[0][1], c[0])],
-          [Math.max(b[1][0], c[1]), Math.max(b[1][1], c[0])]
-        ];
-      }, [[allCoords[0][1], allCoords[0][0]], [allCoords[0][1], allCoords[0][0]]]);
+    const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
+    // Text color logic could be simplified or passed from props
+    const vTextColor = 'white';
 
-      map.current.fitBounds(bounds, { padding: 50, duration: 1000 });
-      setIsFirstLoad(false);
-    }
-  }, [shapes, routeColor]);
+    return (
+        <Marker
+            position={[lat, lon]}
+            icon={createBusIcon(shortName, bearing, vColor, mapZoom || 15)}
+            className="smooth-move"
+            eventHandlers={{
+                click: () => {
+                    if (onVehicleClick) onVehicleClick(rawVehicle);
+                }
+            }}
+        >
+            <Popup className="bus-popup" minWidth={200}>
+                <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
+                    <div style={{
+                        backgroundColor: vColor,
+                        color: vTextColor,
+                        padding: '10px 18px',
+                        borderRadius: '25px',
+                        display: 'inline-block',
+                        fontSize: '1.3rem',
+                        fontWeight: '900',
+                        marginBottom: '12px',
+                        boxShadow: '0 3px 8px rgba(0,0,0,0.3)',
+                        border: '2px solid rgba(255,255,255,0.2)'
+                    }}>
+                        {shortName || '?'}
+                    </div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', color: '#fff', letterSpacing: '-0.5px' }}>
+                        {headsign || 'Bus Route'}
+                    </div>
+                    <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
+                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>ID:</strong> <span style={{ fontFamily: 'monospace', color: '#fff' }}>{id}</span></div>
+                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Operator:</strong> <span style={{ color: '#fff' }}>{agency || 'CPT'}</span></div>
+                        <div style={{ marginBottom: '6px', color: '#4834d4' }}>
+                            <strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>{t?.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
+                        </div>
+                    </div>
+                </div>
+            </Popup>
+        </Marker>
+    );
+});
 
-  // Handle Vehicles (Buses)
-  useEffect(() => {
-    if (!map.current) return;
-
-    // Remove obsolete markers
-    const currentIds = new Set(vehicles.map(v => v._id || v.vehicle_id || v.id));
-    Object.keys(busMarkers.current).forEach(id => {
-      if (!currentIds.has(id)) {
-        busMarkers.current[id].remove();
-        delete busMarkers.current[id];
-      }
-    });
-
-    // Update/Add markers
-    vehicles.forEach(v => {
-      const lat = parseFloat(v.lat || v.lt);
-      const lng = parseFloat(v.lon || v.ln);
-      const bearing = parseFloat(v.bearing || v.ag || 0);
-      const markerId = v._id || v.vehicle_id || v.id;
-
-      // SAFETY GUARD: skip invalid coordinates to prevent site crash
-      if (isNaN(lat) || isNaN(lng)) {
-        console.warn(`Skipping vehicle ${markerId} due to invalid coordinates:`, v);
-        return;
-      }
-
-    const busColorRaw = (v.color || v.c || 'ff0033');
-    const busColor = busColorRaw.startsWith('#') ? busColorRaw : `#${busColorRaw}`;
-
-    if (busMarkers.current[markerId]) {
-      busMarkers.current[markerId].setLngLat([lng, lat]);
-      const el = busMarkers.current[markerId].getElement();
-      
-      const wrapper = el.querySelector('.rotated-bus-wrapper');
-      if (wrapper && !isNaN(bearing)) {
-          wrapper.style.transform = `rotate(${bearing}deg)`;
-      }
-      
-      const label = el.querySelector('.balloon-label');
-      if (label) label.style.backgroundColor = busColor;
-    } else {
-      const el = document.createElement('div');
-      el.className = 'bus-marker-v2';
-      el.innerHTML = `
-          <div class="balloon-bus-marker">
-              <div class="balloon-label" style="background-color: ${busColor};">
-                  ${v.route_short_name || v.sn || '?'}
-              </div>
-              <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
-                  <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
-                      <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
-                      <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                      <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                      <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                      <circle cx="35" cy="10" r="3" fill="#fffb00" />
-                  </svg>
-              </div>
-          </div>
-      `;
-
-      el.onclick = (e) => {
-          e.stopPropagation();
-          if (activePopup.current) activePopup.current.remove();
-          
-          const popupEl = document.createElement('div');
-          // Simplified bus popup info
-          popupEl.innerHTML = `
-              <div style="text-align: center; color: #fff; padding: 10px;">
-                  <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
-                      ${v.route_short_name || v.sn || '?'}
-                  </div>
-                  <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
-                  <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${v.vehicle_id}</div>
-              </div>
-          `;
-
-          activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
-              .setLngLat([lng, lat])
-              .setDOMContent(popupEl)
-              .addTo(map.current);
-          
-          activePopup.current.on('close', () => setSelectedStop(null));
-          onVehicleClick?.(v);
-      };
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([lng, lat])
-        .addTo(map.current);
-        
-      busMarkers.current[markerId] = marker;
-    }
-  });
-}, [vehicles]);
-
-// Efficient GeoJSON Update for Stops
-useEffect(() => {
-  if (!map.current) return;
-  const source = map.current.getSource('stops-source');
-  if (!source) return;
-
-  if (!showStops || stops.length === 0) {
-      source.setData({ type: 'FeatureCollection', features: [] });
-      return;
-  }
-
-  source.setData({
-      type: 'FeatureCollection',
-      features: stops.map(stop => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
-          properties: { ...stop }
-      }))
-  });
-}, [stops, showStops]);
-
-  // Handle React Portal-like rendering for Stop Popup content
-  const [popupPortal, setPopupPortal] = useState(null);
-  useEffect(() => {
-    if (selectedStop && activePopup.current) {
-        const container = document.getElementById(`popup-${selectedStop.stop_id}`);
-        if (container) {
-            setPopupPortal({ container, stop: selectedStop });
-        }
-    } else {
-        setPopupPortal(null);
-    }
-  }, [selectedStop, arrivals, activePopup.current]);
-
-  return (
-    <div className="map-wrapper-v2">
-      <div ref={mapContainer} className="map-container-v2" />
-      
-      <div className="map-controls-custom">
-        <button 
-          id="my-location-btn"
-          className="btn-overlay"
-          onClick={() => {
-            if (map.current) {
-              navigator.geolocation.getCurrentPosition(pos => {
-                const { longitude, latitude } = pos.coords;
-                map.current.flyTo({
-                  center: [longitude, latitude],
-                  zoom: 15,
-                  essential: true
-                });
-
-                // Add or update User Marker
-                if (userMarker.current) userMarker.current.remove();
-                const el = document.createElement('div');
-                el.className = 'user-marker-pulse';
-                userMarker.current = new maplibregl.Marker({ element: el })
-                  .setLngLat([longitude, latitude])
-                  .addTo(map.current);
-              });
+const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan }) => {
+    useMapEvents({
+        movestart: () => {
+            if (map?._container) map._container.classList.add('map-moving');
+        },
+        moveend: () => {
+            setMapZoom(map.getZoom());
+            updateVisibleElements();
+            if (map?._container) map._container.classList.remove('map-moving');
+        },
+        zoomstart: () => {
+            if (map?._container) map._container.classList.add('map-moving');
+        },
+        zoomend: () => {
+            setMapZoom(map.getZoom());
+            updateVisibleElements();
+            if (map?._container) map._container.classList.remove('map-moving');
+        },
+        popupclose: (e) => {
+            if (e.popup.options.className === 'bus-popup') {
+                if (onSelectRoute) onSelectRoute(null);
             }
-          }}
-         title={t.my_location}
-        >
-          <span>🎯</span>
-        </button>
-        <button 
-          className={`btn-overlay ${showStops ? 'active' : ''}`}
-          onClick={() => setShowStops(!showStops)}
-          title={t.show_stops}
-        >
-          <span>{showStops ? '✕' : '🚏'}</span>
-        </button>
-        <button 
-          className={`btn-overlay ${isSatellite ? 'active' : ''}`}
-          onClick={() => setIsSatellite(!isSatellite)}
-          title={isSatellite ? t.streetView : t.satelliteView}
-        >
-          <span>{isSatellite ? '🏙️' : '🛰️'}</span>
-        </button>
-      </div>
+        },
+        click: () => {
+            // Close sidebar on mobile when clicking anywhere on the map
+            if (window.innerWidth < 768 && setIsOpen) {
+                setIsOpen(false);
+            }
+        }
+    });
 
-      {showStops && mapZoom < 15 && (
-        <div className="zoom-hint-pill">
-            {t.zoomInToSeeStops || 'Zoom in to see stops'}
-        </div>
-      )}
+    // Auto-Zoom logic
+    useEffect(() => {
+        if (!map) return;
 
-      {popupPortal && (
-        <div style={{ display: 'none' }}>
-            {/* We use a hidden div to render the React component, but then we might need actual Portal logic or just inject it */}
-        </div>
-      )}
-      
-      {/* Fallback to simple React-based popup if native DOM injection is hard, but let's try the native way first */}
-      {selectedStop && activePopup.current && (
-          <div style={{ display: 'none' }}>
-              {/* This is a trick: the native popup uses a DOM node we provided, we can 'portal' into it if needed, 
-                  but for simplicity let's stick to the custom overlay if the native one is too buggy for React bits.
-                  Actually, the user said "поп ап окна не работают". Let's use the native ones properly.
-              */}
-          </div>
-      )}
+        // Priority 1: Selected Plan (specific points)
+        if (selectedPlan) {
+            const points = [
+                [selectedPlan.from.lat, selectedPlan.from.lon],
+                [selectedPlan.to.lat, selectedPlan.to.lon]
+            ];
+            if (selectedPlan.hub) points.push([selectedPlan.hub.lat, selectedPlan.hub.lon]);
 
-      {/* Re-implementing the TimetablePopup inside the Native Popup requires caution. 
-          I'll use a simpler approach: Injecting the React component into the DOM node of the MapLibre Popup.
-      */}
-      {selectedStop && popupPortal && (
-          <React.Fragment>
-              {require('react-dom').createPortal(
-                <TimetablePopup 
-                    stop={selectedStop} 
-                    arrivals={arrivals} 
+            map.fitBounds(points, { padding: [100, 100], animate: true, maxZoom: 16 });
+            return;
+        }
+
+        // Priority 2: Route Shapes
+        if (shapes && shapes.length > 0) {
+            const allPoints = shapes.flat();
+            if (allPoints.length > 0) {
+                map.fitBounds(allPoints, { padding: [70, 70], animate: true, maxZoom: 15 });
+            }
+        }
+    }, [shapes, selectedPlan, map]);
+
+    return null;
+};
+
+export default function BusMap({
+    stops, shapes, routes, vehicles, selectedPlan, onSelectRoute, routeColor, onVehicleClick,
+    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen
+}) {
+    const mapRef = useRef(null);
+    const { t } = useLanguage();
+    const [locLoading, setLocLoading] = useState(false);
+    const [isFirstLoad, setIsFirstLoad] = useState(true);
+    const seenVehicles = useRef(new Set());
+
+    // Manage visible stops for performance
+    const [visibleStops, setVisibleStops] = useState([]);
+    const [mapZoom, setMapZoom] = useState(10);
+    const [userLoc, setUserLoc] = useState(null);
+
+
+    // 1. Map Events Handling Logic (Stops only, Vehicles are handled directly)
+    const updateVisibleStops = useCallback(() => {
+        if (!mapRef.current) return;
+        const m = mapRef.current;
+        const bounds = m.getBounds();
+        const zoom = m.getZoom();
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+        const buffer = isMobile ? 0.05 : 0.15;
+        const paddedBounds = bounds.pad(buffer);
+
+        // Filter stops only
+        if (showStops && zoom >= 15 && Array.isArray(stops)) {
+            const filteredStops = stops.filter(s =>
+                s && s.lat !== undefined && s.lon !== undefined &&
+                paddedBounds.contains([s.lat, s.lon])
+            );
+            setVisibleStops(filteredStops);
+        } else {
+            setVisibleStops([]);
+        }
+    }, [showStops, stops]);
+
+    // Update visibility when source data or settings change
+    useEffect(() => {
+        updateVisibleStops(mapRef.current);
+    }, [showStops, stops, updateVisibleStops]);
+
+    // Trigger update on vehicles change for "seen" logic and first load removal
+    useEffect(() => {
+        if (Array.isArray(vehicles) && vehicles.length > 0 && isFirstLoad) {
+            vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
+            setIsFirstLoad(false);
+        }
+    }, [vehicles, isFirstLoad]);
+
+    const geoInProgress = useRef(false);
+    const userLocRef = useRef(null);
+    const pendingErrorTimeout = useRef(null);
+
+    // Geolocation - Strict iOS Compliance
+    useEffect(() => {
+        const btn = document.getElementById('my-location-btn');
+        if (!btn) return;
+
+        const handleLocClick = (e) => {
+            e.preventDefault();
+            if (geoInProgress.current) return;
+            if (!navigator.geolocation) {
+                if (showToast) showToast("Geolocation is not supported by your browser");
+                return;
+            }
+
+            setLocLoading(true);
+            geoInProgress.current = true;
+
+            if (pendingErrorTimeout.current) {
+                clearTimeout(pendingErrorTimeout.current);
+                pendingErrorTimeout.current = null;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude } = pos.coords;
+                    if (pendingErrorTimeout.current) {
+                        clearTimeout(pendingErrorTimeout.current);
+                        pendingErrorTimeout.current = null;
+                    }
+
+                    setUserLoc([latitude, longitude]);
+                    userLocRef.current = [latitude, longitude];
+                    setLocLoading(false);
+                    geoInProgress.current = false;
+                    setShowStops(true);
+                    if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
+                },
+                (err) => {
+                    setLocLoading(false);
+                    geoInProgress.current = false;
+                    if (userLocRef.current) return;
+                    if (err.code === 1) {
+                        pendingErrorTimeout.current = setTimeout(() => {
+                            if (!userLocRef.current && showToast) {
+                                showToast("Location access denied. Check browser/OS settings.");
+                            }
+                        }, 1000);
+                    } else if (err.code === 3) {
+                        console.warn("Location timeout.");
+                    } else {
+                        if (showToast) showToast("Could not find location. Try again.");
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+            );
+        };
+
+        btn.addEventListener('click', handleLocClick);
+        return () => {
+            btn.removeEventListener('click', handleLocClick);
+            if (pendingErrorTimeout.current) clearTimeout(pendingErrorTimeout.current);
+        };
+    }, [showToast]);
+
+    return (
+        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+            {/* Desktop Map Controls (hidden via CSS on mobile, but kept in DOM for functional triggers) */}
+            <div className="map-controls-container" style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t.streetView : t.satelliteView}>
+                    <span>{isSatellite ? '🏙️' : '🛰️'}</span>
+                </button>
+                <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`} title={showStops ? t.hideStops : t.showStops}>
+                    <span>{showStops ? '✕' : '🚏'}</span>
+                </button>
+                <button id="my-location-btn" className="stops-toggle-btn" title={t.myLocation}>
+                    <span>{locLoading ? '⌛' : '🎯'}</span>
+                </button>
+                <button
+                    onClick={() => {
+                        if (confirm("Reboot site and refresh all data?")) {
+                            window.location.reload(true);
+                        }
+                    }}
+                    className="stops-toggle-btn"
+                    title="Reboot"
+                >
+                    <span>🔄</span>
+                </button>
+            </div>
+
+            <MapContainer
+                center={[35.1264, 33.4299]}
+                zoom={9}
+                minZoom={8}
+                maxBounds={[[32.5, 30.0], [36.5, 37.0]]}
+                maxBoundsViscosity={1.0}
+                style={{ height: '100%', width: '100%' }}
+                zoomControl={false}
+                ref={mapRef}
+                preferCanvas={true}
+            >
+                <ZoomControl position="bottomright" />
+                <MapEvents
+                    map={mapRef.current}
+                    setMapZoom={setMapZoom}
+                    updateVisibleElements={updateVisibleStops}
+                    shapes={shapes}
                     onSelectRoute={onSelectRoute}
-                    favorites={favorites}
-                    onToggleFavorite={toggleFavorite}
-                    t={t}
-                    routes={routes}
-                />,
-                popupPortal.container
-              )}
-          </React.Fragment>
-      )}
+                    selectedPlan={selectedPlan}
+                    setIsOpen={setIsOpen}
+                />
 
-      <style jsx>{`
-        .map-wrapper-v2 {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: #0a0a12;
-        }
-        .map-container-v2 {
-          width: 100%;
-          height: 100%;
-        }
-        
-        :global(.balloon-bus-marker) {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          width: 40px;
-          height: 60px;
-        }
-        :global(.balloon-label) {
-          padding: 2px 8px;
-          border-radius: 10px;
-          color: white;
-          font-weight: 900;
-          font-size: 0.7rem;
-          margin-bottom: 2px;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-          border: 1px solid rgba(255,255,255,0.3);
-          white-space: nowrap;
-        }
-        :global(.rotated-bus-wrapper) {
-          transition: transform 0.3s ease;
-        }
+                {isSatellite ? (
+                    <>
+                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
+                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
+                    </>
+                ) : (
+                    <TileLayer
+                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                        maxZoom={20}
+                    />
+                )}
 
-        :global(.maplibregl-popup-content) {
-          background: rgba(20, 20, 25, 0.9);
-          backdrop-filter: blur(15px);
-          border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 15px;
-          padding: 15px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-        }
-        :global(.maplibregl-popup-tip) {
-          border-top-color: rgba(20, 20, 25, 0.9);
-        }
-        :global(.maplibregl-popup-close-button) {
-          color: white;
-          font-size: 1.2rem;
-          padding: 5px;
-        }
+                {shapes && shapes.length > 0 && shapes.map((shape, index) => (
+                    <Polyline key={`shape-${index}`} positions={shape} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
+                ))}
 
-        :global(.stop-marker-v2) {
-          cursor: pointer;
-          width: 32px;
-          height: 38px;
-        }
-        :global(.stop-pin-v2) {
-          background: #ff0033;
-          width: 32px;
-          height: 32px;
-          border-radius: 50% 50% 50% 6px;
-          transform: rotate(-45deg);
-          border: 2px solid white;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        :global(.stop-pin-inner) {
-          transform: rotate(45deg);
-          color: white;
-          font-size: 14px;
-        }
-        :global(.stop-marker-v2:hover .stop-pin-v2) {
-          transform: rotate(-45deg) scale(1.2);
-          box-shadow: 0 6px 15px rgba(255,0,51,0.5);
-        }
+                {showStops && mapZoom < 15 && (
+                    <div className="zoom-hint-pill" style={{ borderColor: 'rgba(255,0,51,0.3)' }}>
+                        {t.zoomInToSeeStops || 'Zoom in to see stops'}
+                    </div>
+                )}
 
-        :global(.user-marker-pulse) {
-          width: 20px;
-          height: 20px;
-          background: #0070f3;
-          border: 2px solid white;
-          border-radius: 50%;
-          box-shadow: 0 0 15px #0070f3;
-          position: relative;
-        }
-        :global(.user-marker-pulse::after) {
-          content: '';
-          position: absolute;
-          top: -10px;
-          left: -10px;
-          width: 40px;
-          height: 40px;
-          border: 2px solid #0070f3;
-          border-radius: 50%;
-          animation: user-pulse 2s infinite;
-        }
-        @keyframes user-pulse {
-          0% { transform: scale(0.5); opacity: 1; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
+                {showStops && mapZoom >= 15 && visibleStops.map((stop) => (
+                    <Marker
+                        key={`stop-${stop.stop_id}`}
+                        position={[stop.lat, stop.lon]}
+                        icon={stopIcon}
+                    >
+                        <Popup minWidth={300}>
+                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
+                        </Popup>
+                    </Marker>
+                ))}
 
-        .zoom-hint-pill {
-          position: fixed;
-          top: 100px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: #000;
-          color: white;
-          padding: 10px 20px;
-          border-radius: 40px;
-          font-weight: bold;
-          font-size: 0.8rem;
-          border: 2px solid #ff3366;
-          z-index: 9999;
-          pointer-events: none;
-          box-shadow: 0 5px 25px rgba(0,0,0,0.8);
-          max-width: 250px;
-          width: auto;
-          text-align: center;
-          white-space: nowrap;
-        }
+                {/* Optimized Memoized Bus Markers */}
+                {vehicles && vehicles.length > 0 && vehicles.map((v, i) => {
+                    const vId = v.id || v.vehicle_id;
+                    const vLat = v.lt || v.lat;
+                    const vLon = v.ln || v.lon;
+                    if (vLat === undefined || vLon === undefined) return null;
 
-        :global(.maplibregl-popup-content) {
-          background: #0f0f15 !important;
-          border-radius: 20px !important;
-          padding: 16px !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.7) !important;
-        }
+                    return (
+                        <BusMarker
+                            key={`bus-${vId || i}`}
+                            id={vId}
+                            lat={vLat}
+                            lon={vLon}
+                            bearing={v.b !== undefined ? v.b : v.bearing}
+                            shortName={v.sn || v.route_short_name}
+                            color={v.c}
+                            speed={v.s}
+                            headsign={v.h}
+                            agency={v.ag}
+                            onVehicleClick={onVehicleClick}
+                            rawVehicle={v}
+                            mapZoom={mapZoom} // Pass zoom for scaling, but component is memoized
+                        />
+                    );
+                })}
 
-        .stop-popup-v4 {
-          color: white;
-          width: 300px;
-        }
-        .popup-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 15px;
-          padding-right: 25px;
-        }
-        .stop-title-area h3 {
-          margin: 0;
-          font-size: 1.1rem;
-          letter-spacing: -0.02em;
-        }
-        .stop-code {
-          font-size: 0.7rem;
-          opacity: 0.5;
-        }
-        .fav-pill-btn {
-          background: rgba(255,255,255,0.05);
-          border: none;
-          padding: 6px;
-          border-radius: 12px;
-          cursor: pointer;
-        }
-        .arrivals-scroll {
-          max-height: 250px;
-          overflow-y: auto;
-        }
-        .bus-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px;
-          background: rgba(255,255,255,0.02);
-          margin-bottom: 8px;
-          border-radius: 14px;
-          cursor: pointer;
-        }
-        .bus-badge {
-          width: 38px;
-          height: 38px;
-          min-width: 38px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 800;
-          font-size: 0.9rem;
-        }
-        .bus-dest {
-          flex: 1;
-          font-size: 0.85rem;
-          font-weight: 500;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-        }
-        .bus-eta {
-          text-align: right;
-        }
-        .abs-time {
-          display: block;
-          font-size: 0.85rem;
-          font-weight: 700;
-        }
-        .rel-time {
-          font-size: 0.7rem;
-          color: #ff3366;
-          font-weight: bold;
-        }
-      `}</style>
-    </div>
-  );
+                {userLoc && (
+                    <Marker position={userLoc} icon={userLocationIcon} zIndexOffset={1000}>
+                        <Popup><div>You are here</div></Popup>
+                    </Marker>
+                )}
+
+                {selectedPlan && (
+                    <>
+                        {/* START POINT */}
+                        <Marker position={[selectedPlan.from.lat, selectedPlan.from.lon]} icon={planStartIcon} zIndexOffset={2000}>
+                            <Popup className="plan-popup">
+                                <div style={{ textAlign: 'center' }}>
+                                    <strong style={{ color: '#39ff14' }}>START HERE</strong><br />
+                                    {selectedPlan.from.name}<br />
+                                    Ride: <b>{selectedPlan.type === 'transfer' ? selectedPlan.route1.short_name : selectedPlan.route.short_name}</b>
+                                </div>
+                            </Popup>
+                        </Marker>
+
+                        {/* TRANSFER HUB */}
+                        {selectedPlan.type === 'transfer' && (
+                            <Marker position={[selectedPlan.hub.lat, selectedPlan.hub.lon]} icon={planHubIcon} zIndexOffset={2000}>
+                                <Popup className="plan-popup">
+                                    <div style={{ textAlign: 'center' }}>
+                                        <strong style={{ color: '#e056fd' }}>CHANGE BUS</strong><br />
+                                        {selectedPlan.hub.name}<br />
+                                        Wait for: <b>{selectedPlan.route2.short_name}</b>
+                                    </div>
+                                </Popup>
+                            </Marker>
+                        )}
+
+                        {/* END POINT */}
+                        <Marker position={[selectedPlan.to.lat, selectedPlan.to.lon]} icon={planEndIcon} zIndexOffset={2000}>
+                            <Popup className="plan-popup">
+                                <div style={{ textAlign: 'center' }}>
+                                    <strong style={{ color: '#ff0033' }}>DESTINATION</strong><br />
+                                    {selectedPlan.to.name}<br />
+                                    Exit here.
+                                </div>
+                            </Popup>
+                        </Marker>
+                    </>
+                )}
+            </MapContainer>
+        </div>
+    );
 }
+
+

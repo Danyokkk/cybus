@@ -1,7 +1,8 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
+import { io } from 'socket.io-client';
 import { useLanguage } from '../context/LanguageContext';
 
 // Dynamic import for BusMap component
@@ -28,9 +29,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to false for mobile-first
   const [activeTab, setActiveTab] = useState('routes');
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showStops, setShowStops] = useState(false);
-  const [isSatellite, setIsSatellite] = useState(false); // Default to simple map for performance
-  const [favorites, setFavorites] = useState([]);
+  const [isSatellite, setIsSatellite] = useState(true); // Default to satellite view as requested
   const [toast, setToast] = useState(null);
 
   // Helper to show toasts
@@ -39,41 +40,18 @@ export default function Home() {
     setTimeout(() => setToast(null), duration);
   }, []);
 
+  // 0. Mobile-aware initial state & Resize handling
   useEffect(() => {
-    // Load favorites from local storage safely
-    const savedFavs = localStorage.getItem('cybus_favorites');
-    if (savedFavs) {
-      try {
-        const parsed = JSON.parse(savedFavs);
-        if (Array.isArray(parsed)) setFavorites(parsed);
-      } catch (e) {
-        console.error("Error loading favorites", e);
+    const handleResize = () => {
+      if (window.innerWidth >= 768) {
+        setIsSidebarOpen(true);
       }
-    }
+    };
+
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  // Update localStorage when favorites change (skip first render handled by loading effect)
-  const isMounted = useRef(false);
-  useEffect(() => {
-    if (!isMounted.current) {
-      isMounted.current = true;
-      return;
-    }
-    localStorage.setItem('cybus_favorites', JSON.stringify(favorites));
-  }, [favorites]);
-
-  const toggleFavorite = useCallback((stop) => {
-    setFavorites(prev => {
-      const isFav = prev.some(f => f.stop_id === stop.stop_id);
-      if (isFav) {
-        showToast(`Removed from favorites: ${stop.name}`);
-        return prev.filter(f => f.stop_id !== stop.stop_id);
-      } else {
-        showToast(`Added to favorites: ${stop.name}`);
-        return [...prev, stop];
-      }
-    });
-  }, [showToast]);
 
   // 1. Fetch initial data (Parallelized with Caching)
   useEffect(() => {
@@ -90,6 +68,7 @@ export default function Home() {
           setStops(JSON.parse(cachedStops));
           setRoutes(JSON.parse(cachedRoutes));
           setLoading(false); // Immediate load complete
+          // Optional: Background refresh could go here if needed
         } else {
           // Fresh Fetch
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
@@ -123,33 +102,28 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. Direct Polling for vehicles (Render Server)
+  // 2. WebSocket Real-time Sync
   useEffect(() => {
-    let intervalId;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+    const socket = io(apiUrl);
 
-    const fetchVehicles = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/api/v2/vehicles`);
-        if (!res.ok) throw new Error('Refresh failed');
-        const data = await res.json();
-        
-        // Map compact format to objects for Map component
-        const mapped = data.map(v => ({
-            id: v[0], r: v[1], lt: v[2], ln: v[3], b: v[4], sn: v[5], c: v[6], h: v[7]
-        }));
+    socket.on('connect', () => {
+      console.log('CONNECTED TO WEBSOCKET');
+    });
 
-        setVehicles(mapped);
+    socket.on('vehiclePositions', (data) => {
+      if (Array.isArray(data)) {
+        setVehicles(data);
+        localStorage.setItem('cybus_vehicles', JSON.stringify(data));
+        localStorage.setItem('cybus_v_cache_time', Date.now().toString());
         if (loading) setLoading(false);
-      } catch (err) {
-        console.warn('Real-time update failed, retrying...', err.message);
       }
-    };
+    });
 
-    fetchVehicles();
-    intervalId = setInterval(fetchVehicles, 15000); // Poll every 15s to save Render resources
-    return () => clearInterval(intervalId);
-  }, []);
+    return () => {
+      socket.disconnect();
+    };
+  }, [loading]);
 
   // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = useCallback(async (route) => {
@@ -159,7 +133,7 @@ export default function Home() {
     }
     if (!route) {
       if (selectedRouteId === null) {
-        return; 
+        return; // Already null, avoid redundant work
       }
       setSelectedRouteId(null);
       setSelectedRouteColor(null);
@@ -173,7 +147,7 @@ export default function Home() {
       } catch (err) { console.error(err); }
     } else {
       if (selectedRouteId === route.route_id) {
-        return; 
+        return; // Avoid double loading same route
       }
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
@@ -181,6 +155,7 @@ export default function Home() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
         const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
         const data = await res.json();
+        console.log('Route Detailed Data:', data);
         setStops(data.stops || []);
         setShapes(data.shapes || []);
       } catch (err) {
@@ -188,7 +163,7 @@ export default function Home() {
         setShapes([]);
       }
     }
-  }, [selectedRouteId, routes]); 
+  }, [selectedRouteId, routes]); // Handlers are stable
 
   const handleSelectPlan = useCallback((plan) => {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -199,18 +174,26 @@ export default function Home() {
 
   // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = useCallback((v) => {
+    console.log('Vehicle Clicked:', v);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
 
     const routeId = v.r || v.route_id;
     const routeShortName = v.sn || v.route_short_name;
 
-    let route = routes.find(r => String(r.route_id) === String(routeId));
+    // 1. Try match by exact route_id
+    let route = routes.find(r => r.route_id === routeId);
+
+    // 2. Fallback: match by short_name if ID fails (sometimes IDs change or are partial)
     if (!route && routeShortName) {
+      console.warn(`Route ID mismatch (${routeId}), trying fallback by name: ${routeShortName}`);
       route = routes.find(r => r.short_name === routeShortName || r.route_short_name === routeShortName);
     }
 
     if (route) {
+      console.log('Routing to:', route.route_id);
       handleSelectRoute(route);
+    } else {
+      console.error('Could not find route for vehicle:', v);
     }
   }, [routes, handleSelectRoute]);
 
@@ -226,10 +209,9 @@ export default function Home() {
         setIsOpen={setIsSidebarOpen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        favorites={favorites}
-        toggleFavorite={toggleFavorite}
       />
 
+      {/* Floating Floating Dock - Mobile Exclusive */}
       <div className="mobile-floating-dock">
         <div className="dock-container">
           <button
@@ -245,20 +227,6 @@ export default function Home() {
           >
             <span className="icon">🚌</span>
             <span className="label">Routes</span>
-          </button>
-          <button
-            className={`dock-item ${isSidebarOpen && activeTab === 'favorites' ? 'active' : ''}`}
-            onClick={() => {
-              if (isSidebarOpen && activeTab === 'favorites') {
-                setIsSidebarOpen(false);
-              } else {
-                setIsSidebarOpen(true);
-                setActiveTab('favorites');
-              }
-            }}
-          >
-            <span className="icon">❤️</span>
-            <span className="label">Favs</span>
           </button>
           <button
             className={`dock-item ${isSidebarOpen && activeTab === 'planner' ? 'active' : ''}`}
@@ -290,7 +258,7 @@ export default function Home() {
           </button>
           <button
             className="dock-item"
-            id="mobile-location-btn" 
+            id="mobile-location-btn" // For Map.js to listen to
             onClick={() => {
               const pcBtn = document.getElementById('my-location-btn');
               if (pcBtn) pcBtn.click();
@@ -300,15 +268,8 @@ export default function Home() {
             <span className="label">Me</span>
           </button>
           <button
-            className={`dock-item ${activeTab === 'settings' && isSidebarOpen ? 'active' : ''}`}
-            onClick={() => {
-              if (activeTab === 'settings' && isSidebarOpen) {
-                setIsSidebarOpen(false);
-              } else {
-                setActiveTab('settings');
-                setIsSidebarOpen(true);
-              }
-            }}
+            className={`dock-item ${isSettingsOpen ? 'active' : ''}`}
+            onClick={() => { setIsSettingsOpen(!isSettingsOpen); setIsSidebarOpen(false); }}
           >
             <span className="icon">⚙️</span>
             <span className="label">Settings</span>
@@ -316,10 +277,47 @@ export default function Home() {
         </div>
       </div>
 
+      {isSettingsOpen && (
+        <div className="settings-drawer shadow-quantum">
+          <div className="settings-header">
+            <h3>Quick Settings</h3>
+            <button className="close-btn" onClick={() => setIsSettingsOpen(false)}>✕</button>
+          </div>
+          <div className="settings-content">
+            <div className="setting-card">
+              <span className="icon">🌍</span>
+              <div className="text">
+                <strong>Language / Язык</strong>
+                <div className="lang-group">
+                  <button className={language === 'en' ? 'active' : ''} onClick={() => setLanguage('en')}>EN</button>
+                  <button className={language === 'ru' ? 'active' : ''} onClick={() => setLanguage('ru')}>RU</button>
+                  <button className={language === 'el' ? 'active' : ''} onClick={() => setLanguage('el')}>EL</button>
+                </div>
+              </div>
+            </div>
+            <div className="setting-card" onClick={() => { if (confirm("Refresh all data?")) window.location.reload(); }}>
+              <span className="icon">🔄</span>
+              <div className="text">
+                <strong>Reboot System</strong>
+                <p>Reload GTFS & Real-time data</p>
+              </div>
+            </div>
+            <div className="setting-card">
+              <span className="icon">🌐</span>
+              <div className="text">
+                <strong>Join Community</strong>
+                <p>Updates on Telegram @daqxn</p>
+              </div>
+            </div>
+          </div>
+          <div className="bar-credit" style={{ background: 'transparent', marginTop: 'auto' }}>made by @daan1k</div>
+        </div>
+      )}
+
       {loading && (
         <div className="loading-overlay" style={{ background: '#000' }}>
           <div className="loader-logo" style={{ color: '#ff0033', textTransform: 'uppercase', letterSpacing: '4px' }}>
-            CYPRUS BUS V2
+            Initializing
           </div>
           <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '10px' }}>
             Waking up server (may take 30s)...
@@ -345,10 +343,10 @@ export default function Home() {
           onSelectRoute={handleSelectRoute}
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}
-          vehicles={useMemo(() => {
-            if (!selectedRouteId) return vehicles;
-            return vehicles.filter(v => (v.route_id || v.r) === selectedRouteId);
-          }, [vehicles, selectedRouteId])}
+          vehicles={selectedRouteId
+            ? vehicles.filter(v => (v.r || v.route_id) === selectedRouteId)
+            : vehicles
+          }
           showToast={showToast}
           showStops={showStops}
           setShowStops={setShowStops}
@@ -356,8 +354,6 @@ export default function Home() {
           setIsSatellite={setIsSatellite}
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}
-          favorites={favorites}
-          toggleFavorite={toggleFavorite}
         />
       </div>
     </main>
