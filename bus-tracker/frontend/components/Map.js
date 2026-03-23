@@ -51,65 +51,59 @@ const createBusMarkerHtml = (shortName, bearing = 0, color = '#ff0033') => `
 `;
 
 const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
-  const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
+    const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
 
-  return (
-    <div className="main-timetable-v1">
-      <div className="popup-header">
-        <div className="title-box">
-          <h3>{stop.name}</h3>
-          <code className="stop-id-tag">STOP ID: {stop.stop_id}</code>
+    const getMinsRemaining = (arrivalTime) => {
+        if (!arrivalTime) return null;
+        const now = new Date();
+        const [h, m, s] = arrivalTime.split(':').map(Number);
+        const arrival = new Date();
+        arrival.setHours(h || 0, m || 0, s || 0);
+        if (arrival < now) arrival.setDate(arrival.getDate() + 1);
+        const diff = Math.floor((arrival - now) / 60000);
+        return diff >= 0 ? diff : 0;
+    };
+
+    return (
+        <div className="stop-popup-v4">
+            <div className="popup-top">
+                <div className="stop-title-area">
+                    <h3>{stop.name}</h3>
+                    <span className="stop-code">{stop.stop_id}</span>
+                </div>
+                <button className="fav-pill-btn" onClick={() => onToggleFavorite(stop)}>
+                    <Heart size={16} fill={isFavorite ? "#ff3366" : "transparent"} color={isFavorite ? "#ff3366" : "#fff"} />
+                </button>
+            </div>
+
+            <div className="arrivals-scroll">
+                {!arrivals ? (
+                    <div className="popup-loading">{t.loading}...</div>
+                ) : arrivals.length === 0 ? (
+                    <div className="popup-empty">{t.no_buses}</div>
+                ) : (
+                    <div className="bus-list">
+                        {arrivals.slice(0, 10).map((arr, idx) => {
+                            const route = routes?.find(r => String(r.route_id) === String(arr.route_id));
+                            const mins = getMinsRemaining(arr.arrival_time);
+                            return (
+                                <div key={`${arr.route_id}-${idx}`} className="bus-row" onClick={() => route && onSelectRoute(route)}>
+                                    <div className="bus-badge" style={{ background: `#${route?.color || 'ff3366'}` }}>
+                                        {arr.route_short_name}
+                                    </div>
+                                    <div className="bus-dest">{arr.trip_headsign}</div>
+                                    <div className="bus-eta">
+                                        <span className="abs-time">{arr.arrival_time?.slice(0, 5)}</span>
+                                        <span className="rel-time">{mins} min</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
-        <button
-          className={`fav-btn ${isFavorite ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop); }}
-        >
-          {isFavorite ? '❤️' : '🤍'}
-        </button>
-      </div>
-
-      <table className="arrivals-table">
-        <thead>
-          <tr>
-            <th>⏰ Arrive</th>
-            <th>⏳ In</th>
-            <th>🚌 Route</th>
-            <th>📍 Dest.</th>
-          </tr>
-        </thead>
-        <tbody>
-          {!arrivals ? (
-            <tr><td colSpan="4" className="status-msg">{t.loading || 'Loading...'}</td></tr>
-          ) : arrivals.length === 0 ? (
-            <tr><td colSpan="4" className="status-msg empty">{t.no_buses || 'No arrivals'}</td></tr>
-          ) : (
-            arrivals.slice(0, 10).map((arr, idx) => {
-              const route = routes?.find(r => String(r.route_id) === String(arr.route_id));
-              const [h, m] = arr.arrival_time.split(':');
-              const now = new Date();
-              const busTime = new Date();
-              busTime.setHours(h, m, 0);
-              const diff = Math.floor((busTime - now) / 60000);
-              const timeDisplay = diff >= 0 ? `${diff}m` : 'Now';
-
-              return (
-                <tr key={`${arr.route_id}-${idx}`} onClick={() => route && onSelectRoute(route)}>
-                  <td className="time-col">{arr.arrival_time.slice(0, 5)}</td>
-                  <td className="eta-col">{timeDisplay}</td>
-                  <td className="route-col">
-                    <span className="route-pill" style={{ background: `#${route?.color || 'ff0033'}` }}>
-                      {arr.route_short_name}
-                    </span>
-                  </td>
-                  <td className="dest-col">{arr.trip_headsign}</td>
-                </tr>
-              );
-            })
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
+    );
 };
 
 export default function Map({
@@ -460,25 +454,6 @@ export default function Map({
         </div>
       )}
 
-      {popupPortal && (
-        <div style={{ display: 'none' }}>
-          {/* We use a hidden div to render the React component, but then we might need actual Portal logic or just inject it */}
-        </div>
-      )}
-
-      {/* Fallback to simple React-based popup if native DOM injection is hard, but let's try the native way first */}
-      {selectedStop && activePopup.current && (
-        <div style={{ display: 'none' }}>
-          {/* This is a trick: the native popup uses a DOM node we provided, we can 'portal' into it if needed, 
-                  but for simplicity let's stick to the custom overlay if the native one is too buggy for React bits.
-                  Actually, the user said "поп ап окна не работают". Let's use the native ones properly.
-              */}
-        </div>
-      )}
-
-      {/* Re-implementing the TimetablePopup inside the Native Popup requires caution. 
-          I'll use a simpler approach: Injecting the React component into the DOM node of the MapLibre Popup.
-      */}
       {selectedStop && popupPortal && (
         <React.Fragment>
           {require('react-dom').createPortal(
@@ -549,33 +524,6 @@ export default function Map({
           padding: 5px;
         }
 
-        :global(.stop-marker-v2) {
-          cursor: pointer;
-          width: 32px;
-          height: 38px;
-        }
-        :global(.stop-pin-v2) {
-          background: #ff0033;
-          width: 32px;
-          height: 32px;
-          border-radius: 50% 50% 50% 6px;
-          transform: rotate(-45deg);
-          border: 2px solid white;
-          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        :global(.stop-pin-inner) {
-          transform: rotate(45deg);
-          color: white;
-          font-size: 14px;
-        }
-        :global(.stop-marker-v2:hover .stop-pin-v2) {
-          transform: rotate(-45deg) scale(1.2);
-          box-shadow: 0 6px 15px rgba(255,0,51,0.5);
-        }
-
         :global(.user-marker-pulse) {
           width: 20px;
           height: 20px;
@@ -602,145 +550,107 @@ export default function Map({
         }
 
         .zoom-hint-pill {
-          position: absolute;
-          bottom: 120px;
+          position: fixed;
+          top: 100px;
           left: 50%;
           transform: translateX(-50%);
-          background: rgba(10, 10, 46, 0.95);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          padding: 12px 24px;
-          border-radius: 15px;
-          border: 1px solid rgba(57, 255, 20, 0.3);
-          font-weight: 900;
-          color: #fff;
+          background: #000;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 40px;
+          font-weight: bold;
           font-size: 0.8rem;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.8);
-          text-transform: uppercase;
-          z-index: 1001;
-          white-space: nowrap;
+          border: 2px solid #ff3366;
+          z-index: 9999;
           pointer-events: none;
+          box-shadow: 0 5px 25px rgba(0,0,0,0.8);
+          max-width: 250px;
           width: auto;
-          max-width: max-content;
+          text-align: center;
+          white-space: nowrap;
         }
 
         :global(.maplibregl-popup-content) {
-          background: rgba(10, 10, 46, 0.9) !important;
-          backdrop-filter: blur(15px) !important;
-          -webkit-backdrop-filter: blur(15px) !important;
-          border-radius: 30px !important;
-          padding: 24px !important;
-          border: 1px solid rgba(57, 255, 20, 0.2) !important;
-          box-shadow: 0 20px 60px rgba(0,0,0,0.8) !important;
-          color: #fff !important;
-        }
-        :global(.maplibregl-popup-close-button) {
-          color: #fff !important;
-          font-size: 24px !important;
-          right: 12px !important;
-          top: 12px !important;
-          background: rgba(255,255,255,0.1) !important;
-          border-radius: 50% !important;
-          width: 40px !important;
-          height: 40px !important;
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
+          background: #0f0f15 !important;
+          border-radius: 20px !important;
+          padding: 16px !important;
+          border: 1px solid rgba(255,255,255,0.1) !important;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.7) !important;
         }
 
-        :global(.custom-bus-marker-container) {
-          cursor: pointer;
-          transition: transform 0.3s ease-out;
-        }
-        :global(.balloon-bus-marker) {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-        }
-        :global(.balloon-label) {
-          padding: 3px 8px;
-          border-radius: 8px;
+        .stop-popup-v4 {
           color: white;
-          font-weight: 900;
-          font-size: 0.7rem;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          margin-bottom: 4px;
-          border: 1px solid rgba(255,255,255,0.2);
-          z-index: 2;
-          white-space: nowrap;
+          width: 300px;
         }
-        :global(.rotated-bus-wrapper) {
-          transition: transform 0.3s ease-out;
-        }
-
-        .main-timetable-v1 {
-          width: 320px;
-          font-family: inherit;
-        }
-        .popup-header {
+        .popup-top {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
-          margin-bottom: 12px;
-          gap: 15px;
-          padding-right: 45px; /* Prevent overlap with [X] close button */
+          align-items: center;
+          margin-bottom: 15px;
+          padding-right: 25px;
         }
-        .title-box h3 {
-          margin: 0 0 5px 0;
-          font-size: 1.2rem;
-          font-weight: 900;
-          letter-spacing: -0.5px;
+        .stop-title-area h3 {
+          margin: 0;
+          font-size: 1.1rem;
+          letter-spacing: -0.02em;
         }
-        .stop-id-tag {
-          font-size: 0.75rem;
-          color: #888;
+        .stop-code {
+          font-size: 0.7rem;
+          opacity: 0.5;
+        }
+        .fav-pill-btn {
+          background: rgba(255,255,255,0.05);
+          border: none;
+          padding: 6px;
+          border-radius: 12px;
+          cursor: pointer;
+        }
+        .arrivals-scroll {
+          max-height: 250px;
+          overflow-y: auto;
+        }
+        .bus-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px;
+          background: rgba(255,255,255,0.02);
+          margin-bottom: 8px;
+          border-radius: 14px;
+          cursor: pointer;
+        }
+        .bus-badge {
+          width: 38px;
+          height: 38px;
+          min-width: 38px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: 800;
+          font-size: 0.9rem;
+        }
+        .bus-dest {
+          flex: 1;
+          font-size: 0.85rem;
+          font-weight: 500;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+        .bus-eta {
+          text-align: right;
+        }
+        .abs-time {
+          display: block;
+          font-size: 0.85rem;
+          font-weight: 700;
+        }
+        .rel-time {
+          font-size: 0.7rem;
+          color: #ff3366;
           font-weight: bold;
         }
-        .fav-btn {
-          background: transparent;
-          border: none;
-          font-size: 1.6rem;
-          cursor: pointer;
-          filter: grayscale(1);
-          transition: transform 0.2s;
-        }
-        .fav-btn.active {
-          filter: none;
-        }
-        
-        .arrivals-table {
-          width: 100%;
-          border-collapse: collapse;
-          color: #ddd;
-        }
-        .arrivals-table th {
-          text-align: left;
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          opacity: 0.6;
-          padding: 8px 4px;
-          border-bottom: 1px solid rgba(57, 255, 20, 0.2);
-          color: #fff;
-        }
-        .arrivals-table tr {
-          border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        .arrivals-table td {
-          padding: 10px 4px;
-          font-size: 0.85rem;
-        }
-        .time-col { color: #fff; font-weight: bold; }
-        .eta-col { font-weight: 900; color: #fff; }
-        .route-pill {
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-weight: 900;
-          font-size: 0.8rem;
-          color: #fff;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-        .dest-col { color: #bbb; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       `}</style>
     </div>
   );
