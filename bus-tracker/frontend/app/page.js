@@ -3,8 +3,6 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../context/LanguageContext';
-import { useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
 
 // Dynamic import for BusMap component
 const BusMap = dynamic(() => import('../components/Map'), {
@@ -92,7 +90,6 @@ export default function Home() {
           setStops(JSON.parse(cachedStops));
           setRoutes(JSON.parse(cachedRoutes));
           setLoading(false); // Immediate load complete
-          // Optional: Background refresh could go here if needed
         } else {
           // Fresh Fetch
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
@@ -145,21 +142,14 @@ export default function Home() {
         setVehicles(mapped);
         if (loading) setLoading(false);
       } catch (err) {
-        // If it's a cold start, keep checking more frequently
         console.warn('Backend waking up or error:', err.message);
       }
     };
 
-    // Initial fetch to start the wake-up process
     fetchVehicles();
-
-    // Fast polling while loading (every 3s) to catch the wake-up fast
-    // Slow polling once active (every 15s) to stay within free tier limits
-    const delay = loading ? 3000 : 15000;
-    intervalId = setInterval(fetchVehicles, delay);
-
+    intervalId = setInterval(fetchVehicles, 15000); // Slow polling for free tier
     return () => clearInterval(intervalId);
-  }, [loading]);
+  }, []);
 
   // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = useCallback(async (route) => {
@@ -169,7 +159,7 @@ export default function Home() {
     }
     if (!route) {
       if (selectedRouteId === null) {
-        return; // Already null, avoid redundant work
+        return; 
       }
       setSelectedRouteId(null);
       setSelectedRouteColor(null);
@@ -183,7 +173,7 @@ export default function Home() {
       } catch (err) { console.error(err); }
     } else {
       if (selectedRouteId === route.route_id) {
-        return; // Avoid double loading same route
+        return; 
       }
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
@@ -191,7 +181,6 @@ export default function Home() {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
         const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
         const data = await res.json();
-        console.log('Route Detailed Data:', data);
         setStops(data.stops || []);
         setShapes(data.shapes || []);
       } catch (err) {
@@ -199,7 +188,7 @@ export default function Home() {
         setShapes([]);
       }
     }
-  }, [selectedRouteId, routes]); // Handlers are stable
+  }, [selectedRouteId, routes]); 
 
   const handleSelectPlan = useCallback((plan) => {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -210,28 +199,19 @@ export default function Home() {
 
   // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = useCallback((v) => {
-    console.log('Vehicle Clicked:', v);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
-
     const routeId = v.r || v.route_id;
     const routeShortName = v.sn || v.route_short_name;
 
-    // 1. Try match by exact route_id (string-safe)
     let route = routes.find(r => String(r.route_id) === String(routeId));
-
-    // 2. Fallback: match by short_name if ID fails
     if (!route && routeShortName) {
-      console.warn(`Route ID mismatch (${routeId}), trying fallback by name: ${routeShortName}`);
       route = routes.find(r => r.short_name === routeShortName || r.route_short_name === routeShortName);
     }
 
     if (route) {
-      console.log('Routing to:', route.route_id);
       handleSelectRoute(route);
-    } else {
-      console.error('Could not find route for vehicle:', v);
     }
-  }, [routes, handleSelectRoute, stops]);
+  }, [routes, handleSelectRoute]);
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
@@ -309,7 +289,7 @@ export default function Home() {
           </button>
           <button
             className="dock-item"
-            id="mobile-location-btn" // For Map.js to listen to
+            id="mobile-location-btn" 
             onClick={() => {
               const pcBtn = document.getElementById('my-location-btn');
               if (pcBtn) pcBtn.click();

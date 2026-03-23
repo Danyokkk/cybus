@@ -3,52 +3,22 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import {
-  Bus,
-  MapPin,
-  Navigation,
-  Heart,
-  X,
-  Clock,
-  ChevronRight,
+import { 
+  Bus, 
+  MapPin, 
+  Navigation, 
+  Heart, 
+  X, 
+  Clock, 
+  ChevronRight, 
   Info,
   Navigation2
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-// Hyper-Engine Config - Restored Voyager Style
-const MAP_STYLE = {
-  version: 8,
-  sources: {
-    'voyager-tiles': {
-      type: 'raster',
-      tiles: ['https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'],
-      tileSize: 256,
-      attribution: '&copy; OpenStreetMap'
-    }
-  },
-  layers: [
-    { id: 'voyager-layer', type: 'raster', source: 'voyager-tiles', minzoom: 0, maxzoom: 20 }
-  ]
-};
+// Hyper-Engine Config - Restored from 054869e
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; 
 const CYPRUS_BOUNDS = [[32.2, 34.5], [34.7, 35.7]];
-
-const createBusMarkerHtml = (shortName, bearing = 0, color = '#ff0033') => `
-    <div class="balloon-bus-marker">
-        <div class="balloon-label" style="background-color: #${color};">
-            ${shortName || '?'}
-        </div>
-        <div class="rotated-bus-wrapper" style="transform: rotate(${bearing}deg)">
-            <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px;">
-                <rect x="5" y="5" width="40" height="90" rx="10" fill="#${color}" stroke="white" stroke-width="4" />
-                <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                <circle cx="35" cy="10" r="3" fill="#fffb00" />
-            </svg>
-        </div>
-    </div>
-`;
 
 const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
     const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
@@ -106,10 +76,10 @@ const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavo
     );
 };
 
-export default function Map({
-  stops = [],
-  shapes = [],
-  routes = [],
+export default function Map({ 
+  stops = [], 
+  shapes = [], 
+  routes = [], 
   vehicles = [],
   selectedPlan,
   onSelectRoute,
@@ -126,7 +96,7 @@ export default function Map({
   const mapContainer = useRef(null);
   const map = useRef(null);
   const { t } = useLanguage();
-
+  
   const [arrivals, setArrivals] = useState(null);
   const [selectedStop, setSelectedStop] = useState(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -142,7 +112,6 @@ export default function Map({
   // Initialization & Style Management
   useEffect(() => {
     if (map.current) {
-      // Correctly update style based on mode
       if (isSatellite) {
         map.current.setStyle({
           version: 8,
@@ -169,17 +138,15 @@ export default function Map({
     });
 
     map.current.addControl(new maplibregl.NavigationControl({ showPitch: false }), 'top-right');
-
-    // Add layers on every style change (including first load)
+    
     const addLayers = () => {
-      // Route Source & Layers
       if (!map.current.getSource('route-source')) {
         map.current.addSource('route-source', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] }
         });
 
-        map.current.addLayer({
+          map.current.addLayer({
           id: 'route-line',
           type: 'line',
           source: 'route-source',
@@ -191,48 +158,46 @@ export default function Map({
         });
       }
 
-      // Stops Layer (High-Perf Vector)
       if (!map.current.getSource('stops-source')) {
         map.current.addSource('stops-source', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] }
         });
 
-        // Symbol Layer for stops (Pin Design matching 'Main' branch 'капли')
         map.current.addLayer({
           id: 'stops-layer',
           type: 'circle',
           source: 'stops-source',
-          minzoom: 13, // Show earlier
+          minzoom: 14,
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 18, 10],
-            'circle-color': '#ffffff',
-            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 13, 2, 18, 4],
-            'circle-stroke-color': '#ff0033'
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 10],
+            'circle-color': '#ff3366',
+            'circle-stroke-width': 2,
+            'circle-stroke-color': '#ffffff'
           }
         });
 
         // Click handler
         map.current.on('click', 'stops-layer', async (e) => {
-          const stop = e.features[0].properties;
-          if (activePopup.current) activePopup.current.remove();
+            const stop = e.features[0].properties;
+            if (activePopup.current) activePopup.current.remove();
+            
+            const popupNode = document.createElement('div');
+            popupNode.id = `popup-${stop.stop_id}`;
+            
+            activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-v4' })
+                .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                .setDOMContent(popupNode)
+                .addTo(map.current);
 
-          const popupNode = document.createElement('div');
-          popupNode.id = `popup-${stop.stop_id}`;
-
-          activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-v4' })
-            .setLngLat([e.lngLat.lng, e.lngLat.lat])
-            .setDOMContent(popupNode)
-            .addTo(map.current);
-
-          setSelectedStop(null);
-          setArrivals(null);
-          setSelectedStop(stop);
-          try {
-            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id}/timetable`);
-            const data = await res.json();
-            setArrivals(data);
-          } catch (err) { setArrivals([]); }
+            setSelectedStop(null);
+            setArrivals(null);
+            setSelectedStop(stop);
+            try {
+              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id}/timetable`);
+              const data = await res.json();
+              setArrivals(data);
+            } catch (err) { setArrivals([]); }
         });
 
         map.current.on('mouseenter', 'stops-layer', () => map.current.getCanvas().style.cursor = 'pointer');
@@ -245,10 +210,10 @@ export default function Map({
     map.current.on('zoom', () => setMapZoom(map.current.getZoom()));
 
     return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
+        if (map.current) {
+            map.current.remove();
+            map.current = null;
+        }
     };
   }, [isSatellite]);
 
@@ -268,7 +233,7 @@ export default function Map({
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: coords.map(c => [c[1], c[0]]) // MapLibre uses [lng, lat]
+          coordinates: coords.map(c => [c[1], c[0]])
         }
       }))
     };
@@ -276,7 +241,6 @@ export default function Map({
     const source = map.current.getSource('route-source');
     if (source) source.setData(geojson);
 
-    // Zoom to route on first load only
     if (shapes.length > 0 && isFirstLoad) {
       const allCoords = shapes.flat();
       const bounds = allCoords.reduce((b, c) => {
@@ -291,11 +255,10 @@ export default function Map({
     }
   }, [shapes, routeColor]);
 
-  // Handle Vehicles (Buses) with Balloon Markers from Main
+  // Handle Vehicles (Buses)
   useEffect(() => {
     if (!map.current) return;
 
-    // Remove obsolete markers
     const currentIds = new Set(vehicles.map(v => v._id || v.vehicle_id || v.id));
     Object.keys(busMarkers.current).forEach(id => {
       if (!currentIds.has(id)) {
@@ -304,63 +267,75 @@ export default function Map({
       }
     });
 
-    // Update/Add markers
     vehicles.forEach(v => {
       const lat = parseFloat(v.lat || v.lt);
       const lng = parseFloat(v.lon || v.ln);
-      const bearing = parseFloat(v.bearing || v.b || 0);
+      const bearing = parseFloat(v.bearing || v.ag || v.b || 0);
       const markerId = v._id || v.vehicle_id || v.id;
-      const color = v.color || v.c || 'ff0033';
-      const shortName = v.route_short_name || v.sn || '?';
 
-      // SAFETY GUARD: skip invalid coordinates
       if (isNaN(lat) || isNaN(lng)) return;
+
+      const busColorRaw = (v.color || v.c || 'ff0033');
+      const busColor = busColorRaw.startsWith('#') ? busColorRaw : `#${busColorRaw}`;
 
       if (busMarkers.current[markerId]) {
         busMarkers.current[markerId].setLngLat([lng, lat]);
         const el = busMarkers.current[markerId].getElement();
+        
         const wrapper = el.querySelector('.rotated-bus-wrapper');
         if (wrapper && !isNaN(bearing)) {
-          wrapper.style.transform = `rotate(${bearing}deg)`;
+            wrapper.style.transform = `rotate(${bearing}deg)`;
         }
+        
         const label = el.querySelector('.balloon-label');
-        if (label) label.style.backgroundColor = `#${color}`;
+        if (label) label.style.backgroundColor = busColor;
       } else {
         const el = document.createElement('div');
-        el.className = 'custom-bus-marker-container';
-        el.innerHTML = createBusMarkerHtml(shortName, bearing, color);
+        el.className = 'bus-marker-v2';
+        el.innerHTML = `
+            <div class="balloon-bus-marker">
+                <div class="balloon-label" style="background-color: ${busColor};">
+                    ${v.route_short_name || v.sn || '?'}
+                </div>
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
+                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
+                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                    </svg>
+                </div>
+            </div>
+        `;
 
         el.onclick = (e) => {
-          e.stopPropagation();
-          if (activePopup.current) activePopup.current.remove();
-
-          const popupEl = document.createElement('div');
-          popupEl.className = 'bus-popup-v2';
-          popupEl.style.cssText = 'text-align: center; color: #fff; padding: 10px; min-width: 180px;';
-          popupEl.innerHTML = `
-                <div style="background: #${color}; padding: 10px 18px; border-radius: 25px; display: inline-block; font-size: 1.3rem; font-weight: 900; margin-bottom: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2);">
-                    ${shortName}
-                </div>
-                <div style="font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; color: #fff; letter-spacing: -0.5px;">
-                    ${v.headsign || v.h || 'Bus Route'}
-                </div>
-                <div style="font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 5px; opacity: 0.7;">
-                    ID: ${markerId}
+            e.stopPropagation();
+            if (activePopup.current) activePopup.current.remove();
+            
+            const popupEl = document.createElement('div');
+            popupEl.innerHTML = `
+                <div style="text-align: center; color: #fff; padding: 10px;">
+                    <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
+                        ${v.route_short_name || v.sn || '?'}
+                    </div>
+                    <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
+                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${markerId}</div>
                 </div>
             `;
 
-          activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
-            .setLngLat([lng, lat])
-            .setDOMContent(popupEl)
-            .addTo(map.current);
-
-          onVehicleClick?.(v);
+            activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
+                .setLngLat([lng, lat])
+                .setDOMContent(popupEl)
+                .addTo(map.current);
+            
+            onVehicleClick?.(v);
         };
 
         const marker = new maplibregl.Marker({ element: el })
           .setLngLat([lng, lat])
           .addTo(map.current);
-
+          
         busMarkers.current[markerId] = marker;
       }
     });
@@ -373,17 +348,17 @@ export default function Map({
     if (!source) return;
 
     if (!showStops || stops.length === 0) {
-      source.setData({ type: 'FeatureCollection', features: [] });
-      return;
+        source.setData({ type: 'FeatureCollection', features: [] });
+        return;
     }
 
     source.setData({
-      type: 'FeatureCollection',
-      features: stops.map(stop => ({
-        type: 'Feature',
-        geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
-        properties: { ...stop }
-      }))
+        type: 'FeatureCollection',
+        features: stops.map(stop => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
+            properties: { ...stop }
+        }))
     });
   }, [stops, showStops]);
 
@@ -391,21 +366,21 @@ export default function Map({
   const [popupPortal, setPopupPortal] = useState(null);
   useEffect(() => {
     if (selectedStop && activePopup.current) {
-      const container = document.getElementById(`popup-${selectedStop.stop_id}`);
-      if (container) {
-        setPopupPortal({ container, stop: selectedStop });
-      }
+        const container = document.getElementById(`popup-${selectedStop.stop_id}`);
+        if (container) {
+            setPopupPortal({ container, stop: selectedStop });
+        }
     } else {
-      setPopupPortal(null);
+        setPopupPortal(null);
     }
   }, [selectedStop, arrivals, activePopup.current]);
 
   return (
     <div className="map-wrapper-v2">
       <div ref={mapContainer} className="map-container-v2" />
-
+      
       <div className="map-controls-custom">
-        <button
+        <button 
           id="my-location-btn"
           className="btn-overlay"
           onClick={() => {
@@ -418,7 +393,6 @@ export default function Map({
                   essential: true
                 });
 
-                // Add or update User Marker
                 if (userMarker.current) userMarker.current.remove();
                 const el = document.createElement('div');
                 el.className = 'user-marker-pulse';
@@ -432,14 +406,14 @@ export default function Map({
         >
           <span>🎯</span>
         </button>
-        <button
+        <button 
           className={`btn-overlay ${showStops ? 'active' : ''}`}
           onClick={() => setShowStops(!showStops)}
           title={t.show_stops}
         >
           <span>{showStops ? '✕' : '🚏'}</span>
         </button>
-        <button
+        <button 
           className={`btn-overlay ${isSatellite ? 'active' : ''}`}
           onClick={() => setIsSatellite(!isSatellite)}
           title={isSatellite ? t.streetView : t.satelliteView}
@@ -450,25 +424,25 @@ export default function Map({
 
       {showStops && mapZoom < 15 && (
         <div className="zoom-hint-pill">
-          {t.zoomInToSeeStops || 'Zoom in to see stops'}
+            {t.zoomInToSeeStops || 'Zoom in to see stops'}
         </div>
       )}
 
       {selectedStop && popupPortal && (
-        <React.Fragment>
-          {require('react-dom').createPortal(
-            <TimetablePopup
-              stop={selectedStop}
-              arrivals={arrivals}
-              onSelectRoute={onSelectRoute}
-              favorites={favorites}
-              onToggleFavorite={toggleFavorite}
-              t={t}
-              routes={routes}
-            />,
-            popupPortal.container
-          )}
-        </React.Fragment>
+          <React.Fragment>
+              {require('react-dom').createPortal(
+                <TimetablePopup 
+                    stop={selectedStop} 
+                    arrivals={arrivals} 
+                    onSelectRoute={onSelectRoute}
+                    favorites={favorites}
+                    onToggleFavorite={toggleFavorite}
+                    t={t}
+                    routes={routes}
+                />,
+                popupPortal.container
+              )}
+          </React.Fragment>
       )}
 
       <style jsx>{`
@@ -518,12 +492,6 @@ export default function Map({
         :global(.maplibregl-popup-tip) {
           border-top-color: rgba(20, 20, 25, 0.9);
         }
-        :global(.maplibregl-popup-close-button) {
-          color: white;
-          font-size: 1.2rem;
-          padding: 5px;
-        }
-
         :global(.user-marker-pulse) {
           width: 20px;
           height: 20px;
