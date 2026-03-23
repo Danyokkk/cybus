@@ -16,8 +16,8 @@ import {
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-// Hyper-Engine Config - Restored from 054869e
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; 
+// Hyper-Engine Config
+const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; // Simple white map
 const CYPRUS_BOUNDS = [[32.2, 34.5], [34.7, 35.7]];
 
 const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
@@ -112,25 +112,14 @@ export default function Map({
   // Initialization & Style Management
   useEffect(() => {
     if (map.current) {
-      if (isSatellite) {
-        map.current.setStyle({
-          version: 8,
-          sources: { 'satellite': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
-          layers: [{ id: 'satellite-layer', type: 'raster', source: 'satellite' }]
-        });
-      } else {
-        map.current.setStyle(MAP_STYLE);
-      }
+      // If map already exists, just update style to avoid re-initializing
+      map.current.setStyle(isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE);
       return;
     }
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: isSatellite ? {
-        version: 8,
-        sources: { 'satellite': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
-        layers: [{ id: 'satellite-layer', type: 'raster', source: 'satellite' }]
-      } : MAP_STYLE,
+      style: isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE,
       center: [33.3613, 35.1856], // Nicosia
       zoom: 13,
       pitch: 0,
@@ -139,7 +128,9 @@ export default function Map({
 
     map.current.addControl(new maplibregl.NavigationControl({ showPitch: false }), 'top-right');
     
+    // Add layers on every style change (including first load)
     const addLayers = () => {
+      // Route Source & Layers
       if (!map.current.getSource('route-source')) {
         map.current.addSource('route-source', {
           type: 'geojson',
@@ -158,19 +149,25 @@ export default function Map({
         });
       }
 
+      // Stops Layer (High-Perf Vector)
       if (!map.current.getSource('stops-source')) {
         map.current.addSource('stops-source', {
           type: 'geojson',
           data: { type: 'FeatureCollection', features: [] }
         });
 
+        // Circle Layer for base
         map.current.addLayer({
           id: 'stops-layer',
           type: 'circle',
           source: 'stops-source',
           minzoom: 14,
           paint: {
-            'circle-radius': ['interpolate', ['linear'], ['zoom'], 14, 4, 18, 10],
+            'circle-radius': [
+              'interpolate', ['linear'], ['zoom'],
+              14, 4,
+              18, 10
+            ],
             'circle-color': '#ff3366',
             'circle-stroke-width': 2,
             'circle-stroke-color': '#ffffff'
@@ -233,7 +230,7 @@ export default function Map({
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: coords.map(c => [c[1], c[0]])
+          coordinates: coords.map(c => [c[1], c[0]]) // MapLibre uses [lng, lat]
         }
       }))
     };
@@ -241,6 +238,7 @@ export default function Map({
     const source = map.current.getSource('route-source');
     if (source) source.setData(geojson);
 
+    // Zoom to route on first load only
     if (shapes.length > 0 && isFirstLoad) {
       const allCoords = shapes.flat();
       const bounds = allCoords.reduce((b, c) => {
@@ -259,6 +257,7 @@ export default function Map({
   useEffect(() => {
     if (!map.current) return;
 
+    // Remove obsolete markers
     const currentIds = new Set(vehicles.map(v => v._id || v.vehicle_id || v.id));
     Object.keys(busMarkers.current).forEach(id => {
       if (!currentIds.has(id)) {
@@ -267,100 +266,107 @@ export default function Map({
       }
     });
 
+    // Update/Add markers
     vehicles.forEach(v => {
       const lat = parseFloat(v.lat || v.lt);
       const lng = parseFloat(v.lon || v.ln);
-      const bearing = parseFloat(v.bearing || v.ag || v.b || 0);
+      const bearing = parseFloat(v.bearing || v.ag || 0);
       const markerId = v._id || v.vehicle_id || v.id;
 
-      if (isNaN(lat) || isNaN(lng)) return;
-
-      const busColorRaw = (v.color || v.c || 'ff0033');
-      const busColor = busColorRaw.startsWith('#') ? busColorRaw : `#${busColorRaw}`;
-
-      if (busMarkers.current[markerId]) {
-        busMarkers.current[markerId].setLngLat([lng, lat]);
-        const el = busMarkers.current[markerId].getElement();
-        
-        const wrapper = el.querySelector('.rotated-bus-wrapper');
-        if (wrapper && !isNaN(bearing)) {
-            wrapper.style.transform = `rotate(${bearing}deg)`;
-        }
-        
-        const label = el.querySelector('.balloon-label');
-        if (label) label.style.backgroundColor = busColor;
-      } else {
-        const el = document.createElement('div');
-        el.className = 'bus-marker-v2';
-        el.innerHTML = `
-            <div class="balloon-bus-marker">
-                <div class="balloon-label" style="background-color: ${busColor};">
-                    ${v.route_short_name || v.sn || '?'}
-                </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
-                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
-                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
-                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
-                    </svg>
-                </div>
-            </div>
-        `;
-
-        el.onclick = (e) => {
-            e.stopPropagation();
-            if (activePopup.current) activePopup.current.remove();
-            
-            const popupEl = document.createElement('div');
-            popupEl.innerHTML = `
-                <div style="text-align: center; color: #fff; padding: 10px;">
-                    <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
-                        ${v.route_short_name || v.sn || '?'}
-                    </div>
-                    <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
-                    <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${markerId}</div>
-                </div>
-            `;
-
-            activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
-                .setLngLat([lng, lat])
-                .setDOMContent(popupEl)
-                .addTo(map.current);
-            
-            onVehicleClick?.(v);
-        };
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([lng, lat])
-          .addTo(map.current);
-          
-        busMarkers.current[markerId] = marker;
-      }
-    });
-  }, [vehicles]);
-
-  // Efficient GeoJSON Update for Stops
-  useEffect(() => {
-    if (!map.current) return;
-    const source = map.current.getSource('stops-source');
-    if (!source) return;
-
-    if (!showStops || stops.length === 0) {
-        source.setData({ type: 'FeatureCollection', features: [] });
+      // SAFETY GUARD: skip invalid coordinates to prevent site crash
+      if (isNaN(lat) || isNaN(lng)) {
+        console.warn(`Skipping vehicle ${markerId} due to invalid coordinates:`, v);
         return;
-    }
+      }
 
-    source.setData({
-        type: 'FeatureCollection',
-        features: stops.map(stop => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
-            properties: { ...stop }
-        }))
-    });
-  }, [stops, showStops]);
+    const busColorRaw = (v.color || v.c || 'ff0033');
+    const busColor = busColorRaw.startsWith('#') ? busColorRaw : `#${busColorRaw}`;
+
+    if (busMarkers.current[markerId]) {
+      busMarkers.current[markerId].setLngLat([lng, lat]);
+      const el = busMarkers.current[markerId].getElement();
+      
+      const wrapper = el.querySelector('.rotated-bus-wrapper');
+      if (wrapper && !isNaN(bearing)) {
+          wrapper.style.transform = `rotate(${bearing}deg)`;
+      }
+      
+      const label = el.querySelector('.balloon-label');
+      if (label) label.style.backgroundColor = busColor;
+    } else {
+      const el = document.createElement('div');
+      el.className = 'bus-marker-v2';
+      el.innerHTML = `
+          <div class="balloon-bus-marker">
+              <div class="balloon-label" style="background-color: ${busColor};">
+                  ${v.route_short_name || v.sn || '?'}
+              </div>
+              <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
+                  <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
+                      <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
+                      <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                      <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                      <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                      <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                  </svg>
+              </div>
+          </div>
+      `;
+
+      el.onclick = (e) => {
+          e.stopPropagation();
+          if (activePopup.current) activePopup.current.remove();
+          
+          const popupEl = document.createElement('div');
+          // Simplified bus popup info
+          popupEl.innerHTML = `
+              <div style="text-align: center; color: #fff; padding: 10px;">
+                  <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
+                      ${v.route_short_name || v.sn || '?'}
+                  </div>
+                  <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
+                  <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${v.vehicle_id}</div>
+              </div>
+          `;
+
+          activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
+              .setLngLat([lng, lat])
+              .setDOMContent(popupEl)
+              .addTo(map.current);
+          
+          activePopup.current.on('close', () => setSelectedStop(null));
+          onVehicleClick?.(v);
+      };
+
+      const marker = new maplibregl.Marker({ element: el })
+        .setLngLat([lng, lat])
+        .addTo(map.current);
+        
+      busMarkers.current[markerId] = marker;
+    }
+  });
+}, [vehicles]);
+
+// Efficient GeoJSON Update for Stops
+useEffect(() => {
+  if (!map.current) return;
+  const source = map.current.getSource('stops-source');
+  if (!source) return;
+
+  if (!showStops || stops.length === 0) {
+      source.setData({ type: 'FeatureCollection', features: [] });
+      return;
+  }
+
+  source.setData({
+      type: 'FeatureCollection',
+      features: stops.map(stop => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
+          properties: { ...stop }
+      }))
+  });
+}, [stops, showStops]);
 
   // Handle React Portal-like rendering for Stop Popup content
   const [popupPortal, setPopupPortal] = useState(null);
@@ -393,6 +399,7 @@ export default function Map({
                   essential: true
                 });
 
+                // Add or update User Marker
                 if (userMarker.current) userMarker.current.remove();
                 const el = document.createElement('div');
                 el.className = 'user-marker-pulse';
@@ -402,7 +409,7 @@ export default function Map({
               });
             }
           }}
-          title={t.my_location}
+         title={t.my_location}
         >
           <span>🎯</span>
         </button>
@@ -428,6 +435,25 @@ export default function Map({
         </div>
       )}
 
+      {popupPortal && (
+        <div style={{ display: 'none' }}>
+            {/* We use a hidden div to render the React component, but then we might need actual Portal logic or just inject it */}
+        </div>
+      )}
+      
+      {/* Fallback to simple React-based popup if native DOM injection is hard, but let's try the native way first */}
+      {selectedStop && activePopup.current && (
+          <div style={{ display: 'none' }}>
+              {/* This is a trick: the native popup uses a DOM node we provided, we can 'portal' into it if needed, 
+                  but for simplicity let's stick to the custom overlay if the native one is too buggy for React bits.
+                  Actually, the user said "поп ап окна не работают". Let's use the native ones properly.
+              */}
+          </div>
+      )}
+
+      {/* Re-implementing the TimetablePopup inside the Native Popup requires caution. 
+          I'll use a simpler approach: Injecting the React component into the DOM node of the MapLibre Popup.
+      */}
       {selectedStop && popupPortal && (
           <React.Fragment>
               {require('react-dom').createPortal(
@@ -492,6 +518,39 @@ export default function Map({
         :global(.maplibregl-popup-tip) {
           border-top-color: rgba(20, 20, 25, 0.9);
         }
+        :global(.maplibregl-popup-close-button) {
+          color: white;
+          font-size: 1.2rem;
+          padding: 5px;
+        }
+
+        :global(.stop-marker-v2) {
+          cursor: pointer;
+          width: 32px;
+          height: 38px;
+        }
+        :global(.stop-pin-v2) {
+          background: #ff0033;
+          width: 32px;
+          height: 32px;
+          border-radius: 50% 50% 50% 6px;
+          transform: rotate(-45deg);
+          border: 2px solid white;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        :global(.stop-pin-inner) {
+          transform: rotate(45deg);
+          color: white;
+          font-size: 14px;
+        }
+        :global(.stop-marker-v2:hover .stop-pin-v2) {
+          transform: rotate(-45deg) scale(1.2);
+          box-shadow: 0 6px 15px rgba(255,0,51,0.5);
+        }
+
         :global(.user-marker-pulse) {
           width: 20px;
           height: 20px;
