@@ -14,7 +14,9 @@ export default defineSchema({
     headsign: v.optional(v.string()),
     agency: v.optional(v.string()),
     last_update: v.number(), // timestamp
-  }).index("by_vehicle", ["vehicle_id"]),
+  })
+  .index("by_vehicle", ["vehicle_id"])
+  .index("by_last_update", ["last_update"]),
 
   stops: defineTable({
     stop_id: v.string(),

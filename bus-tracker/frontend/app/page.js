@@ -126,16 +126,40 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. Convex Real-time Sync
-  const convexVehicles = useQuery(api.vehicles.getVehicles) || [];
-  
-  // Sync the ultra-fast convex data to our local state so Map handles it natively
+  // 2. Direct Backend Polling (Replaced Convex to save bandwidth)
   useEffect(() => {
-    if (convexVehicles.length > 0) {
-      setVehicles(convexVehicles);
-      if (loading) setLoading(false);
-    }
-  }, [convexVehicles, loading]);
+    let intervalId;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+
+    const fetchVehicles = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/v2/vehicles`);
+        if (!res.ok) throw new Error('Backend waking up...');
+        const data = await res.json();
+        
+        // Map compact array back to objects for the Map component
+        const mapped = data.map(v => ({
+          id: v[0], r: v[1], lt: v[2], ln: v[3], b: v[4], sn: v[5], c: v[6], h: v[7]
+        }));
+
+        setVehicles(mapped);
+        if (loading) setLoading(false);
+      } catch (err) {
+        // If it's a cold start, keep checking more frequently
+        console.warn('Backend waking up or error:', err.message);
+      }
+    };
+
+    // Initial fetch to start the wake-up process
+    fetchVehicles();
+
+    // Fast polling while loading (every 3s) to catch the wake-up fast
+    // Slow polling once active (every 15s) to stay within free tier limits
+    const delay = loading ? 3000 : 15000;
+    intervalId = setInterval(fetchVehicles, delay);
+
+    return () => clearInterval(intervalId);
+  }, [loading]);
 
   // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = useCallback(async (route) => {

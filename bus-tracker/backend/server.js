@@ -441,6 +441,18 @@ app.get('/api/trips', (req, res) => {
 
 app.get('/api/vehicle_positions', (req, res) => res.json(vehiclePositions));
 
+// --- API V2: Ultra-compact for free-tier bandwidth (Maps only) ---
+app.get('/api/v2/vehicles', (req, res) => {
+  // Returns only what's needed for markers: [id, routeId, lat, lon, bearing, shortName, color, headsign]
+  const compact = vehiclePositions.map(v => [
+    v.id, v.r, v.lt, v.ln, v.b, v.sn, v.c, v.h
+  ]);
+  res.json(compact);
+});
+
+// --- PING: For uptime monitors to keep Render alive 24/7 ---
+app.get('/api/ping', (req, res) => res.send('pong'));
+
 // --- Route Planner Logic (V1 - Direct Connections) ---
 function getDistance(lat1, lon1, lat2, lon2) {
   const R = 6371; // Radius of the earth in km

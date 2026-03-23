@@ -3,83 +3,119 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { 
-  Bus, 
-  MapPin, 
-  Navigation, 
-  Heart, 
-  X, 
-  Clock, 
-  ChevronRight, 
+import {
+  Bus,
+  MapPin,
+  Navigation,
+  Heart,
+  X,
+  Clock,
+  ChevronRight,
   Info,
   Navigation2
 } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-// Hyper-Engine Config
-const MAP_STYLE = 'https://tiles.openfreemap.org/styles/bright'; // Simple white map
+// Hyper-Engine Config - Restored Voyager Style
+const MAP_STYLE = {
+  version: 8,
+  sources: {
+    'voyager-tiles': {
+      type: 'raster',
+      tiles: ['https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'],
+      tileSize: 256,
+      attribution: '&copy; OpenStreetMap'
+    }
+  },
+  layers: [
+    { id: 'voyager-layer', type: 'raster', source: 'voyager-tiles', minzoom: 0, maxzoom: 20 }
+  ]
+};
 const CYPRUS_BOUNDS = [[32.2, 34.5], [34.7, 35.7]];
 
-const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
-    const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
-
-    const getMinsRemaining = (arrivalTime) => {
-        if (!arrivalTime) return null;
-        const now = new Date();
-        const [h, m, s] = arrivalTime.split(':').map(Number);
-        const arrival = new Date();
-        arrival.setHours(h || 0, m || 0, s || 0);
-        if (arrival < now) arrival.setDate(arrival.getDate() + 1);
-        const diff = Math.floor((arrival - now) / 60000);
-        return diff >= 0 ? diff : 0;
-    };
-
-    return (
-        <div className="stop-popup-v4">
-            <div className="popup-top">
-                <div className="stop-title-area">
-                    <h3>{stop.name}</h3>
-                    <span className="stop-code">{stop.stop_id}</span>
-                </div>
-                <button className="fav-pill-btn" onClick={() => onToggleFavorite(stop)}>
-                    <Heart size={16} fill={isFavorite ? "#ff3366" : "transparent"} color={isFavorite ? "#ff3366" : "#fff"} />
-                </button>
-            </div>
-
-            <div className="arrivals-scroll">
-                {!arrivals ? (
-                    <div className="popup-loading">{t.loading}...</div>
-                ) : arrivals.length === 0 ? (
-                    <div className="popup-empty">{t.no_buses}</div>
-                ) : (
-                    <div className="bus-list">
-                        {arrivals.slice(0, 10).map((arr, idx) => {
-                            const route = routes?.find(r => String(r.route_id) === String(arr.route_id));
-                            const mins = getMinsRemaining(arr.arrival_time);
-                            return (
-                                <div key={`${arr.route_id}-${idx}`} className="bus-row" onClick={() => route && onSelectRoute(route)}>
-                                    <div className="bus-badge" style={{ background: `#${route?.color || 'ff3366'}` }}>
-                                        {arr.route_short_name}
-                                    </div>
-                                    <div className="bus-dest">{arr.trip_headsign}</div>
-                                    <div className="bus-eta">
-                                        <span className="abs-time">{arr.arrival_time?.slice(0, 5)}</span>
-                                        <span className="rel-time">{mins} min</span>
-                                    </div>
-                                </div>
-                            );
-                        })}
-                    </div>
-                )}
-            </div>
+const createBusMarkerHtml = (shortName, bearing = 0, color = '#ff0033') => `
+    <div class="balloon-bus-marker">
+        <div class="balloon-label" style="background-color: #${color};">
+            ${shortName || '?'}
         </div>
-    );
+        <div class="rotated-bus-wrapper" style="transform: rotate(${bearing}deg)">
+            <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px;">
+                <rect x="5" y="5" width="40" height="90" rx="10" fill="#${color}" stroke="white" stroke-width="4" />
+                <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                <circle cx="35" cy="10" r="3" fill="#fffb00" />
+            </svg>
+        </div>
+    </div>
+`;
+
+const TimetablePopup = ({ stop, arrivals, onSelectRoute, favorites, onToggleFavorite, t, routes }) => {
+  const isFavorite = favorites?.some(f => f.stop_id === stop.stop_id);
+
+  return (
+    <div className="main-timetable-v1">
+      <div className="popup-header">
+        <div className="title-box">
+          <h3>{stop.name}</h3>
+          <code className="stop-id-tag">STOP ID: {stop.stop_id}</code>
+        </div>
+        <button
+          className={`fav-btn ${isFavorite ? 'active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop); }}
+        >
+          {isFavorite ? '❤️' : '🤍'}
+        </button>
+      </div>
+
+      <table className="arrivals-table">
+        <thead>
+          <tr>
+            <th>⏰ Arrive</th>
+            <th>⏳ In</th>
+            <th>🚌 Route</th>
+            <th>📍 Dest.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {!arrivals ? (
+            <tr><td colSpan="4" className="status-msg">{t.loading || 'Loading...'}</td></tr>
+          ) : arrivals.length === 0 ? (
+            <tr><td colSpan="4" className="status-msg empty">{t.no_buses || 'No arrivals'}</td></tr>
+          ) : (
+            arrivals.slice(0, 10).map((arr, idx) => {
+              const route = routes?.find(r => String(r.route_id) === String(arr.route_id));
+              const [h, m] = arr.arrival_time.split(':');
+              const now = new Date();
+              const busTime = new Date();
+              busTime.setHours(h, m, 0);
+              const diff = Math.floor((busTime - now) / 60000);
+              const timeDisplay = diff >= 0 ? `${diff}m` : 'Now';
+
+              return (
+                <tr key={`${arr.route_id}-${idx}`} onClick={() => route && onSelectRoute(route)}>
+                  <td className="time-col">{arr.arrival_time.slice(0, 5)}</td>
+                  <td className="eta-col">{timeDisplay}</td>
+                  <td className="route-col">
+                    <span className="route-pill" style={{ background: `#${route?.color || 'ff0033'}` }}>
+                      {arr.route_short_name}
+                    </span>
+                  </td>
+                  <td className="dest-col">{arr.trip_headsign}</td>
+                </tr>
+              );
+            })
+          )}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
-export default function Map({ 
-  stops = [], 
-  shapes = [], 
-  routes = [], 
+export default function Map({
+  stops = [],
+  shapes = [],
+  routes = [],
   vehicles = [],
   selectedPlan,
   onSelectRoute,
@@ -96,7 +132,7 @@ export default function Map({
   const mapContainer = useRef(null);
   const map = useRef(null);
   const { t } = useLanguage();
-  
+
   const [arrivals, setArrivals] = useState(null);
   const [selectedStop, setSelectedStop] = useState(null);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
@@ -112,14 +148,26 @@ export default function Map({
   // Initialization & Style Management
   useEffect(() => {
     if (map.current) {
-      // If map already exists, just update style to avoid re-initializing
-      map.current.setStyle(isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE);
+      // Correctly update style based on mode
+      if (isSatellite) {
+        map.current.setStyle({
+          version: 8,
+          sources: { 'satellite': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
+          layers: [{ id: 'satellite-layer', type: 'raster', source: 'satellite' }]
+        });
+      } else {
+        map.current.setStyle(MAP_STYLE);
+      }
       return;
     }
 
     map.current = new maplibregl.Map({
       container: mapContainer.current,
-      style: isSatellite ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}/style.json' || 'https://tiles.openfreemap.org/styles/bright' : MAP_STYLE,
+      style: isSatellite ? {
+        version: 8,
+        sources: { 'satellite': { type: 'raster', tiles: ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'], tileSize: 256 } },
+        layers: [{ id: 'satellite-layer', type: 'raster', source: 'satellite' }]
+      } : MAP_STYLE,
       center: [33.3613, 35.1856], // Nicosia
       zoom: 13,
       pitch: 0,
@@ -127,7 +175,7 @@ export default function Map({
     });
 
     map.current.addControl(new maplibregl.NavigationControl({ showPitch: false }), 'top-right');
-    
+
     // Add layers on every style change (including first load)
     const addLayers = () => {
       // Route Source & Layers
@@ -137,7 +185,7 @@ export default function Map({
           data: { type: 'FeatureCollection', features: [] }
         });
 
-          map.current.addLayer({
+        map.current.addLayer({
           id: 'route-line',
           type: 'line',
           source: 'route-source',
@@ -156,45 +204,41 @@ export default function Map({
           data: { type: 'FeatureCollection', features: [] }
         });
 
-        // Circle Layer for base
+        // Symbol Layer for stops (Pin Design matching 'Main' branch 'капли')
         map.current.addLayer({
           id: 'stops-layer',
           type: 'circle',
           source: 'stops-source',
-          minzoom: 14,
+          minzoom: 13, // Show earlier
           paint: {
-            'circle-radius': [
-              'interpolate', ['linear'], ['zoom'],
-              14, 4,
-              18, 10
-            ],
-            'circle-color': '#ff3366',
-            'circle-stroke-width': 2,
-            'circle-stroke-color': '#ffffff'
+            'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 18, 10],
+            'circle-color': '#ffffff',
+            'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 13, 2, 18, 4],
+            'circle-stroke-color': '#ff0033'
           }
         });
 
         // Click handler
         map.current.on('click', 'stops-layer', async (e) => {
-            const stop = e.features[0].properties;
-            if (activePopup.current) activePopup.current.remove();
-            
-            const popupNode = document.createElement('div');
-            popupNode.id = `popup-${stop.stop_id}`;
-            
-            activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-v4' })
-                .setLngLat([e.lngLat.lng, e.lngLat.lat])
-                .setDOMContent(popupNode)
-                .addTo(map.current);
+          const stop = e.features[0].properties;
+          if (activePopup.current) activePopup.current.remove();
 
-            setSelectedStop(null);
-            setArrivals(null);
-            setSelectedStop(stop);
-            try {
-              const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id}/timetable`);
-              const data = await res.json();
-              setArrivals(data);
-            } catch (err) { setArrivals([]); }
+          const popupNode = document.createElement('div');
+          popupNode.id = `popup-${stop.stop_id}`;
+
+          activePopup.current = new maplibregl.Popup({ maxWidth: '350px', className: 'stop-popup-v4' })
+            .setLngLat([e.lngLat.lng, e.lngLat.lat])
+            .setDOMContent(popupNode)
+            .addTo(map.current);
+
+          setSelectedStop(null);
+          setArrivals(null);
+          setSelectedStop(stop);
+          try {
+            const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com'}/api/stops/${stop.stop_id}/timetable`);
+            const data = await res.json();
+            setArrivals(data);
+          } catch (err) { setArrivals([]); }
         });
 
         map.current.on('mouseenter', 'stops-layer', () => map.current.getCanvas().style.cursor = 'pointer');
@@ -207,10 +251,10 @@ export default function Map({
     map.current.on('zoom', () => setMapZoom(map.current.getZoom()));
 
     return () => {
-        if (map.current) {
-            map.current.remove();
-            map.current = null;
-        }
+      if (map.current) {
+        map.current.remove();
+        map.current = null;
+      }
     };
   }, [isSatellite]);
 
@@ -253,7 +297,7 @@ export default function Map({
     }
   }, [shapes, routeColor]);
 
-  // Handle Vehicles (Buses)
+  // Handle Vehicles (Buses) with Balloon Markers from Main
   useEffect(() => {
     if (!map.current) return;
 
@@ -270,123 +314,104 @@ export default function Map({
     vehicles.forEach(v => {
       const lat = parseFloat(v.lat || v.lt);
       const lng = parseFloat(v.lon || v.ln);
-      const bearing = parseFloat(v.bearing || v.ag || 0);
+      const bearing = parseFloat(v.bearing || v.b || 0);
       const markerId = v._id || v.vehicle_id || v.id;
+      const color = v.color || v.c || 'ff0033';
+      const shortName = v.route_short_name || v.sn || '?';
 
-      // SAFETY GUARD: skip invalid coordinates to prevent site crash
-      if (isNaN(lat) || isNaN(lng)) {
-        console.warn(`Skipping vehicle ${markerId} due to invalid coordinates:`, v);
-        return;
-      }
+      // SAFETY GUARD: skip invalid coordinates
+      if (isNaN(lat) || isNaN(lng)) return;
 
-    const busColorRaw = (v.color || v.c || 'ff0033');
-    const busColor = busColorRaw.startsWith('#') ? busColorRaw : `#${busColorRaw}`;
-
-    if (busMarkers.current[markerId]) {
-      busMarkers.current[markerId].setLngLat([lng, lat]);
-      const el = busMarkers.current[markerId].getElement();
-      
-      const wrapper = el.querySelector('.rotated-bus-wrapper');
-      if (wrapper && !isNaN(bearing)) {
+      if (busMarkers.current[markerId]) {
+        busMarkers.current[markerId].setLngLat([lng, lat]);
+        const el = busMarkers.current[markerId].getElement();
+        const wrapper = el.querySelector('.rotated-bus-wrapper');
+        if (wrapper && !isNaN(bearing)) {
           wrapper.style.transform = `rotate(${bearing}deg)`;
-      }
-      
-      const label = el.querySelector('.balloon-label');
-      if (label) label.style.backgroundColor = busColor;
-    } else {
-      const el = document.createElement('div');
-      el.className = 'bus-marker-v2';
-      el.innerHTML = `
-          <div class="balloon-bus-marker">
-              <div class="balloon-label" style="background-color: ${busColor};">
-                  ${v.route_short_name || v.sn || '?'}
-              </div>
-              <div class="rotated-bus-wrapper" style="transform: rotate(${(bearing || 0)}deg)">
-                  <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
-                      <rect x="5" y="5" width="40" height="90" rx="10" fill="${busColor}" stroke="white" stroke-width="4" />
-                      <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                      <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                      <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                      <circle cx="35" cy="10" r="3" fill="#fffb00" />
-                  </svg>
-              </div>
-          </div>
-      `;
+        }
+        const label = el.querySelector('.balloon-label');
+        if (label) label.style.backgroundColor = `#${color}`;
+      } else {
+        const el = document.createElement('div');
+        el.className = 'custom-bus-marker-container';
+        el.innerHTML = createBusMarkerHtml(shortName, bearing, color);
 
-      el.onclick = (e) => {
+        el.onclick = (e) => {
           e.stopPropagation();
           if (activePopup.current) activePopup.current.remove();
-          
+
           const popupEl = document.createElement('div');
-          // Simplified bus popup info
+          popupEl.className = 'bus-popup-v2';
+          popupEl.style.cssText = 'text-align: center; color: #fff; padding: 10px; min-width: 180px;';
           popupEl.innerHTML = `
-              <div style="text-align: center; color: #fff; padding: 10px;">
-                  <div style="background: ${busColor}; padding: 5px 15px; border-radius: 20px; display: inline-block; font-weight: bold; margin-bottom: 8px;">
-                      ${v.route_short_name || v.sn || '?'}
-                  </div>
-                  <div style="font-weight: bold;">${v.headsign || v.h || 'Bus'}</div>
-                  <div style="font-size: 0.8rem; margin-top: 5px; opacity: 0.7;">ID: ${v.vehicle_id}</div>
-              </div>
-          `;
+                <div style="background: #${color}; padding: 10px 18px; border-radius: 25px; display: inline-block; font-size: 1.3rem; font-weight: 900; margin-bottom: 12px; box-shadow: 0 3px 8px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2);">
+                    ${shortName}
+                </div>
+                <div style="font-size: 1.2rem; font-weight: 900; margin-bottom: 8px; color: #fff; letter-spacing: -0.5px;">
+                    ${v.headsign || v.h || 'Bus Route'}
+                </div>
+                <div style="font-size: 0.8rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; margin-top: 5px; opacity: 0.7;">
+                    ID: ${markerId}
+                </div>
+            `;
 
           activePopup.current = new maplibregl.Popup({ closeButton: true, className: 'bus-popup-native' })
-              .setLngLat([lng, lat])
-              .setDOMContent(popupEl)
-              .addTo(map.current);
-          
-          activePopup.current.on('close', () => setSelectedStop(null));
+            .setLngLat([lng, lat])
+            .setDOMContent(popupEl)
+            .addTo(map.current);
+
           onVehicleClick?.(v);
-      };
+        };
 
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat([lng, lat])
-        .addTo(map.current);
-        
-      busMarkers.current[markerId] = marker;
-    }
-  });
-}, [vehicles]);
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([lng, lat])
+          .addTo(map.current);
 
-// Efficient GeoJSON Update for Stops
-useEffect(() => {
-  if (!map.current) return;
-  const source = map.current.getSource('stops-source');
-  if (!source) return;
+        busMarkers.current[markerId] = marker;
+      }
+    });
+  }, [vehicles]);
 
-  if (!showStops || stops.length === 0) {
+  // Efficient GeoJSON Update for Stops
+  useEffect(() => {
+    if (!map.current) return;
+    const source = map.current.getSource('stops-source');
+    if (!source) return;
+
+    if (!showStops || stops.length === 0) {
       source.setData({ type: 'FeatureCollection', features: [] });
       return;
-  }
+    }
 
-  source.setData({
+    source.setData({
       type: 'FeatureCollection',
       features: stops.map(stop => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
-          properties: { ...stop }
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [stop.lon, stop.lat] },
+        properties: { ...stop }
       }))
-  });
-}, [stops, showStops]);
+    });
+  }, [stops, showStops]);
 
   // Handle React Portal-like rendering for Stop Popup content
   const [popupPortal, setPopupPortal] = useState(null);
   useEffect(() => {
     if (selectedStop && activePopup.current) {
-        const container = document.getElementById(`popup-${selectedStop.stop_id}`);
-        if (container) {
-            setPopupPortal({ container, stop: selectedStop });
-        }
+      const container = document.getElementById(`popup-${selectedStop.stop_id}`);
+      if (container) {
+        setPopupPortal({ container, stop: selectedStop });
+      }
     } else {
-        setPopupPortal(null);
+      setPopupPortal(null);
     }
   }, [selectedStop, arrivals, activePopup.current]);
 
   return (
     <div className="map-wrapper-v2">
       <div ref={mapContainer} className="map-container-v2" />
-      
+
       <div className="map-controls-custom">
-        <button 
+        <button
           id="my-location-btn"
           className="btn-overlay"
           onClick={() => {
@@ -409,18 +434,18 @@ useEffect(() => {
               });
             }
           }}
-         title={t.my_location}
+          title={t.my_location}
         >
           <span>🎯</span>
         </button>
-        <button 
+        <button
           className={`btn-overlay ${showStops ? 'active' : ''}`}
           onClick={() => setShowStops(!showStops)}
           title={t.show_stops}
         >
           <span>{showStops ? '✕' : '🚏'}</span>
         </button>
-        <button 
+        <button
           className={`btn-overlay ${isSatellite ? 'active' : ''}`}
           onClick={() => setIsSatellite(!isSatellite)}
           title={isSatellite ? t.streetView : t.satelliteView}
@@ -431,44 +456,44 @@ useEffect(() => {
 
       {showStops && mapZoom < 15 && (
         <div className="zoom-hint-pill">
-            {t.zoomInToSeeStops || 'Zoom in to see stops'}
+          {t.zoomInToSeeStops || 'Zoom in to see stops'}
         </div>
       )}
 
       {popupPortal && (
         <div style={{ display: 'none' }}>
-            {/* We use a hidden div to render the React component, but then we might need actual Portal logic or just inject it */}
+          {/* We use a hidden div to render the React component, but then we might need actual Portal logic or just inject it */}
         </div>
       )}
-      
+
       {/* Fallback to simple React-based popup if native DOM injection is hard, but let's try the native way first */}
       {selectedStop && activePopup.current && (
-          <div style={{ display: 'none' }}>
-              {/* This is a trick: the native popup uses a DOM node we provided, we can 'portal' into it if needed, 
+        <div style={{ display: 'none' }}>
+          {/* This is a trick: the native popup uses a DOM node we provided, we can 'portal' into it if needed, 
                   but for simplicity let's stick to the custom overlay if the native one is too buggy for React bits.
                   Actually, the user said "поп ап окна не работают". Let's use the native ones properly.
               */}
-          </div>
+        </div>
       )}
 
       {/* Re-implementing the TimetablePopup inside the Native Popup requires caution. 
           I'll use a simpler approach: Injecting the React component into the DOM node of the MapLibre Popup.
       */}
       {selectedStop && popupPortal && (
-          <React.Fragment>
-              {require('react-dom').createPortal(
-                <TimetablePopup 
-                    stop={selectedStop} 
-                    arrivals={arrivals} 
-                    onSelectRoute={onSelectRoute}
-                    favorites={favorites}
-                    onToggleFavorite={toggleFavorite}
-                    t={t}
-                    routes={routes}
-                />,
-                popupPortal.container
-              )}
-          </React.Fragment>
+        <React.Fragment>
+          {require('react-dom').createPortal(
+            <TimetablePopup
+              stop={selectedStop}
+              arrivals={arrivals}
+              onSelectRoute={onSelectRoute}
+              favorites={favorites}
+              onToggleFavorite={toggleFavorite}
+              t={t}
+              routes={routes}
+            />,
+            popupPortal.container
+          )}
+        </React.Fragment>
       )}
 
       <style jsx>{`
@@ -577,107 +602,145 @@ useEffect(() => {
         }
 
         .zoom-hint-pill {
-          position: fixed;
-          top: 100px;
+          position: absolute;
+          bottom: 120px;
           left: 50%;
           transform: translateX(-50%);
-          background: #000;
-          color: white;
-          padding: 10px 20px;
-          border-radius: 40px;
-          font-weight: bold;
+          background: rgba(10, 10, 46, 0.95);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          padding: 12px 24px;
+          border-radius: 15px;
+          border: 1px solid rgba(57, 255, 20, 0.3);
+          font-weight: 900;
+          color: #fff;
           font-size: 0.8rem;
-          border: 2px solid #ff3366;
-          z-index: 9999;
-          pointer-events: none;
-          box-shadow: 0 5px 25px rgba(0,0,0,0.8);
-          max-width: 250px;
-          width: auto;
-          text-align: center;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+          text-transform: uppercase;
+          z-index: 1001;
           white-space: nowrap;
+          pointer-events: none;
+          width: auto;
+          max-width: max-content;
         }
 
         :global(.maplibregl-popup-content) {
-          background: #0f0f15 !important;
-          border-radius: 20px !important;
-          padding: 16px !important;
-          border: 1px solid rgba(255,255,255,0.1) !important;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.7) !important;
+          background: rgba(10, 10, 46, 0.9) !important;
+          backdrop-filter: blur(15px) !important;
+          -webkit-backdrop-filter: blur(15px) !important;
+          border-radius: 30px !important;
+          padding: 24px !important;
+          border: 1px solid rgba(57, 255, 20, 0.2) !important;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.8) !important;
+          color: #fff !important;
+        }
+        :global(.maplibregl-popup-close-button) {
+          color: #fff !important;
+          font-size: 24px !important;
+          right: 12px !important;
+          top: 12px !important;
+          background: rgba(255,255,255,0.1) !important;
+          border-radius: 50% !important;
+          width: 40px !important;
+          height: 40px !important;
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
         }
 
-        .stop-popup-v4 {
+        :global(.custom-bus-marker-container) {
+          cursor: pointer;
+          transition: transform 0.3s ease-out;
+        }
+        :global(.balloon-bus-marker) {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          position: relative;
+        }
+        :global(.balloon-label) {
+          padding: 3px 8px;
+          border-radius: 8px;
           color: white;
-          width: 300px;
-        }
-        .popup-top {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 15px;
-          padding-right: 25px;
-        }
-        .stop-title-area h3 {
-          margin: 0;
-          font-size: 1.1rem;
-          letter-spacing: -0.02em;
-        }
-        .stop-code {
+          font-weight: 900;
           font-size: 0.7rem;
-          opacity: 0.5;
-        }
-        .fav-pill-btn {
-          background: rgba(255,255,255,0.05);
-          border: none;
-          padding: 6px;
-          border-radius: 12px;
-          cursor: pointer;
-        }
-        .arrivals-scroll {
-          max-height: 250px;
-          overflow-y: auto;
-        }
-        .bus-row {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px;
-          background: rgba(255,255,255,0.02);
-          margin-bottom: 8px;
-          border-radius: 14px;
-          cursor: pointer;
-        }
-        .bus-badge {
-          width: 38px;
-          height: 38px;
-          min-width: 38px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 800;
-          font-size: 0.9rem;
-        }
-        .bus-dest {
-          flex: 1;
-          font-size: 0.85rem;
-          font-weight: 500;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          margin-bottom: 4px;
+          border: 1px solid rgba(255,255,255,0.2);
+          z-index: 2;
           white-space: nowrap;
         }
-        .bus-eta {
-          text-align: right;
+        :global(.rotated-bus-wrapper) {
+          transition: transform 0.3s ease-out;
         }
-        .abs-time {
-          display: block;
-          font-size: 0.85rem;
-          font-weight: 700;
+
+        .main-timetable-v1 {
+          width: 320px;
+          font-family: inherit;
         }
-        .rel-time {
-          font-size: 0.7rem;
-          color: #ff3366;
+        .popup-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+          gap: 15px;
+          padding-right: 45px; /* Prevent overlap with [X] close button */
+        }
+        .title-box h3 {
+          margin: 0 0 5px 0;
+          font-size: 1.2rem;
+          font-weight: 900;
+          letter-spacing: -0.5px;
+        }
+        .stop-id-tag {
+          font-size: 0.75rem;
+          color: #888;
           font-weight: bold;
         }
+        .fav-btn {
+          background: transparent;
+          border: none;
+          font-size: 1.6rem;
+          cursor: pointer;
+          filter: grayscale(1);
+          transition: transform 0.2s;
+        }
+        .fav-btn.active {
+          filter: none;
+        }
+        
+        .arrivals-table {
+          width: 100%;
+          border-collapse: collapse;
+          color: #ddd;
+        }
+        .arrivals-table th {
+          text-align: left;
+          font-size: 0.7rem;
+          text-transform: uppercase;
+          opacity: 0.6;
+          padding: 8px 4px;
+          border-bottom: 1px solid rgba(57, 255, 20, 0.2);
+          color: #fff;
+        }
+        .arrivals-table tr {
+          border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .arrivals-table td {
+          padding: 10px 4px;
+          font-size: 0.85rem;
+        }
+        .time-col { color: #fff; font-weight: bold; }
+        .eta-col { font-weight: 900; color: #fff; }
+        .route-pill {
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-weight: 900;
+          font-size: 0.8rem;
+          color: #fff;
+          box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        .dest-col { color: #bbb; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       `}</style>
     </div>
   );
