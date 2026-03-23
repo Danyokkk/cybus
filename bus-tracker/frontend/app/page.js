@@ -2,7 +2,6 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
-import { io } from 'socket.io-client';
 import { useLanguage } from '../context/LanguageContext';
 
 // Dynamic import for BusMap component
@@ -58,7 +57,6 @@ export default function Home() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Cached Data Check
         const cachedStops = localStorage.getItem('cybus_stops');
         const cachedRoutes = localStorage.getItem('cybus_routes');
         const cacheTime = localStorage.getItem('cybus_cache_time');
@@ -67,10 +65,8 @@ export default function Home() {
         if (cachedStops && cachedRoutes && isCacheValid) {
           setStops(JSON.parse(cachedStops));
           setRoutes(JSON.parse(cachedRoutes));
-          setLoading(false); // Immediate load complete
-          // Optional: Background refresh could go here if needed
+          setLoading(false); 
         } else {
-          // Fresh Fetch
           const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
           const [stopsRes, routesRes] = await Promise.all([
             fetch(`${apiUrl}/api/stops`),
@@ -102,39 +98,42 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. WebSocket Real-time Sync
+  // 2. Direct Polling for vehicles (Render Server) - Replaced WebSocket
   useEffect(() => {
+    let intervalId;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
-    const socket = io(apiUrl);
 
-    socket.on('connect', () => {
-      console.log('CONNECTED TO WEBSOCKET');
-    });
+    const fetchVehicles = async () => {
+      try {
+        const res = await fetch(`${apiUrl}/api/v2/vehicles`);
+        if (!res.ok) throw new Error('Refresh failed');
+        const data = await res.json();
+        
+        // Map compact format to objects with legacy property support for Leaflet Map
+        const mapped = data.map(v => ({
+            id: v[0], r: v[1], lt: v[2], ln: v[3], b: v[4], sn: v[5], c: v[6], h: v[7],
+            vehicle_id: v[0], route_id: v[1], lat: v[2], lon: v[3], bearing: v[4], route_short_name: v[5], color: v[6], headsign: v[7]
+        }));
 
-    socket.on('vehiclePositions', (data) => {
-      if (Array.isArray(data)) {
-        setVehicles(data);
-        localStorage.setItem('cybus_vehicles', JSON.stringify(data));
-        localStorage.setItem('cybus_v_cache_time', Date.now().toString());
+        setVehicles(mapped);
         if (loading) setLoading(false);
+      } catch (err) {
+        console.warn('Real-time update failed, retrying...', err.message);
       }
-    });
-
-    return () => {
-      socket.disconnect();
     };
-  }, [loading]);
+
+    fetchVehicles();
+    intervalId = setInterval(fetchVehicles, 15000); 
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Auto-close sidebar on mobile after route selection
   const handleSelectRoute = useCallback(async (route) => {
-    console.log('Selecting Route:', route);
     if (window.innerWidth < 768) {
       setIsSidebarOpen(false);
     }
     if (!route) {
-      if (selectedRouteId === null) {
-        return; // Already null, avoid redundant work
-      }
+      if (selectedRouteId === null) return;
       setSelectedRouteId(null);
       setSelectedRouteColor(null);
       setSelectedPlan(null);
@@ -146,16 +145,13 @@ export default function Home() {
         setStops(data);
       } catch (err) { console.error(err); }
     } else {
-      if (selectedRouteId === route.route_id) {
-        return; // Avoid double loading same route
-      }
+      if (selectedRouteId === route.route_id) return;
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
         const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
         const data = await res.json();
-        console.log('Route Detailed Data:', data);
         setStops(data.stops || []);
         setShapes(data.shapes || []);
       } catch (err) {
@@ -163,7 +159,7 @@ export default function Home() {
         setShapes([]);
       }
     }
-  }, [selectedRouteId, routes]); // Handlers are stable
+  }, [selectedRouteId, routes]);
 
   const handleSelectPlan = useCallback((plan) => {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
@@ -174,27 +170,14 @@ export default function Home() {
 
   // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = useCallback((v) => {
-    console.log('Vehicle Clicked:', v);
     if (window.innerWidth < 768) setIsSidebarOpen(false);
-
     const routeId = v.r || v.route_id;
     const routeShortName = v.sn || v.route_short_name;
-
-    // 1. Try match by exact route_id
     let route = routes.find(r => r.route_id === routeId);
-
-    // 2. Fallback: match by short_name if ID fails (sometimes IDs change or are partial)
     if (!route && routeShortName) {
-      console.warn(`Route ID mismatch (${routeId}), trying fallback by name: ${routeShortName}`);
       route = routes.find(r => r.short_name === routeShortName || r.route_short_name === routeShortName);
     }
-
-    if (route) {
-      console.log('Routing to:', route.route_id);
-      handleSelectRoute(route);
-    } else {
-      console.error('Could not find route for vehicle:', v);
-    }
+    if (route) handleSelectRoute(route);
   }, [routes, handleSelectRoute]);
 
   return (
@@ -211,7 +194,6 @@ export default function Home() {
         setActiveTab={setActiveTab}
       />
 
-      {/* Floating Floating Dock - Mobile Exclusive */}
       <div className="mobile-floating-dock">
         <div className="dock-container">
           <button
@@ -258,7 +240,7 @@ export default function Home() {
           </button>
           <button
             className="dock-item"
-            id="mobile-location-btn" // For Map.js to listen to
+            id="mobile-location-btn" 
             onClick={() => {
               const pcBtn = document.getElementById('my-location-btn');
               if (pcBtn) pcBtn.click();
@@ -300,13 +282,6 @@ export default function Home() {
               <div className="text">
                 <strong>Reboot System</strong>
                 <p>Reload GTFS & Real-time data</p>
-              </div>
-            </div>
-            <div className="setting-card">
-              <span className="icon">🌐</span>
-              <div className="text">
-                <strong>Join Community</strong>
-                <p>Updates on Telegram @daqxn</p>
               </div>
             </div>
           </div>
