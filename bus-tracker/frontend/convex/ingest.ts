@@ -7,7 +7,7 @@ export const pollBusData = action({
   handler: async (ctx) => {
     try {
       // Pull enriched, minimized data from the cybus backend
-      const url = "https://cyfinal.onrender.com/api/vehicle_positions";
+      const url = "https://cybus-production.up.railway.app/api/vehicle_positions";
       const response = await fetch(url);
       
       if (!response.ok) throw new Error("Cybus API fetch failed");
@@ -47,7 +47,7 @@ export const pingRender = action({
   handler: async () => {
     try {
       // Pings Render to prevent it from ever sleeping (Free Tier 24/7 Uptime)
-      await fetch("https://cyfinal.onrender.com/api/routes");
+      await fetch("https://cybus-production.up.railway.app/api/routes");
       console.log("Pinged Render to keep it awake!");
     } catch (e) {
       console.error("Ping failed", e);

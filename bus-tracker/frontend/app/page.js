@@ -13,7 +13,7 @@ const BusMap = dynamic(() => import('../components/Map'), {
 export default function Home() {
   // Pre-warm the backend as early as possible
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
     fetch(`${apiUrl}/api/vehicle_positions`, { method: 'HEAD', mode: 'no-cors' }).catch(() => { });
   }, []);
 
@@ -67,7 +67,7 @@ export default function Home() {
           setRoutes(JSON.parse(cachedRoutes));
           setLoading(false); 
         } else {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
           const [stopsRes, routesRes] = await Promise.all([
             fetch(`${apiUrl}/api/stops`),
             fetch(`${apiUrl}/api/routes`)
@@ -101,7 +101,7 @@ export default function Home() {
   // 2. Direct Polling for vehicles (Render Server) - Replaced WebSocket
   useEffect(() => {
     let intervalId;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
 
     const fetchVehicles = async () => {
       try {
@@ -139,7 +139,7 @@ export default function Home() {
       setSelectedPlan(null);
       setShapes([]);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
         const res = await fetch(`${apiUrl}/api/stops`);
         const data = await res.json();
         setStops(data);
@@ -149,7 +149,7 @@ export default function Home() {
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
         const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
         const data = await res.json();
         setStops(data.stops || []);

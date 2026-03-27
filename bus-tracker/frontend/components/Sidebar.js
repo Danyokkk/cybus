@@ -149,7 +149,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
         }
         setIsPlanning(true);
         try {
-            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cyfinal.onrender.com';
+            const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
             const planRes = await fetch(`${apiUrl}/api/plan-route?lat1=${originCoords.lat}&lon1=${originCoords.lon}&lat2=${destCoords.lat}&lon2=${destCoords.lon}`);
             const plans = await planRes.json();
             setPlanResults(plans);

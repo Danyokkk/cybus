@@ -11,7 +11,7 @@ export const metadata = {
   openGraph: {
     title: 'CyBus | Live Cyprus Bus Tracker',
     description: 'Real-time bus tracking for all of Cyprus.',
-    url: 'https://cyfinal.onrender.com',
+    url: 'https://cybus-production.up.railway.app',
     siteName: 'CyBus',
     type: 'website',
   },
