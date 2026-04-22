@@ -13,7 +13,7 @@ const BusMap = dynamic(() => import('../components/Map'), {
 export default function Home() {
   // Pre-warm the backend as early as possible
   useEffect(() => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
     fetch(`${apiUrl}/api/vehicle_positions`, { method: 'HEAD', mode: 'no-cors' }).catch(() => { });
   }, []);
 
@@ -26,6 +26,7 @@ export default function Home() {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Default to false for mobile-first
   const [activeTab, setActiveTab] = useState('routes');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -67,7 +68,7 @@ export default function Home() {
           setRoutes(JSON.parse(cachedRoutes));
           setLoading(false); 
         } else {
-          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
+          const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
           const [stopsRes, routesRes] = await Promise.all([
             fetch(`${apiUrl}/api/stops`),
             fetch(`${apiUrl}/api/routes`)
@@ -101,7 +102,7 @@ export default function Home() {
   // 2. Direct Polling for vehicles (Render Server) - Replaced WebSocket
   useEffect(() => {
     let intervalId;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
 
     const fetchVehicles = async () => {
       try {
@@ -116,14 +117,16 @@ export default function Home() {
         }));
 
         setVehicles(mapped);
+        setIsConnected(true);
         if (loading) setLoading(false);
       } catch (err) {
         console.warn('Real-time update failed, retrying...', err.message);
+        setIsConnected(false);
       }
     };
 
     fetchVehicles();
-    intervalId = setInterval(fetchVehicles, 15000); 
+    intervalId = setInterval(fetchVehicles, 10000); 
     return () => clearInterval(intervalId);
   }, []);
 
@@ -139,7 +142,7 @@ export default function Home() {
       setSelectedPlan(null);
       setShapes([]);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
         const res = await fetch(`${apiUrl}/api/stops`);
         const data = await res.json();
         setStops(data);
@@ -149,7 +152,7 @@ export default function Home() {
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
         const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
         const data = await res.json();
         setStops(data.stops || []);
@@ -182,6 +185,14 @@ export default function Home() {
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
+      {/* Small Server Status Indicator */}
+      <div className="server-status-indicator">
+        <div className={`status-dot ${isConnected ? 'online' : 'offline'}`}></div>
+        <span className="status-text">
+          {isConnected ? `${vehicles.length} buses live` : 'Reconnecting...'}
+        </span>
+      </div>
+
       <Sidebar
         routes={routes}
         stops={stops}

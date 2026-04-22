@@ -120,7 +120,7 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
     useEffect(() => {
         setLoading(true);
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus-production.up.railway.app';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
         fetch(`${apiUrl}/api/stops/${stop.stop_id}/timetable`)
             .then(res => res.json())
             .then(data => {

@@ -357,7 +357,7 @@ async function loadData() {
   fetchData();
 
   // High-frequency polling for Realtime updates
-  setInterval(fetchData, 3000);
+  setInterval(fetchData, 10000);
 }
 
 loadData();
