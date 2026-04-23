@@ -35,13 +35,13 @@ let routeShapes = {};
 let vehiclePositions = [];
 let tripUpdates = {};
 
-// --- 1. The Proxy Config ---
-// We prepend this to the URL to route traffic through a clean IP
-const PROXY_URL = "https://corsproxy.io/?";
-
-// Standard Axios (No complex headers, the proxy handles it)
+// Standard Axios with realistic User-Agent to avoid blocks
 const axiosInstance = axios.create({
-  timeout: 30000 // 30s timeout
+  timeout: 30000,
+  headers: {
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': '*/*'
+  }
 });
 
 // Helper: Get Current Date in YYYYMMDD (Cyprus Time)
@@ -99,7 +99,7 @@ let tripMap = {};
 // Fetch Logic
 async function fetchData() {
   try {
-    const url = `${PROXY_URL}http://20.19.98.194:8328/Api/api/gtfs-realtime`;
+    const url = 'http://20.19.98.194:8328/Api/api/gtfs-realtime';
     console.log(`>>> Fetching RT Feed: ${url}`);
     const response = await axiosInstance.get(url, { responseType: 'arraybuffer' });
     if (!response.data || response.data.length === 0) throw new Error("Empty response from feed");
