@@ -378,7 +378,7 @@ loadData();
 // Pings the server every 10 seconds to prevent Render from sleeping
 setInterval(() => {
   const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://cybus.onrender.com';
-  axios.get(`${RENDER_URL}/api/ping`)
+  axiosInstance.get(`${RENDER_URL}/api/ping`)
     .then(() => console.log(`>>> [Keep-Alive] Ping successful to ${RENDER_URL}`))
     .catch(err => console.error(`! [Keep-Alive] Ping failed: ${err.message}`));
 }, 10000);
