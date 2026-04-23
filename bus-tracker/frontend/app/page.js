@@ -126,7 +126,7 @@ export default function Home() {
     };
 
     fetchVehicles();
-    intervalId = setInterval(fetchVehicles, 10000); 
+    intervalId = setInterval(fetchVehicles, 5000); 
     return () => clearInterval(intervalId);
   }, []);
 
@@ -203,8 +203,8 @@ export default function Home() {
             <span className="metric-value">{isConnected ? 'STABLE' : 'SYNCING'}</span>
           </div>
         </div>
-        <div className="status-footer">
-          Cyprus Public Transport RT
+        <div className="status-footer" style={{ borderTop: '1px solid rgba(255, 0, 51, 0.1)', color: 'rgba(255, 255, 255, 0.4)' }}>
+          CPT REAL-TIME ENGINE V2
         </div>
       </div>
 
@@ -320,8 +320,8 @@ export default function Home() {
           <div className="loader-logo" style={{ color: '#ff0033', textTransform: 'uppercase', letterSpacing: '4px' }}>
             Initializing
           </div>
-          <div style={{ color: '#888', fontSize: '0.8rem', marginTop: '10px' }}>
-            Waking up server (may take 30s)...
+          <div style={{ color: '#666', fontSize: '0.7rem', marginTop: '10px', fontWeight: 900 }}>
+            OPTIMIZING ENGINE...
           </div>
           <div className="loader-bar-container" style={{ marginTop: '20px' }}>
             <div className="loader-bar-progress" style={{ background: 'linear-gradient(90deg, transparent, #ff0033, transparent)' }}></div>

@@ -84,20 +84,20 @@ const stopIcon = L.divIcon({
     popupAnchor: [0, -40]
 });
 
-// User Location "Radar" Icon - Fat Neon Green
+// User Location Icon - Minimalist Red Pulse
 const userLocationIcon = L.divIcon({
     className: 'custom-user-location-icon',
-    html: '<div style="background: #39ff14; width: 22px; height: 22px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 0 20px #39ff14, 0 0 40px rgba(57, 255, 20, 0.4); animation: sonar 2s infinite;"></div>',
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    html: '<div style="background: #ff0033; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 15px rgba(255, 0, 51, 0.6); animation: sonar 2s infinite;"></div>',
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
 });
 
 // Plan Point Icons
 const planStartIcon = L.divIcon({
     className: 'custom-plan-icon',
-    html: '<div style="background: #39ff14; border: 2px solid white; box-shadow: 0 0 10px #39ff14; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #000; font-size: 10px;">START</div>',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
+    html: '<div style="background: #ff0033; border: 2px solid white; box-shadow: 0 0 10px rgba(255, 0, 51, 0.5); width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 8px;">START</div>',
+    iconSize: [26, 26],
+    iconAnchor: [13, 13]
 });
 
 const planHubIcon = L.divIcon({
@@ -659,7 +659,7 @@ export default function BusMap({
                         <Marker position={[selectedPlan.from.lat, selectedPlan.from.lon]} icon={planStartIcon} zIndexOffset={2000}>
                             <Popup className="plan-popup">
                                 <div style={{ textAlign: 'center' }}>
-                                    <strong style={{ color: '#39ff14' }}>START HERE</strong><br />
+                                    <strong style={{ color: '#ff0033' }}>START HERE</strong><br />
                                     {selectedPlan.from.name}<br />
                                     Ride: <b>{selectedPlan.type === 'transfer' ? selectedPlan.route1.short_name : selectedPlan.route.short_name}</b>
                                 </div>

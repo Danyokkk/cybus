@@ -176,9 +176,8 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                 )}
 
                 <div className="sidebar-header">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '5px' : '15px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '10px' : '15px' }}>
-                            <h2 style={{ fontSize: isMobile ? '1.2rem' : '1.6rem', margin: 0 }}>CyBus</h2>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px' }}>
+                            <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.4rem', margin: 0, fontWeight: 900, color: 'var(--nebula-accent)' }}>CyBus</h2>
                             <div className="tab-switcher">
                                 <button
                                     className={`tab-btn ${activeTab === 'routes' ? 'active' : ''}`}
@@ -196,7 +195,6 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                                 </button>
                             </div>
                         </div>
-                    </div>
 
                     {activeTab === 'routes' ? (
                         <input
@@ -422,7 +420,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                 .tab-btn.active {
                     background: var(--nebula-accent);
                     color: #fff;
-                    box-shadow: 0 2px 10px rgba(72, 52, 212, 0.3);
+                    box-shadow: 0 2px 10px rgba(255, 0, 51, 0.3);
                 }
                 .planner-form {
                     display: flex;
@@ -464,7 +462,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                     border-bottom: none;
                 }
                 .suggestion-item:hover {
-                    background: rgba(57, 255, 20, 0.1);
+                    background: rgba(255, 0, 51, 0.1);
                 }
                 .suggestion-icon {
                     font-size: 1.1rem;
@@ -532,10 +530,10 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                     to { transform: rotate(360deg); }
                 }
                 .plan-submit-btn {
-                    background: linear-gradient(135deg, var(--nebula-accent), #6c5ce7);
+                    background: linear-gradient(135deg, var(--nebula-accent), #900);
                     border: none;
-                    padding: 12px;
-                    border-radius: 12px;
+                    padding: 10px;
+                    border-radius: 10px;
                     color: #fff;
                     font-weight: 900;
                     cursor: pointer;
@@ -546,28 +544,28 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                     cursor: not-allowed;
                 }
                 .plan-card {
-                    background: rgba(255, 255, 255, 0.02);
-                    border: 1px solid rgba(57, 255, 20, 0.1);
-                    padding: 15px;
-                    border-radius: 20px;
-                    margin-bottom: 12px;
-                    margin-top: 10px;
+                    background: rgba(255, 255, 255, 0.01);
+                    border: 1px solid rgba(255, 0, 51, 0.1);
+                    padding: 12px;
+                    border-radius: 15px;
+                    margin-bottom: 10px;
+                    margin-top: 8px;
                     cursor: pointer;
                     transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
                 }
                 .plan-card:hover {
-                    background: rgba(57, 255, 20, 0.05);
+                    background: rgba(255, 0, 51, 0.04);
                     border-color: var(--nebula-accent);
-                    box-shadow: 0 5px 20px rgba(57, 255, 20, 0.1);
+                    box-shadow: 0 5px 15px rgba(255, 0, 51, 0.1);
                     transform: translateY(-2px);
                 }
                 .plan-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 12px;
-                    border-bottom: 1px solid rgba(57, 255, 20, 0.05);
-                    padding-bottom: 10px;
+                    margin-bottom: 10px;
+                    border-bottom: 1px solid rgba(255, 0, 51, 0.05);
+                    padding-bottom: 8px;
                 }
                 .step {
                     font-size: 0.75rem;
@@ -584,7 +582,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                     top: 25px;
                     bottom: 25px;
                     left: 25px;
-                    width: 380px;
+                    width: 280px;
                     background: var(--glass-bg);
                     backdrop-filter: var(--glass-blur);
                     border: 1px solid var(--glass-border);
