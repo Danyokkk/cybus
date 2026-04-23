@@ -316,15 +316,15 @@ export default function Home() {
       )}
 
       {loading && (
-        <div className="loading-overlay" style={{ background: '#000' }}>
-          <div className="loader-logo" style={{ color: '#ff0033', textTransform: 'uppercase', letterSpacing: '4px' }}>
+        <div className="loading-overlay">
+          <div className="loader-logo">
             Initializing
           </div>
-          <div style={{ color: '#666', fontSize: '0.7rem', marginTop: '10px', fontWeight: 900 }}>
+          <div className="loader-text">
             OPTIMIZING ENGINE...
           </div>
-          <div className="loader-bar-container" style={{ marginTop: '20px' }}>
-            <div className="loader-bar-progress" style={{ background: 'linear-gradient(90deg, transparent, #ff0033, transparent)' }}></div>
+          <div className="loader-bar-container">
+            <div className="loader-bar-progress"></div>
           </div>
         </div>
       )}
