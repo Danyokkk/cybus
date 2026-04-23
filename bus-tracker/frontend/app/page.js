@@ -185,12 +185,27 @@ export default function Home() {
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-      {/* Small Server Status Indicator */}
-      <div className="server-status-indicator">
-        <div className={`status-dot ${isConnected ? 'online' : 'offline'}`}></div>
-        <span className="status-text">
-          {isConnected ? `${vehicles.length} buses live` : 'Reconnecting...'}
-        </span>
+      {/* System Status Dashboard */}
+      <div className="system-status-card">
+        <div className="status-item">
+          <div className={`status-pill ${isConnected ? 'online' : 'offline'}`}>
+            <span className="dot"></span>
+            {isConnected ? 'SYSTEM ONLINE' : 'RECONNECTING'}
+          </div>
+        </div>
+        <div className="status-grid">
+          <div className="status-metric">
+            <span className="metric-label">LIVE BUSES</span>
+            <span className="metric-value">{vehicles.length}</span>
+          </div>
+          <div className="status-metric">
+            <span className="metric-label">FEED STATUS</span>
+            <span className="metric-value">{isConnected ? 'STABLE' : 'SYNCING'}</span>
+          </div>
+        </div>
+        <div className="status-footer">
+          Cyprus Public Transport RT
+        </div>
       </div>
 
       <Sidebar

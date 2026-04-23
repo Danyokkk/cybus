@@ -22,9 +22,10 @@ CyBus is a high-performance web application designed to track public transportat
 
 ## ✨ Key Features
 
-- 📍 **Real-time Tracking**: Live GPS positions of buses synced every 5 seconds.
-- 🎨 **Premium UI**: Ultra-bold design featuring **Montserrat 900** and a striking red/black palette.
-- 📱 **Mobile Optimized**: High-performance map rendering using Canvas technology (CircleMarkers) to prevent lag on mobile devices.
+- 📍 **Real-time Tracking**: Live GPS positions of buses synced every 10 seconds.
+- 🎨 **Premium UI**: Ultra-bold design featuring **Montserrat 900** and a striking hacker aesthetic.
+- ⚡ **Auto-Stable Engine**: Built-in self-pinger and daily GTFS auto-reload for 24/7 uptime.
+- 📱 **Mobile Optimized**: High-performance map rendering using Canvas technology.
 - 🚏 **Stop Discovery**: Interactive bus stops with live arrival timetables.
 - 🛰️ **Hybrid Views**: Switch between Satellite and Street views seamlessly.
 - 🌑 **Glassmorphism**: Sleek, transparent UI components with dynamic blur effects.

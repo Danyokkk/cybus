@@ -99,8 +99,10 @@ let tripMap = {};
 // Fetch Logic
 async function fetchData() {
   try {
-    const url = 'http://20.19.98.194:8328/Api/api/gtfs-realtime';
+    const url = `${PROXY_URL}http://20.19.98.194:8328/Api/api/gtfs-realtime`;
+    console.log(`>>> Fetching RT Feed: ${url}`);
     const response = await axiosInstance.get(url, { responseType: 'arraybuffer' });
+    if (!response.data || response.data.length === 0) throw new Error("Empty response from feed");
     const feed = GtfsRealtimeBindings.transit_realtime.FeedMessage.decode(new Uint8Array(response.data));
 
     const tempPositions = [];
@@ -356,11 +358,30 @@ async function loadData() {
   console.log(`Smart Data Load Complete! Active Trips: ${trips.length}`);
   fetchData();
 
-  // High-frequency polling for Realtime updates
-  setInterval(fetchData, 10000);
+  // High-frequency polling for Realtime updates (Recursive timeout to prevent overlap)
+  const scheduleFetch = () => {
+    setTimeout(async () => {
+      await fetchData();
+      scheduleFetch();
+    }, 10000);
+  };
+  scheduleFetch();
+
+  // Daily GTFS reload (to update active services for the new day)
+  if (global.reloadInterval) clearInterval(global.reloadInterval);
+  global.reloadInterval = setInterval(loadData, 24 * 60 * 60 * 1000);
 }
 
 loadData();
+
+// --- SELF-PING SYSTEM (Render Keep-Alive) ---
+// Pings the server every 10 seconds to prevent Render from sleeping
+setInterval(() => {
+  const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://cybus.onrender.com';
+  axios.get(`${RENDER_URL}/api/ping`)
+    .then(() => console.log(`>>> [Keep-Alive] Ping successful to ${RENDER_URL}`))
+    .catch(err => console.error(`! [Keep-Alive] Ping failed: ${err.message}`));
+}, 10000);
 
 // --- WebSocket Events ---
 io.on('connection', (socket) => {
