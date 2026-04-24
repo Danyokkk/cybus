@@ -629,10 +629,14 @@ body {
 /* Bus Marker Styles */
 .custom-bus-marker-container {
   background: transparent !important;
+  /* Smooth "driving" movement effect */
+  transition: transform 1.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: transform;
 }
 
-/* Map moving handler removed as we don't have transition */
+/* Disable transition during map zoom/move to prevent "flying" markers */
 .map-moving .custom-bus-marker-container {
+  transition: none !important;
 }
 
 .balloon-bus-marker {
