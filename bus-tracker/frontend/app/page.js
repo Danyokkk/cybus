@@ -221,19 +221,10 @@ export default function Home() {
       <div className="system-status-card">
         <div className="status-indicator">
           <div className={`status-dot ${isConnected ? 'online' : ''}`}></div>
-          <span className="status-text">{isConnected ? 'ONLINE' : 'CONNECTING'}</span>
+          <span className="status-text">{isConnected ? 'ONLINE' : 'OFFLINE'}</span>
         </div>
-        <div className="status-metrics">
-          <div className="status-metric">
-            <span className="metric-label">BUSES</span>
-            <span className="metric-value">{vehicles.length}</span>
-          </div>
-          <div className="status-metric">
-            <span className="metric-label">FEED</span>
-            <span className="metric-value" style={{ color: isConnected ? '#fff' : 'var(--nebula-accent)' }}>
-              {isConnected ? 'STABLE' : 'SYNC'}
-            </span>
-          </div>
+        <div className="status-buses-count">
+          {vehicles.length} BUSES
         </div>
       </div>
 
