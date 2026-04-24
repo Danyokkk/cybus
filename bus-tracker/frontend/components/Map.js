@@ -379,7 +379,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops }) => {
+const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen }) => {
     useMapEvents({
         movestart: () => {
             if (map?._container) map._container.classList.add('map-moving');
@@ -405,7 +405,9 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
         },
         click: () => {
             // Close sidebar on mobile when clicking anywhere on the map
-            // Note: setIsOpen is not in props here, but we can access via window or better yet, handle in parent
+            if (typeof window !== 'undefined' && window.innerWidth < 768 && setIsOpen) {
+                setIsOpen(false);
+            }
         }
     });
 
@@ -614,6 +616,7 @@ export default function BusMap({
                     selectedPlan={selectedPlan}
                     selectedStopId={selectedStopId}
                     setSelectedStopId={setSelectedStopId}
+                    setIsOpen={setIsOpen}
                     stops={stops}
                 />
 
