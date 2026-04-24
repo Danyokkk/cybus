@@ -270,6 +270,9 @@ const getContrastYIQ = (hexcolor) => {
     return (yiq >= 128) ? 'black' : 'white';
 };
 
+// Icon Cache to prevent redundant divIcon creation
+const iconCache = new Map();
+
 // Custom Bus Icon Generator (Balloon Label + Rotated Bus)
 const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
     // Quantize bearing to 22.5-degree steps (16 directions) to massively reduce cache size and re-mounts
