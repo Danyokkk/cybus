@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
-export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, selectedRouteId, isOpen, setIsOpen, activeTab, setActiveTab, favorites, onToggleFavorite }) {
+export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, onSelectStop, selectedRouteId, isOpen, setIsOpen, activeTab, setActiveTab, favorites, onToggleFavorite }) {
     const [searchTerm, setSearchTerm] = useState('');
     const { language, t } = useLanguage();
     const [isMobile, setIsMobile] = useState(false);
@@ -131,7 +131,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
         const tabs = ['routes', 'planner', 'favorites'];
         const index = tabs.indexOf(activeTab);
         return {
-            left: `${(index * 100) / 3}%`,
+            left: `\${(index * 100) / 3}%`,
             width: '33.33%'
         };
     };
@@ -139,15 +139,13 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
     return (
         <div className={`sidebar \${isOpen ? 'open' : 'closed'} \${isMobile ? 'is-mobile' : ''}`}>
             <div className="sidebar-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-                    <div className="sidebar-logo-container">
-                        <h2 className="sidebar-logo">CyBus</h2>
-                    </div>
-                    <div className="tab-switcher-container">
-                        <div className="tab-indicator" style={getIndicatorStyle()}></div>
-                        <button className={`tab-btn \${activeTab === 'routes' ? 'active' : ''}`} onClick={() => setActiveTab('routes')}>Routes</button>
-                        <button className={`tab-btn \${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Plan</button>
-                        <button className={`tab-btn \${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>⭐</button>
+                <div className="header-top-row">
+                    <div className="sidebar-logo-shell">CyBus</div>
+                    <div className="tab-bubble-container">
+                        <div className="tab-bubble-indicator" style={getIndicatorStyle()}></div>
+                        <button className={`tab-bubble-btn \${activeTab === 'routes' ? 'active' : ''}`} onClick={() => setActiveTab('routes')}>Routes</button>
+                        <button className={`tab-bubble-btn \${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Plan</button>
+                        <button className={`tab-bubble-btn \${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>⭐</button>
                     </div>
                 </div>
 
@@ -183,7 +181,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                         </div>
                     </div>
                 ) : activeTab === 'favorites' ? (
-                    <div className="favorites-header" style={{ padding: '0 5px', color: '#fff', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    <div className="favorites-header">
                         Saved Stops
                     </div>
                 ) : (
@@ -220,7 +218,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                                 if (!stop) return null;
                                 return (
                                     <div key={fId} className="route-item" style={{ justifyContent: 'space-between' }}>
-                                        <div className="stop-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }} onClick={() => onSelectPlan({ from: stop, to: stop, type: 'direct', route: { short_name: '⭐', color: 'ff0033' } })}>
+                                        <div className="stop-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }} onClick={() => onSelectStop(fId)}>
                                             <div className="route-badge" style={{ background: 'rgba(255,255,255,0.05)', minWidth: '40px' }}>🚏</div>
                                             <div style={{ fontSize: '0.75rem' }}>{stop.name}</div>
                                         </div>

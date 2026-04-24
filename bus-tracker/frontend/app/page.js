@@ -24,6 +24,7 @@ export default function Home() {
   const [selectedRouteId, setSelectedRouteId] = useState(null);
   const [selectedRouteColor, setSelectedRouteColor] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedStopId, setSelectedStopId] = useState(null);
   const [vehicles, setVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isConnected, setIsConnected] = useState(true);
@@ -174,6 +175,7 @@ export default function Home() {
       if (selectedRouteId === route.route_id) return;
       setSelectedRouteId(route.route_id);
       setSelectedRouteColor(route.color || '0070f3');
+      setSelectedPlan(null); // Clear plan when route is selected
       try {
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
         const res = await fetch(`${apiUrl}/api/routes/${route.route_id}`);
@@ -190,9 +192,17 @@ export default function Home() {
   const handleSelectPlan = useCallback((plan) => {
     if (window.innerWidth < 768) setIsSidebarOpen(false);
     setSelectedPlan(plan);
+    setSelectedStopId(null);
     const route = plan?.type === 'transfer' ? plan.route1 : plan?.route;
     if (route) handleSelectRoute(route);
   }, [handleSelectRoute]);
+
+  const handleSelectStop = useCallback((stopId) => {
+    if (window.innerWidth < 768) setIsSidebarOpen(false);
+    setSelectedStopId(stopId);
+    setSelectedPlan(null);
+    setShowStops(true);
+  }, []);
 
   // Close sidebar on mobile when bus is clicked
   const handleVehicleClick = useCallback((v) => {
@@ -232,6 +242,7 @@ export default function Home() {
         stops={stops}
         onSelectRoute={handleSelectRoute}
         onSelectPlan={handleSelectPlan}
+        onSelectStop={handleSelectStop}
         selectedRouteId={selectedRouteId}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
@@ -362,6 +373,8 @@ export default function Home() {
           shapes={shapes}
           routes={routes}
           selectedPlan={selectedPlan}
+          selectedStopId={selectedStopId}
+          setSelectedStopId={setSelectedStopId}
           onSelectRoute={handleSelectRoute}
           routeColor={selectedRouteColor}
           onVehicleClick={handleVehicleClick}

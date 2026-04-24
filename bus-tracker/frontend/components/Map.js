@@ -379,7 +379,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan }) => {
+const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops }) => {
     useMapEvents({
         movestart: () => {
             if (map?._container) map._container.classList.add('map-moving');
@@ -401,18 +401,27 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
             if (e.popup.options.className === 'bus-popup') {
                 if (onSelectRoute) onSelectRoute(null);
             }
+            if (selectedStopId) setSelectedStopId(null);
         },
         click: () => {
             // Close sidebar on mobile when clicking anywhere on the map
-            if (window.innerWidth < 768 && setIsOpen) {
-                setIsOpen(false);
-            }
+            // Note: setIsOpen is not in props here, but we can access via window or better yet, handle in parent
         }
     });
 
-    // Auto-Zoom logic
+    // Auto-Zoom and Stop Selection logic
     useEffect(() => {
         if (!map) return;
+
+        // Selection 0: Specific Stop (Favorites/Direct)
+        if (selectedStopId) {
+            const stop = stops.find(s => s.stop_id === selectedStopId);
+            if (stop) {
+                map.flyTo([stop.lat, stop.lon], 17, { animate: true, duration: 1.5 });
+                // We don't manually open popup here because Marker will handle it if we have a state
+            }
+            return;
+        }
 
         // Priority 1: Selected Plan (specific points)
         if (selectedPlan) {
@@ -433,13 +442,13 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
                 map.fitBounds(allPoints, { padding: [70, 70], animate: true, maxZoom: 15 });
             }
         }
-    }, [shapes, selectedPlan, map]);
+    }, [shapes, selectedPlan, selectedStopId, map, stops]);
 
     return null;
 };
 
 export default function BusMap({
-    stops, shapes, routes, vehicles, selectedPlan, onSelectRoute, routeColor, onVehicleClick,
+    stops, shapes, routes, vehicles, selectedPlan, selectedStopId, setSelectedStopId, onSelectRoute, routeColor, onVehicleClick,
     showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen,
     favorites, onToggleFavorite
 }) {
@@ -467,7 +476,7 @@ export default function BusMap({
         const paddedBounds = bounds.pad(buffer);
 
         // Filter stops only
-        if (showStops && zoom >= 15 && Array.isArray(stops)) {
+        if (showStops && (zoom >= 15 || selectedStopId) && Array.isArray(stops)) {
             const filteredStops = stops.filter(s =>
                 s && s.lat !== undefined && s.lon !== undefined &&
                 paddedBounds.contains([s.lat, s.lon])
@@ -476,7 +485,7 @@ export default function BusMap({
         } else {
             setVisibleStops([]);
         }
-    }, [showStops, stops]);
+    }, [showStops, stops, selectedStopId]);
 
     // Update visibility when source data or settings change
     useEffect(() => {
@@ -603,7 +612,9 @@ export default function BusMap({
                     shapes={shapes}
                     onSelectRoute={onSelectRoute}
                     selectedPlan={selectedPlan}
-                    setIsOpen={setIsOpen}
+                    selectedStopId={selectedStopId}
+                    setSelectedStopId={setSelectedStopId}
+                    stops={stops}
                 />
 
                 {isSatellite ? (
@@ -623,17 +634,24 @@ export default function BusMap({
                     <Polyline key={`shape-${index}`} positions={shape} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
                 ))}
 
-                {showStops && mapZoom < 15 && (
+                {showStops && mapZoom < 15 && !selectedStopId && (
                     <div className="zoom-hint-pill" style={{ borderColor: 'rgba(255,0,51,0.3)' }}>
                         {t.zoomInToSeeStops || 'Zoom in to see stops'}
                     </div>
                 )}
 
-                {showStops && mapZoom >= 15 && visibleStops.map((stop) => (
+                {showStops && (mapZoom >= 15 || selectedStopId) && visibleStops.map((stop) => (
                     <Marker
                         key={`stop-${stop.stop_id}`}
                         position={[stop.lat, stop.lon]}
                         icon={stopIcon}
+                        eventHandlers={{
+                            add: (e) => {
+                                if (selectedStopId === stop.stop_id) {
+                                    e.target.openPopup();
+                                }
+                            }
+                        }}
                     >
                         <Popup minWidth={300}>
                             <TimetablePopup 
@@ -720,5 +738,3 @@ export default function BusMap({
         </div>
     );
 }
-
-
