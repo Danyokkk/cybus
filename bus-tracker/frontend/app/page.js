@@ -208,26 +208,22 @@ export default function Home() {
 
   return (
     <main className={`main-container ${isSidebarOpen ? 'sidebar-open' : 'sidebar-closed'}`}>
-      {/* System Status Dashboard */}
       <div className="system-status-card">
-        <div className="status-item">
-          <div className={`status-pill ${isConnected ? 'online' : 'offline'}`}>
-            <span className="dot"></span>
-            {isConnected ? 'SYSTEM ONLINE' : 'RECONNECTING'}
-          </div>
+        <div className="status-indicator">
+          <div className={`status-dot ${isConnected ? 'online' : ''}`}></div>
+          <span className="status-text">{isConnected ? 'ONLINE' : 'CONNECTING'}</span>
         </div>
-        <div className="status-grid">
+        <div className="status-metrics">
           <div className="status-metric">
-            <span className="metric-label">LIVE BUSES</span>
+            <span className="metric-label">BUSES</span>
             <span className="metric-value">{vehicles.length}</span>
           </div>
           <div className="status-metric">
-            <span className="metric-label">FEED STATUS</span>
-            <span className="metric-value">{isConnected ? 'STABLE' : 'SYNCING'}</span>
+            <span className="metric-label">FEED</span>
+            <span className="metric-value" style={{ color: isConnected ? '#00ff66' : '#ff0033' }}>
+              {isConnected ? 'STABLE' : 'SYNC'}
+            </span>
           </div>
-        </div>
-        <div className="status-footer" style={{ borderTop: '1px solid rgba(255, 0, 51, 0.1)', color: 'rgba(255, 255, 255, 0.4)' }}>
-          CPT REAL-TIME ENGINE V2
         </div>
       </div>
 

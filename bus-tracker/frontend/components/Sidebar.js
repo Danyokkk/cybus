@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 
 export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, selectedRouteId, isOpen, setIsOpen, activeTab, setActiveTab, favorites, onToggleFavorite }) {
     const [searchTerm, setSearchTerm] = useState('');
-    const { language, setLanguage, t } = useLanguage();
+    const { language, t } = useLanguage();
     const [isMobile, setIsMobile] = useState(false);
     const [selectedAgency, setSelectedAgency] = useState('All');
 
@@ -20,14 +20,11 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
     const [originQuery, setOriginQuery] = useState('');
     const [originCoords, setOriginCoords] = useState(null);
     const [originSuggestions, setOriginSuggestions] = useState([]);
-
     const [destQuery, setDestQuery] = useState('');
     const [destCoords, setDestCoords] = useState(null);
     const [destSuggestions, setDestSuggestions] = useState([]);
-
     const [isSearchingOrigin, setIsSearchingOrigin] = useState(false);
     const [isSearchingDest, setIsSearchingDest] = useState(false);
-
     const [planResults, setPlanResults] = useState([]);
     const [isPlanning, setIsPlanning] = useState(false);
 
@@ -130,207 +127,105 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
     };
 
     return (
-        <>
-            <div className={`sidebar ${isOpen ? 'open' : 'closed'} ${isMobile ? 'is-mobile' : ''}`}>
-                {!isMobile && (
-                    <button
-                        className="sidebar-toggle-tab"
-                        onClick={() => setIsOpen(!isOpen)}
-                        aria-label={isOpen ? "Close Sidebar" : "Open Sidebar"}
-                    >
-                        {isOpen
-                            ? <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M15 18l-6-6 6-6" /></svg>
-                            : <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 18l6-6-6-6" /></svg>
-                        }
-                    </button>
-                )}
-
-                <div className="sidebar-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px', marginBottom: '15px' }}>
-                        <h2 style={{ fontSize: isMobile ? '1.1rem' : '1.4rem', margin: 0, fontWeight: 900, color: 'var(--nebula-accent)' }}>CyBus</h2>
-                        <div className="tab-switcher">
-                            <button className={`tab-btn ${activeTab === 'routes' ? 'active' : ''}`} onClick={() => setActiveTab('routes')}>Routes</button>
-                            <button className={`tab-btn ${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Plan</button>
-                            <button className={`tab-btn ${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>⭐</button>
-                        </div>
+        <div className={`sidebar \${isOpen ? 'open' : 'closed'} \${isMobile ? 'is-mobile' : ''}`}>
+            <div className="sidebar-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
+                    <h2 style={{ fontSize: '1.2rem', margin: 0 }}>CyBus</h2>
+                    <div className="tab-switcher">
+                        <button className={`tab-btn \${activeTab === 'routes' ? 'active' : ''}`} onClick={() => setActiveTab('routes')}>Routes</button>
+                        <button className={`tab-btn \${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Plan</button>
+                        <button className={`tab-btn \${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>⭐</button>
                     </div>
-
-                    {activeTab === 'routes' ? (
-                        <div className="search-container">
-                            <input
-                                type="text"
-                                placeholder={t.searchPlaceholder || 'Search...'}
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="search-input"
-                            />
-                            <div className="agency-chips" style={{ display: 'flex', gap: '8px', overflowX: 'auto', marginTop: '10px', scrollbarWidth: 'none', paddingBottom: '5px' }}>
-                                {['All', ...new Set(routes.map(r => r.agency_name).filter(Boolean))].map(agency => (
-                                    <button 
-                                        key={agency}
-                                        onClick={() => setSelectedAgency(agency)}
-                                        style={{
-                                            whiteSpace: 'nowrap',
-                                            padding: '4px 12px',
-                                            borderRadius: '20px',
-                                            fontSize: '0.65rem',
-                                            fontWeight: 900,
-                                            border: '1px solid var(--glass-border)',
-                                            background: selectedAgency === agency ? 'var(--nebula-accent)' : 'rgba(255,255,255,0.05)',
-                                            color: selectedAgency === agency ? '#000' : '#fff',
-                                            cursor: 'pointer',
-                                            transition: 'all 0.2s'
-                                        }}
-                                    >
-                                        {agency}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ) : activeTab === 'favorites' ? (
-                        <div className="favorites-header" style={{ padding: '0 5px', color: '#fff', fontSize: '0.8rem', fontWeight: 900 }}>
-                            SAVED STOPS
-                        </div>
-                    ) : (
-                        <div className="planner-form">
-                            <div className="input-group">
-                                <input
-                                    className={`planner-input ${isSearchingOrigin ? 'loading' : ''}`}
-                                    style={{ paddingLeft: '45px' }}
-                                    placeholder={t.fromPlaceholder || "From..."}
-                                    value={originQuery}
-                                    onChange={e => { setOriginQuery(e.target.value); setOriginCoords(null); }}
-                                />
-                                <button className="geo-btn" onClick={handleUseMyLocation} title={t.myLocation || "Use My Location"} type="button">
-                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                                </button>
-                                {originSuggestions.length > 0 && (
-                                    <ul className="suggestions-list">
-                                        {originSuggestions.map((s, i) => (
-                                            <li key={i} onClick={() => selectOrigin(s)} className="suggestion-item">
-                                                <span className="suggestion-icon">{s.type === 'bus_stop' ? '🚏' : '📍'}</span>
-                                                <div className="suggestion-text">
-                                                    <div className="main-name">{s.display_name.split(',')[0]}</div>
-                                                    <div className="sub-name">{s.display_name.split(',').slice(1, 3).join(', ')}</div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                            <div className="input-group" style={{ marginTop: '10px' }}>
-                                <input
-                                    className={`planner-input ${isSearchingDest ? 'loading' : ''}`}
-                                    placeholder={t.toPlaceholder || "To..."}
-                                    value={destQuery}
-                                    onChange={e => { setDestQuery(e.target.value); setDestCoords(null); }}
-                                />
-                                {destSuggestions.length > 0 && (
-                                    <ul className="suggestions-list">
-                                        {destSuggestions.map((s, i) => (
-                                            <li key={i} onClick={() => selectDest(s)} className="suggestion-item">
-                                                <span className="suggestion-icon">{s.type === 'bus_stop' ? '🚏' : '📍'}</span>
-                                                <div className="suggestion-text">
-                                                    <div className="main-name">{s.display_name.split(',')[0]}</div>
-                                                    <div className="sub-name">{s.display_name.split(',').slice(1, 3).join(', ')}</div>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                            <button className="plan-submit-btn" onClick={handlePlanRoute} disabled={!originCoords || !destCoords} style={{ marginTop: '15px' }}>
-                                {isPlanning ? 'Analyzing...' : 'Find Route'}
-                            </button>
-                        </div>
-                    )}
                 </div>
 
-                <div className="route-list">
-                    {activeTab === 'routes' && (
-                        routes && routes.filter(r => {
-                            const matchesSearch = (r.short_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
-                                                 (r.long_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-                            const matchesAgency = selectedAgency === 'All' || r.agency_name === selectedAgency;
-                            return matchesSearch && matchesAgency;
-                        }).map((route) => {
-                            const badgeColor = route.color ? (route.color.startsWith('#') ? route.color : '#' + route.color) : 'var(--nebula-accent)';
-                            return (
-                                <div
-                                    key={route.route_id}
-                                    className={`route-item ${selectedRouteId === route.route_id ? 'active' : ''}`}
-                                    onClick={() => onSelectRoute(route)}
+                {activeTab === 'routes' ? (
+                    <div className="search-container">
+                        <input
+                            type="text"
+                            placeholder={t.searchPlaceholder || 'Search...'}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
+                        <div className="agency-chips">
+                            {['All', ...new Set(routes.map(r => r.agency_name).filter(Boolean))].map(agency => (
+                                <button 
+                                    key={agency}
+                                    onClick={() => setSelectedAgency(agency)}
+                                    className={`chip \${selectedAgency === agency ? 'active' : ''}`}
+                                    style={{
+                                        background: selectedAgency === agency ? 'var(--nebula-accent)' : 'rgba(255,255,255,0.05)',
+                                        color: selectedAgency === agency ? '#000' : '#fff',
+                                        padding: '4px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.65rem',
+                                        border: 'none',
+                                        cursor: 'pointer',
+                                        whiteSpace: 'nowrap'
+                                    }}
                                 >
-                                    <div className="route-badge" style={{ backgroundColor: badgeColor, color: `#${route.text_color || 'FFFFFF'}` }}>
-                                        {route.short_name}
-                                    </div>
-                                    <div className="route-name" style={{ fontSize: '0.75rem', fontWeight: 900, lineHeight: 1.2, textAlign: 'left', flex: 1 }}>
-                                        {route.long_name}
-                                    </div>
-                                </div>
-                            );
-                        })
-                    )}
-
-                    {activeTab === 'favorites' && (
-                        <div className="favorites-list">
-                            {favorites && favorites.length > 0 ? (
-                                favorites.map(fId => {
-                                    const stop = stops.find(s => s.stop_id === fId);
-                                    if (!stop) return null;
-                                    return (
-                                        <div key={fId} className="route-item" style={{ justifyContent: 'space-between' }}>
-                                            <div 
-                                                className="stop-info" 
-                                                style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, cursor: 'pointer' }}
-                                                onClick={() => onSelectPlan({ from: stop, to: stop, type: 'direct' })}
-                                            >
-                                                <div className="route-badge" style={{ backgroundColor: 'rgba(255,255,255,0.05)', minWidth: '40px', padding: '8px' }}>🚏</div>
-                                                <div className="route-name" style={{ fontSize: '0.75rem' }}>{stop.name}</div>
-                                            </div>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); onToggleFavorite(fId); }}
-                                                style={{ background: 'none', border: 'none', color: 'var(--nebula-accent)', cursor: 'pointer', fontSize: '1.1rem' }}
-                                            >
-                                                ⭐
-                                            </button>
-                                        </div>
-                                    );
-                                })
-                            ) : (
-                                <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666', fontSize: '0.8rem' }}>
-                                    No favorites yet.<br/>Star a stop on the map to add.
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === 'planner' && (
-                        <div className="planner-results">
-                            {planResults.map((plan, i) => (
-                                <div key={i} className="plan-card" onClick={() => onSelectPlan(plan)}>
-                                    <div className="plan-header" style={{ display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '8px' }}>
-                                        {plan.type === 'transfer' ? (
-                                            <>
-                                                <div className="route-badge" style={{ backgroundColor: `#${plan.route1.color || '000'}`, transform: 'scale(0.8)' }}>{plan.route1.short_name}</div>
-                                                <span>➜</span>
-                                                <div className="route-badge" style={{ backgroundColor: `#${plan.route2.color || '000'}`, transform: 'scale(0.8)' }}>{plan.route2.short_name}</div>
-                                            </>
-                                        ) : (
-                                            <div className="route-badge" style={{ backgroundColor: `#${plan.route.color || '000'}`, transform: 'scale(0.8)' }}>{plan.route.short_name}</div>
-                                        )}
-                                    </div>
-                                    <div style={{ fontSize: '0.7rem', opacity: 0.8 }}>Walk: {plan.total_walk} km</div>
-                                </div>
+                                    {agency}
+                                </button>
                             ))}
                         </div>
-                    )}
-                </div>
-
-                <div className="sidebar-footer">
-                    <div className="daan1k-credit">made by @daan1k</div>
-                </div>
+                    </div>
+                ) : activeTab === 'favorites' ? (
+                    <div className="favorites-header" style={{ padding: '0 5px', color: '#fff', fontSize: '0.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                        Saved Stops
+                    </div>
+                ) : (
+                    <div className="planner-form">
+                        {/* Planner Inputs Simplified */}
+                        <input className="search-input" placeholder="From..." value={originQuery} onChange={e => {setOriginQuery(e.target.value); setOriginCoords(null);}} />
+                        <input className="search-input" style={{marginTop: '8px'}} placeholder="To..." value={destQuery} onChange={e => {setDestQuery(e.target.value); setDestCoords(null);}} />
+                        <button className="route-item" onClick={handlePlanRoute} style={{marginTop: '15px', background: 'var(--nebula-accent)', color: '#000', justifyContent: 'center', fontWeight: 'bold'}}>
+                            {isPlanning ? 'Analyzing...' : 'Find Route'}
+                        </button>
+                    </div>
+                )}
             </div>
-        </>
+
+            <div className="route-list">
+                {activeTab === 'routes' && routes && routes.filter(r => {
+                    const matchesSearch = (r.short_name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+                                         (r.long_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+                    const matchesAgency = selectedAgency === 'All' || r.agency_name === selectedAgency;
+                    return matchesSearch && matchesAgency;
+                }).map((route) => (
+                    <div key={route.route_id} className={`route-item \${selectedRouteId === route.route_id ? 'active' : ''}`} onClick={() => onSelectRoute(route)}>
+                        <div className="route-badge" style={{ backgroundColor: route.color ? (route.color.startsWith('#') ? route.color : '#' + route.color) : 'var(--nebula-accent)', color: '#fff' }}>
+                            {route.short_name}
+                        </div>
+                        <div className="route-name" style={{ fontSize: '0.75rem', flex: 1 }}>{route.long_name}</div>
+                    </div>
+                ))}
+
+                {activeTab === 'favorites' && (
+                    <div className="favorites-list">
+                        {favorites && favorites.length > 0 ? (
+                            favorites.map(fId => {
+                                const stop = stops.find(s => s.stop_id === fId);
+                                if (!stop) return null;
+                                return (
+                                    <div key={fId} className="route-item" style={{ justifyContent: 'space-between' }}>
+                                        <div className="stop-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }} onClick={() => onSelectPlan({ from: stop, to: stop, type: 'direct' })}>
+                                            <div className="route-badge" style={{ background: 'rgba(255,255,255,0.05)', minWidth: '40px' }}>🚏</div>
+                                            <div style={{ fontSize: '0.75rem' }}>{stop.name}</div>
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); onToggleFavorite(fId); }} style={{ background: 'none', border: 'none', color: 'var(--nebula-accent)', fontSize: '1.2rem', cursor: 'pointer' }}>⭐</button>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666', fontSize: '0.75rem' }}>No saved stops yet. Star a stop on the map!</div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            <div className="sidebar-footer">
+                <div className="daan1k-credit">made by @daan1k</div>
+            </div>
+        </div>
     );
 }
