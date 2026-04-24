@@ -220,7 +220,7 @@ export default function Home() {
           </div>
           <div className="status-metric">
             <span className="metric-label">FEED</span>
-            <span className="metric-value" style={{ color: isConnected ? '#00ff66' : '#ff0033' }}>
+            <span className="metric-value" style={{ color: isConnected ? '#fff' : 'var(--nebula-accent)' }}>
               {isConnected ? 'STABLE' : 'SYNC'}
             </span>
           </div>
