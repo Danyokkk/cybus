@@ -33,6 +33,7 @@ export default function Home() {
   const [showStops, setShowStops] = useState(false);
   const [isSatellite, setIsSatellite] = useState(true); // Default to satellite view as requested
   const [toast, setToast] = useState(null);
+  const [favorites, setFavorites] = useState([]);
 
   // Helper to show toasts
   const showToast = useCallback((msg, duration = 3000) => {
@@ -52,6 +53,28 @@ export default function Home() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('cybus_favorites');
+    if (saved) {
+      try {
+        setFavorites(JSON.parse(saved));
+      } catch (e) {
+        console.error("Error loading favorites", e);
+      }
+    }
+  }, []);
+
+  const toggleFavorite = useCallback((stopId) => {
+    setFavorites(prev => {
+      const isFav = prev.includes(stopId);
+      const newFavs = isFav ? prev.filter(id => id !== stopId) : [...prev, stopId];
+      localStorage.setItem('cybus_favorites', JSON.stringify(newFavs));
+      showToast(isFav ? "Removed from Favorites" : "Added to Favorites", 2000);
+      return newFavs;
+    });
+  }, [showToast]);
 
   // 1. Fetch initial data (Parallelized with Caching)
   useEffect(() => {
@@ -218,6 +241,8 @@ export default function Home() {
         setIsOpen={setIsSidebarOpen}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
+        favorites={favorites}
+        onToggleFavorite={toggleFavorite}
       />
 
       <div className="mobile-floating-dock">
@@ -355,6 +380,8 @@ export default function Home() {
           setIsSatellite={setIsSatellite}
           isOpen={isSidebarOpen}
           setIsOpen={setIsSidebarOpen}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
         />
       </div>
     </main>

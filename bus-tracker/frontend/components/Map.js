@@ -114,9 +114,10 @@ const planEndIcon = L.divIcon({
     iconAnchor: [15, 15]
 });
 
-const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
+const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavorite }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
+    const isFav = favorites?.includes(stop.stop_id);
 
     useEffect(() => {
         setLoading(true);
@@ -151,7 +152,17 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 
     return (
         <div style={{ minWidth: '320px', maxWidth: '350px', color: '#fff' }}>
-            <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px' }}>{stop.name}</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px', flex: 1 }}>{stop.name}</h3>
+                <button 
+                    onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop.stop_id); }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: isFav ? 'var(--nebula-accent)' : 'rgba(255,255,255,0.2)', transition: 'transform 0.2s' }}
+                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.2)'}
+                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                >
+                    {isFav ? '⭐' : '☆'}
+                </button>
+            </div>
             <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '12px', fontWeight: 'bold' }}>STOP ID: {stop.stop_id}</div>
 
             {uniqueRoutes.length > 0 && (
@@ -430,7 +441,8 @@ const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRou
 
 export default function BusMap({
     stops, shapes, routes, vehicles, selectedPlan, onSelectRoute, routeColor, onVehicleClick,
-    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen
+    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen,
+    favorites, onToggleFavorite
 }) {
     const mapRef = useRef(null);
     const { t } = useLanguage();
@@ -625,7 +637,13 @@ export default function BusMap({
                         icon={stopIcon}
                     >
                         <Popup minWidth={300}>
-                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} />
+                            <TimetablePopup 
+                                stop={stop} 
+                                routes={routes || []} 
+                                onSelectRoute={onSelectRoute} 
+                                favorites={favorites}
+                                onToggleFavorite={onToggleFavorite}
+                            />
                         </Popup>
                     </Marker>
                 ))}
