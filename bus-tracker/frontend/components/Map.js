@@ -156,9 +156,8 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavori
                 <h3 style={{ margin: '0 0 5px 0', fontSize: '1.2rem', color: '#fff', fontWeight: '900', letterSpacing: '-0.5px', flex: 1 }}>{stop.name}</h3>
                 <button 
                     onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop.stop_id); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.5rem', color: isFav ? 'var(--nebula-accent)' : 'rgba(255,255,255,0.2)', transition: 'transform 0.2s' }}
-                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.2)'}
-                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                    className={`fav-btn ${isFav ? 'active' : ''}`}
+                    title={isFav ? "Remove from Favorites" : "Add to Favorites"}
                 >
                     {isFav ? '⭐' : '☆'}
                 </button>
