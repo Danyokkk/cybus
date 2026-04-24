@@ -629,14 +629,10 @@ body {
 /* Bus Marker Styles */
 .custom-bus-marker-container {
   background: transparent !important;
-  /* Smooth movement only, but disable during map zoom to prevent lag */
-  transition: transform 0.3s ease-out !important;
-  will-change: transform;
 }
 
-/* Disable transition during map zoom/move to prevent "flying" markers */
+/* Map moving handler removed as we don't have transition */
 .map-moving .custom-bus-marker-container {
-  transition: none !important;
 }
 
 .balloon-bus-marker {
@@ -756,21 +752,23 @@ body {
 /* System Status Card - Premium Dashboard Style */
 .system-status-card {
   position: fixed;
-  top: 25px;
-  right: 25px;
-  width: 220px;
+  top: 15px;
+  right: 60px; /* moved to left slightly to avoid overlapping map controls on right edge */
+  width: auto;
   background: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
-  border-radius: 30px;
-  padding: 20px;
+  border-radius: 20px;
+  padding: 8px 12px;
   z-index: 9999;
   box-shadow: var(--shadow-quantum);
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
   gap: 15px;
   animation: slideInRight 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+  pointer-events: none;
 }
 
 .status-pill {
@@ -809,15 +807,16 @@ body {
 }
 
 .status-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
 }
 
 .status-metric {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
 }
 
 .metric-label {
@@ -833,12 +832,7 @@ body {
 }
 
 .status-footer {
-  font-size: 0.55rem;
-  color: rgba(255, 255, 255, 0.2);
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-  padding-top: 10px;
-  text-align: center;
-  letter-spacing: 0.5px;
+  display: none; /* Hide footer to save space */
 }
 
 @keyframes slideInRight {
@@ -867,8 +861,6 @@ body {
 
 /* Hardware Acceleration for smooth map markers */
 .rotated-bus-wrapper {
-  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-  will-change: transform;
   display: flex;
   align-items: center;
   justify-content: center;

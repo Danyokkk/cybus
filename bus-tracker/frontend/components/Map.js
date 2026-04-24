@@ -263,13 +263,12 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
 const iconCache = new Map();
 
 // Custom Bus Icon Generator (Balloon Label + Rotated Bus)
-const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15) => {
-    // Quantize bearing to 10-degree steps to reduce cache size and re-mounts
-    const qBearing = Math.round((bearing || 0) / 10) * 10;
-    // Dynamic scale to keep buses "readable" even when zoomed out (doesn't shrink as much as map)
-    const scale = zoom < 12 ? 0.8 : zoom < 14 ? 0.9 : 1.0;
+const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
+    // Quantize bearing to 22.5-degree steps (16 directions) to massively reduce cache size and re-mounts
+    const qBearing = Math.round((bearing || 0) / 22.5) * 22.5;
+    const scale = 0.9; // Fixed scale for performance
 
-    const key = `${routeShortName}_${qBearing}_${color}_${scale}`;
+    const key = `${routeShortName}_${qBearing}_${color}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
@@ -310,7 +309,7 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15
 };
 
 // Memoized Bus Marker Component to prevent re-renders unless data changes
-const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle, mapZoom }) => {
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle }) => {
     const routeInfo = useMemo(() => null, []);
 
     const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
@@ -320,8 +319,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, bearing, vColor, mapZoom || 15)}
-            className="smooth-move"
+            icon={createBusIcon(shortName, bearing, vColor)}
             eventHandlers={{
                 click: () => {
                     if (onVehicleClick) onVehicleClick(rawVehicle);
@@ -642,7 +640,6 @@ export default function BusMap({
                             agency={v.ag}
                             onVehicleClick={onVehicleClick}
                             rawVehicle={v}
-                            mapZoom={mapZoom} // Pass zoom for scaling, but component is memoized
                         />
                     );
                 })}
