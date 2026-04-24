@@ -130,7 +130,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
         <div className={`sidebar \${isOpen ? 'open' : 'closed'} \${isMobile ? 'is-mobile' : ''}`}>
             <div className="sidebar-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-                    <h2 style={{ fontSize: '1.2rem', margin: 0 }}>CyBus</h2>
+                    <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'var(--nebula-accent)', fontWeight: 900 }}>CyBus</h2>
                     <div className="tab-switcher">
                         <button className={`tab-btn \${activeTab === 'routes' ? 'active' : ''}`} onClick={() => setActiveTab('routes')}>Routes</button>
                         <button className={`tab-btn \${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Plan</button>

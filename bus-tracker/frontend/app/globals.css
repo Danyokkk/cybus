@@ -195,8 +195,8 @@ html, body {
 }
 
 .status-dot.online {
-  background: #00ff66;
-  box-shadow: 0 0 8px #00ff66;
+  background: var(--nebula-accent);
+  box-shadow: 0 0 8px var(--nebula-accent);
   animation: pulse-dot 2s infinite;
 }
 
@@ -287,23 +287,78 @@ html, body {
 
 /* Favorite Star Button */
 .fav-btn {
-  background: rgba(255, 0, 51, 0.1);
-  border: 1px solid rgba(255, 0, 51, 0.3);
-  width: 40px;
-  height: 40px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
-  font-size: 1.2rem;
+  transition: all 0.3s ease;
+  font-size: 1.4rem;
+}
+
+.fav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
 }
 
 .fav-btn.active {
   background: var(--nebula-accent);
   color: #fff;
-  box-shadow: 0 0 15px rgba(255, 0, 51, 0.4);
+  border-color: var(--nebula-accent);
+  box-shadow: 0 0 20px rgba(255, 0, 51, 0.6);
+  transform: scale(1.1);
+}
+
+/* Missing Map Controls - Red Harmony */
+.stops-toggle-btn {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: var(--shadow-quantum) !important;
+  font-weight: 900 !important;
+  font-size: 1.2rem !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer;
+}
+
+.stops-toggle-btn:hover {
+  transform: scale(1.1);
+  border-color: var(--nebula-accent) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--nebula-accent) !important;
+  color: #fff !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  color: #fff !important;
+  font-size: 24px !important;
+  width: 30px !important;
+  height: 30px !important;
+  line-height: 30px !important;
+  text-align: center;
 }
 
 .sidebar-footer {
