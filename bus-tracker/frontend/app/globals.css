@@ -57,13 +57,43 @@ html, body {
 .sidebar.closed { transform: translateX(calc(-100% - 30px)); }
 .sidebar-header { padding: 20px; }
 
-/* Tab Switcher - Rounded & Red */
-.tab-switcher {
+/* Sidebar Logo - Red Shell */
+.sidebar-logo-container {
+  background: var(--nebula-accent);
+  padding: 4px 15px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 15px rgba(255, 0, 51, 0.3);
+}
+
+.sidebar-logo {
+  color: #000 !important;
+  font-size: 1.2rem;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+/* Sliding Tab Switcher */
+.tab-switcher-container {
   display: flex;
   background: rgba(255, 255, 255, 0.05);
   padding: 4px;
   border-radius: 14px;
-  gap: 4px;
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tab-indicator {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  background: var(--nebula-accent);
+  border-radius: 10px;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  box-shadow: 0 4px 15px rgba(255, 0, 51, 0.4);
 }
 
 .tab-btn {
@@ -76,14 +106,14 @@ html, body {
   font-size: 0.7rem;
   font-weight: 900;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.3s ease;
   text-transform: uppercase;
+  z-index: 2;
+  position: relative;
 }
 
 .tab-btn.active {
-  background: var(--nebula-accent);
   color: #fff;
-  box-shadow: 0 4px 15px rgba(255, 0, 51, 0.4);
 }
 
 /* Search Container */
@@ -285,20 +315,24 @@ html, body {
 
 .leaflet-popup-tip { background: #000 !important; }
 
-/* Favorite Star Button */
+/* Favorite Star Button - Smaller to avoid overlap */
 .fav-btn {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.3);
   color: #fff;
-  width: 44px;
-  height: 44px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-size: 1.4rem;
+  font-size: 1rem;
+  position: absolute;
+  top: 10px;
+  right: 45px; /* Moved away from close button */
+  z-index: 10;
 }
 
 .fav-btn:hover {
@@ -354,11 +388,20 @@ html, body {
 
 .leaflet-container a.leaflet-popup-close-button {
   color: #fff !important;
-  font-size: 24px !important;
-  width: 30px !important;
-  height: 30px !important;
-  line-height: 30px !important;
+  font-size: 20px !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
   text-align: center;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-radius: 50% !important;
+  top: 10px !important;
+  right: 10px !important;
+  transition: all 0.2s;
+}
+
+.leaflet-container a.leaflet-popup-close-button:hover {
+  background: rgba(255, 0, 51, 0.5) !important;
 }
 
 .sidebar-footer {
@@ -385,5 +428,5 @@ html, body {
     transform: translateY(calc(100% + 20px));
   }
   .sidebar-header h2 { display: none; } /* Hide logo in mobile sidebar to save space */
-  .tab-switcher { width: 100%; }
+  .tab-switcher-container { width: 100%; }
 }

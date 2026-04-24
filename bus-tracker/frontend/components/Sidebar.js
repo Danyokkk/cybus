@@ -126,12 +126,25 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
         setIsPlanning(false);
     };
 
+    // Calculate indicator position for sliding tabs
+    const getIndicatorStyle = () => {
+        const tabs = ['routes', 'planner', 'favorites'];
+        const index = tabs.indexOf(activeTab);
+        return {
+            left: `${(index * 100) / 3}%`,
+            width: '33.33%'
+        };
+    };
+
     return (
         <div className={`sidebar \${isOpen ? 'open' : 'closed'} \${isMobile ? 'is-mobile' : ''}`}>
             <div className="sidebar-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '15px' }}>
-                    <h2 style={{ fontSize: '1.4rem', margin: 0, color: 'var(--nebula-accent)', fontWeight: 900 }}>CyBus</h2>
-                    <div className="tab-switcher">
+                    <div className="sidebar-logo-container">
+                        <h2 className="sidebar-logo">CyBus</h2>
+                    </div>
+                    <div className="tab-switcher-container">
+                        <div className="tab-indicator" style={getIndicatorStyle()}></div>
                         <button className={`tab-btn \${activeTab === 'routes' ? 'active' : ''}`} onClick={() => setActiveTab('routes')}>Routes</button>
                         <button className={`tab-btn \${activeTab === 'planner' ? 'active' : ''}`} onClick={() => setActiveTab('planner')}>Plan</button>
                         <button className={`tab-btn \${activeTab === 'favorites' ? 'active' : ''}`} onClick={() => setActiveTab('favorites')}>⭐</button>
@@ -175,7 +188,6 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                     </div>
                 ) : (
                     <div className="planner-form">
-                        {/* Planner Inputs Simplified */}
                         <input className="search-input" placeholder="From..." value={originQuery} onChange={e => {setOriginQuery(e.target.value); setOriginCoords(null);}} />
                         <input className="search-input" style={{marginTop: '8px'}} placeholder="To..." value={destQuery} onChange={e => {setDestQuery(e.target.value); setDestCoords(null);}} />
                         <button className="route-item" onClick={handlePlanRoute} style={{marginTop: '15px', background: 'var(--nebula-accent)', color: '#000', justifyContent: 'center', fontWeight: 'bold'}}>
@@ -208,7 +220,7 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                                 if (!stop) return null;
                                 return (
                                     <div key={fId} className="route-item" style={{ justifyContent: 'space-between' }}>
-                                        <div className="stop-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }} onClick={() => onSelectPlan({ from: stop, to: stop, type: 'direct' })}>
+                                        <div className="stop-info" style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }} onClick={() => onSelectPlan({ from: stop, to: stop, type: 'direct', route: { short_name: '⭐', color: 'ff0033' } })}>
                                             <div className="route-badge" style={{ background: 'rgba(255,255,255,0.05)', minWidth: '40px' }}>🚏</div>
                                             <div style={{ fontSize: '0.75rem' }}>{stop.name}</div>
                                         </div>
@@ -219,6 +231,27 @@ export default function Sidebar({ routes, stops, onSelectRoute, onSelectPlan, se
                         ) : (
                             <div style={{ textAlign: 'center', padding: '40px 20px', color: '#666', fontSize: '0.75rem' }}>No saved stops yet. Star a stop on the map!</div>
                         )}
+                    </div>
+                )}
+                
+                {activeTab === 'planner' && planResults && planResults.length > 0 && (
+                    <div className="planner-results">
+                        {planResults.map((plan, i) => (
+                            <div key={i} className="route-item" onClick={() => onSelectPlan(plan)}>
+                                <div className="plan-header" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    {plan.type === 'transfer' ? (
+                                        <>
+                                            <div className="route-badge" style={{ backgroundColor: `#\${plan.route1.color || '000'}` }}>{plan.route1.short_name}</div>
+                                            <span>➜</span>
+                                            <div className="route-badge" style={{ backgroundColor: `#\${plan.route2.color || '000'}` }}>{plan.route2.short_name}</div>
+                                        </>
+                                    ) : (
+                                        <div className="route-badge" style={{ backgroundColor: `#\${plan.route?.color || '000'}` }}>{plan.route?.short_name || '...'}</div>
+                                    )}
+                                </div>
+                                <div style={{ fontSize: '0.6rem', opacity: 0.8 }}>{plan.total_walk}km walk</div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
