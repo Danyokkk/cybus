@@ -35,6 +35,14 @@ html, body {
   overflow: hidden;
 }
 
+/* Map Container Fix */
+.map-container {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: #000; /* Fallback */
+}
+
 /* Sidebar - Liquid Red Style */
 .sidebar {
   position: absolute;
@@ -275,6 +283,62 @@ html, body {
   background: var(--nebula-accent);
   border-color: var(--nebula-accent);
   box-shadow: 0 0 15px rgba(255, 0, 51, 0.5);
+}
+
+/* Map Controls */
+.map-controls-container {
+  position: absolute;
+  top: 100px;
+  right: 25px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stops-toggle-btn {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 50% !important;
+  color: #fff !important;
+  width: 44px !important;
+  height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: var(--shadow-quantum) !important;
+  font-weight: 900 !important;
+  font-size: 1.2rem !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer;
+}
+
+.stops-toggle-btn:hover {
+  transform: scale(1.1);
+  border-color: var(--nebula-accent) !important;
+}
+
+.leaflet-control-zoom a {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur) !important;
+  border: 1px solid var(--glass-border) !important;
+  color: #fff !important;
+  font-weight: 900 !important;
+  transition: all 0.3s ease !important;
+  border-radius: 50% !important;
+  margin-bottom: 5px !important;
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: var(--nebula-accent) !important;
+  color: #fff !important;
 }
 
 /* Mobile Dock - Premium Style */
