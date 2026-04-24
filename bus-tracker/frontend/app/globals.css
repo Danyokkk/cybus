@@ -192,7 +192,7 @@ html, body {
 
 .route-badge {
   padding: 6px 12px;
-  border-radius: 10px;
+  border-radius: 12px;
   font-weight: 900;
   min-width: 55px;
   text-align: center;
@@ -355,16 +355,16 @@ html, body {
 }
 
 .balloon-label {
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-weight: 900;
-  font-size: 0.75rem;
-  margin-bottom: 4px;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-  white-space: nowrap;
-  letter-spacing: -0.2px;
-  transition: transform 0.2s ease;
+  padding: 4px 12px !important;
+  border-radius: 25px !important; /* Fully rounded pill */
+  font-weight: 900 !important;
+  font-size: 0.8rem !important;
+  margin-bottom: 5px !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4), 0 0 10px rgba(255,255,255,0.1) !important;
+  white-space: nowrap !important;
+  display: block !important;
+  text-align: center !important;
 }
 
 .rotated-bus-wrapper {
