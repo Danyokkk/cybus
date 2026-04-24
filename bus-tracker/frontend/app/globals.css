@@ -881,3 +881,25 @@ body {
   z-index: 2;
   white-space: nowrap;
 }
+
+.search-container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: transparent;
+}
+
+.agency-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.agency-chips {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.favorites-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
