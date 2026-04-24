@@ -259,24 +259,35 @@ const TimetablePopup = ({ stop, routes, onSelectRoute }) => {
     );
 };
 
+// Helper: Determine contrast color (black or white) for a given background hex
+const getContrastYIQ = (hexcolor) => {
+    if (!hexcolor) return 'white';
+    const hex = hexcolor.replace('#', '');
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+    return (yiq >= 128) ? 'black' : 'white';
+};
+
 // Icon Cache to prevent redundant divIcon creation
 const iconCache = new Map();
 
 // Custom Bus Icon Generator (Balloon Label + Rotated Bus)
-const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15) => {
-    // Quantize bearing to 10-degree steps to reduce cache size and re-mounts
-    const qBearing = Math.round((bearing || 0) / 10) * 10;
-    // Dynamic scale to keep buses "readable" even when zoomed out (doesn't shrink as much as map)
-    const scale = zoom < 12 ? 0.8 : zoom < 14 ? 0.9 : 1.0;
+const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
+    // Quantize bearing to 22.5-degree steps (16 directions) to massively reduce cache size and re-mounts
+    const qBearing = Math.round((bearing || 0) / 22.5) * 22.5;
+    const scale = 0.9; // Fixed scale for performance
+    const textColor = getContrastYIQ(color);
 
-    const key = `${routeShortName}_${qBearing}_${color}_${scale}`;
+    const key = `${routeShortName}_${qBearing}_${color}_${textColor}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
             <div class="balloon-bus-marker">
-                <div class="balloon-label" style="background-color: ${color};">
+                <div class="balloon-label" style="background-color: ${color}; color: ${textColor};">
                     ${routeShortName || '?'}
                 </div>
                 <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
@@ -310,18 +321,16 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32', zoom = 15
 };
 
 // Memoized Bus Marker Component to prevent re-renders unless data changes
-const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle, mapZoom }) => {
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle }) => {
     const routeInfo = useMemo(() => null, []);
 
     const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
-    // Text color logic could be simplified or passed from props
-    const vTextColor = 'white';
+    const vTextColor = getContrastYIQ(vColor);
 
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, bearing, vColor, mapZoom || 15)}
-            className="smooth-move"
+            icon={createBusIcon(shortName, bearing, vColor)}
             eventHandlers={{
                 click: () => {
                     if (onVehicleClick) onVehicleClick(rawVehicle);
@@ -642,7 +651,6 @@ export default function BusMap({
                             agency={v.ag}
                             onVehicleClick={onVehicleClick}
                             rawVehicle={v}
-                            mapZoom={mapZoom} // Pass zoom for scaling, but component is memoized
                         />
                     );
                 })}
