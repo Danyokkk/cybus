@@ -47,6 +47,8 @@ export default function Home() {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
         setIsSidebarOpen(true);
+      } else {
+        setIsSidebarOpen(false);
       }
     };
 

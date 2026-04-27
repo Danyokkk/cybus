@@ -274,6 +274,31 @@ html, body {
 
 .leaflet-popup-tip { background: #000 !important; }
 
+/* Large Popup Close Button */
+.leaflet-popup-close-button {
+  width: 32px !important;
+  height: 32px !important;
+  font-size: 24px !important;
+  line-height: 28px !important;
+  color: #fff !important;
+  text-align: center !important;
+  background: rgba(255, 0, 51, 0.8) !important; /* Red Harmony accent */
+  border-radius: 50% !important;
+  top: -10px !important;
+  right: -10px !important;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5) !important;
+  border: 2px solid #000 !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.leaflet-popup-close-button:hover {
+  background: #ff0033 !important;
+  transform: scale(1.1) !important;
+}
+
 /* Favorite Star Button */
 .fav-btn {
   background: rgba(255, 255, 255, 0.08);

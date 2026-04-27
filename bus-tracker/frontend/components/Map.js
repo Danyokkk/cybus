@@ -123,6 +123,11 @@ const TimetablePopup = memo(({ stop, routes, onSelectRoute, favorites, onToggleF
                     const busTime = new Date();
                     busTime.setHours(h, m, 0);
                     return (busTime - now) / 60000 <= 60;
+                }).map(a => {
+                    const [h, m] = a.arrival_time.split(':');
+                    const busTime = new Date();
+                    busTime.setHours(h, m, 0);
+                    return { ...a, diffMins: Math.max(0, Math.round((busTime - now) / 60000)) };
                 });
                 setArrivals(upcoming.slice(0, 10));
                 setLoading(false);
@@ -180,6 +185,9 @@ const TimetablePopup = memo(({ stop, routes, onSelectRoute, favorites, onToggleF
                             return (
                                 <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
                                     <td style={{ padding: '10px 4px', color: '#fff', fontWeight: 'bold' }}>{arr.arrival_time.slice(0, 5)}</td>
+                                    <td style={{ padding: '10px 4px', color: 'var(--nebula-accent)', fontWeight: '900', fontSize: '0.8rem' }}>
+                                        {arr.diffMins === 0 ? 'Now' : `${arr.diffMins}m`}
+                                    </td>
                                     <td style={{ padding: '10px 4px' }}>
                                         <span style={{ backgroundColor: badgeColor, padding: '4px 8px', borderRadius: '6px', color: '#fff', fontSize: '0.8rem', fontWeight: '900' }}>{arr.route_short_name}</span>
                                     </td>
@@ -314,6 +322,11 @@ export default function BusMap({
         }
     }, [showStops, stops, selectedStopId]);
 
+    const handleLocateUser = () => {
+        if (!mapRef.current) return;
+        mapRef.current.locate({ setView: true, maxZoom: 16 });
+    };
+
     useEffect(() => { updateVisibleStops(); }, [showStops, stops, updateVisibleStops]);
 
     const vehicleMarkers = useMemo(() => vehicles?.map((v, i) => (
@@ -345,7 +358,7 @@ export default function BusMap({
                 <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`} title={showStops ? t?.hideStops || 'Hide Stops' : t?.showStops || 'Show Stops'}>
                     <span>{showStops ? '✕' : '🚏'}</span>
                 </button>
-                <button id="my-location-btn" className="stops-toggle-btn" title={t?.myLocation || 'My Location'}>
+                <button id="my-location-btn" onClick={handleLocateUser} className="stops-toggle-btn" title={t?.myLocation || 'My Location'}>
                     <span>🎯</span>
                 </button>
                 <button onClick={() => { if (confirm("Reboot site and refresh all data?")) window.location.reload(true); }} className="stops-toggle-btn" title="Reboot">
