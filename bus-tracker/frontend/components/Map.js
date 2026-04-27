@@ -266,7 +266,7 @@ const BusMarker = memo(({ id, lat, lon, shortName, color, headsign, agency, onVe
     );
 });
 
-const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen }) => {
+const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen, setUserLoc, setShowStops }) => {
     useMapEvents({
         moveend: () => {
             setMapZoom(map.getZoom());
@@ -281,6 +281,10 @@ const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSele
         },
         click: () => {
             if (typeof window !== 'undefined' && window.innerWidth < 768 && setIsOpen) setIsOpen(false);
+        },
+        locationfound: (e) => {
+            if (setUserLoc) setUserLoc(e.latlng);
+            if (setShowStops) setShowStops(true);
         }
     });
 
@@ -388,6 +392,8 @@ export default function BusMap({
                     setSelectedStopId={setSelectedStopId}
                     setIsOpen={setIsOpen}
                     stops={stops}
+                    setUserLoc={setUserLoc}
+                    setShowStops={setShowStops}
                 />
 
                 <TileLayer url={isSatellite ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} />
@@ -400,6 +406,16 @@ export default function BusMap({
                         </Popup>
                     </Marker>
                 ))}
+
+                {userLoc && (
+                    <CircleMarker 
+                        center={userLoc} 
+                        radius={8} 
+                        pathOptions={{ color: 'white', fillColor: 'var(--nebula-accent)', fillOpacity: 1, weight: 3 }}
+                    >
+                        <Popup>📍 You are here</Popup>
+                    </CircleMarker>
+                )}
 
                 {vehicleMarkers}
 
