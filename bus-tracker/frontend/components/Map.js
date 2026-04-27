@@ -217,13 +217,16 @@ const createBusIcon = (routeShortName, color = '#44bd32') => {
         className: 'custom-bus-marker-container',
         html: `
             <div class="balloon-bus-marker">
-                <div class="balloon-label" style="background-color: ${color}; color: ${textColor};">
-                    ${routeShortName || '?'}
+                <div class="bus-mini-pill" style="background-color: ${color}; color: ${textColor};">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 4px;">
+                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+                    </svg>
+                    <span style="font-weight: 900; font-size: 0.85rem;">${routeShortName || '?'}</span>
                 </div>
             </div>
         `,
-        iconSize: [40, 30],
-        iconAnchor: [20, 15],
+        iconSize: [60, 30],
+        iconAnchor: [30, 15],
         popupAnchor: [0, -15]
     });
 
@@ -334,6 +337,22 @@ export default function BusMap({
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+            {/* Desktop Map Controls */}
+            <div className="map-controls-container" style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t?.streetView || 'Street View' : t?.satelliteView || 'Satellite View'}>
+                    <span>{isSatellite ? '🏙️' : '🛰️'}</span>
+                </button>
+                <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`} title={showStops ? t?.hideStops || 'Hide Stops' : t?.showStops || 'Show Stops'}>
+                    <span>{showStops ? '✕' : '🚏'}</span>
+                </button>
+                <button id="my-location-btn" className="stops-toggle-btn" title={t?.myLocation || 'My Location'}>
+                    <span>🎯</span>
+                </button>
+                <button onClick={() => { if (confirm("Reboot site and refresh all data?")) window.location.reload(true); }} className="stops-toggle-btn" title="Reboot">
+                    <span>🔄</span>
+                </button>
+            </div>
+
             <MapContainer
                 center={[35.1264, 33.4299]}
                 zoom={9}
