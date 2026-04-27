@@ -59,11 +59,13 @@ html, body {
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-quantum);
   border-radius: 28px;
-  transition: transform 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+  will-change: transform;
   overflow: hidden;
 }
 
 .sidebar.closed { transform: translateX(calc(-100% - 40px)); }
+.sidebar.open { transform: translateX(0); }
 .sidebar-header { padding: 24px; background: rgba(0,0,0,0.2); }
 
 /* Header Top Row - Distinct Logo and Tabs */
@@ -104,7 +106,7 @@ html, body {
   bottom: 4px;
   background: var(--nebula-accent);
   border-radius: 12px;
-  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  transition: left 0.4s cubic-bezier(0.19, 1, 0.22, 1), width 0.3s ease;
   box-shadow: 0 4px 15px rgba(255, 0, 51, 0.4);
   z-index: 1;
 }
@@ -199,7 +201,7 @@ html, body {
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
-/* System Status - Refined Mini Pill */
+/* System Status - Mini Pill */
 .system-status-card {
   position: fixed;
   top: 15px;
@@ -438,9 +440,10 @@ html, body {
     bottom: 95px;
     height: 55vh;
     border-radius: 35px;
+    transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1);
   }
-  .sidebar.closed { transform: translateY(calc(100% + 100px)); }
-  .sidebar.open { transform: translateY(0); }
+  .sidebar.closed { transform: translateY(calc(100% + 100px)) !important; }
+  .sidebar.open { transform: translateY(0) !important; }
   
   .mobile-floating-dock { display: block; }
   .map-controls-container { display: none !important; }

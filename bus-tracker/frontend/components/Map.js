@@ -29,7 +29,7 @@ const busIcon = new L.Icon({
     popupAnchor: [0, -16],
 });
 
-// 3D 🛑 Stop Pin (Style from User Image)
+// 3D 🛑 Stop Pin
 const stopIcon = L.divIcon({
     className: 'custom-stop-icon',
     html: `
@@ -42,7 +42,6 @@ const stopIcon = L.divIcon({
             align-items: center;
             filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
         ">
-            <!-- Pin Body -->
             <div style="
                 background: #ff0033; 
                 width: 32px; 
@@ -54,7 +53,6 @@ const stopIcon = L.divIcon({
                 justify-content: center;
                 border: 2px solid white;
             ">
-                <!-- Inner White Circle -->
                 <div style="
                     background: white; 
                     width: 20px; 
@@ -69,14 +67,7 @@ const stopIcon = L.divIcon({
                     <span style="font-size: 14px;">🚌</span>
                 </div>
             </div>
-            <!-- Base Shadow -->
-            <div style="
-                width: 14px;
-                height: 4px;
-                background: rgba(0,0,0,0.3);
-                border-radius: 50%;
-                margin-top: -2px;
-            "></div>
+            <div style="width: 14px; height: 4px; background: rgba(0,0,0,0.3); border-radius: 50%; margin-top: -2px;"></div>
         </div>
     `,
     iconSize: [32, 42],
@@ -84,7 +75,7 @@ const stopIcon = L.divIcon({
     popupAnchor: [0, -40]
 });
 
-// User Location Icon - Minimalist Red Pulse
+// User Location Icon
 const userLocationIcon = L.divIcon({
     className: 'custom-user-location-icon',
     html: '<div style="background: #ff0033; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 15px rgba(255, 0, 51, 0.6); animation: sonar 2s infinite;"></div>',
@@ -92,7 +83,6 @@ const userLocationIcon = L.divIcon({
     iconAnchor: [12, 12]
 });
 
-// Plan Point Icons
 const planStartIcon = L.divIcon({
     className: 'custom-plan-icon',
     html: '<div style="background: #ff0033; border: 2px solid white; box-shadow: 0 0 10px rgba(255, 0, 51, 0.5); width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 900; color: #fff; font-size: 8px;">START</div>',
@@ -114,7 +104,7 @@ const planEndIcon = L.divIcon({
     iconAnchor: [15, 15]
 });
 
-const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavorite }) => {
+const TimetablePopup = memo(({ stop, routes, onSelectRoute, favorites, onToggleFavorite }) => {
     const [arrivals, setArrivals] = useState([]);
     const [loading, setLoading] = useState(true);
     const isFav = favorites?.includes(stop.stop_id);
@@ -126,27 +116,21 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavori
             .then(res => res.json())
             .then(data => {
                 const now = new Date();
-                const currentTime = now.toTimeString().split(' ')[0]; // HH:MM:SS
-
-                // Filter: Upcoming AND within 60 minutes
+                const currentTime = now.toTimeString().split(' ')[0];
                 const upcoming = data.filter(a => {
                     if (a.arrival_time < currentTime) return false;
-
                     const [h, m] = a.arrival_time.split(':');
                     const busTime = new Date();
                     busTime.setHours(h, m, 0);
-                    const diffMins = (busTime - now) / 60000;
-
-                    return diffMins <= 60;
+                    return (busTime - now) / 60000 <= 60;
                 });
-
                 setArrivals(upcoming.slice(0, 10));
                 setLoading(false);
             })
             .catch(() => setLoading(false));
     }, [stop.stop_id]);
 
-    const uniqueRoutes = [...new Set(arrivals.map(a => a.route_short_name))];
+    const uniqueRoutes = useMemo(() => [...new Set(arrivals.map(a => a.route_short_name))], [arrivals]);
 
     if (loading) return <div style={{ minWidth: '320px', padding: '20px', textAlign: 'center', color: '#fff', fontWeight: 'bold' }}>Loading arrivals...</div>;
 
@@ -157,7 +141,6 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavori
                 <button 
                     onClick={(e) => { e.stopPropagation(); onToggleFavorite(stop.stop_id); }}
                     className={`fav-btn ${isFav ? 'active' : ''}`}
-                    title={isFav ? "Remove from Favorites" : "Add to Favorites"}
                 >
                     {isFav ? '⭐' : '☆'}
                 </button>
@@ -166,37 +149,16 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavori
 
             {uniqueRoutes.length > 0 && (
                 <div style={{ marginBottom: '10px' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 'bold', marginBottom: '4px' }}>Routes stopping here:</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                         {uniqueRoutes.map(shortName => {
-                            // Match using 'short_name' (from server) or fallback
                             const routeInfo = routes.find(r => r.short_name === shortName || r.route_short_name === shortName);
-                            // Use 'color' (server) or 'route_color'
                             const color = routeInfo ? `#${routeInfo.color || routeInfo.route_color}` : '#0070f3';
                             const textColor = routeInfo ? `#${routeInfo.text_color || routeInfo.route_text_color}` : 'white';
-
                             return (
                                 <span
                                     key={shortName}
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevent map click
-                                        if (routeInfo) onSelectRoute(routeInfo);
-                                    }}
-                                    style={{
-                                        backgroundColor: color,
-                                        color: textColor,
-                                        padding: '4px 10px',
-                                        borderRadius: '6px',
-                                        fontSize: '0.8rem',
-                                        cursor: routeInfo ? 'pointer' : 'default',
-                                        fontWeight: 'bold',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
-                                        transition: 'transform 0.1s',
-                                        display: 'inline-block'
-                                    }}
-                                    onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-                                    onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
-                                    title={routeInfo ? `View Route ${shortName}` : ''}
+                                    onClick={(e) => { e.stopPropagation(); if (routeInfo) onSelectRoute(routeInfo); }}
+                                    style={{ backgroundColor: color, color: textColor, padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 'bold' }}
                                 >
                                     {shortName}
                                 </span>
@@ -207,56 +169,19 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavori
             )}
 
             <table style={{ width: '100%', fontSize: '0.85rem', borderCollapse: 'collapse', color: '#ddd' }}>
-                <thead>
-                    <tr style={{ borderBottom: '1px solid var(--glass-border)', textAlign: 'left', color: '#fff', opacity: 0.6, fontSize: '0.7rem', textTransform: 'uppercase' }}>
-                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>⏰ Arrive</th>
-                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>⏳ In</th>
-                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>🚌 Route</th>
-                        <th style={{ padding: '8px 4px', whiteSpace: 'nowrap' }}>📍 Dest.</th>
-                    </tr>
-                </thead>
                 <tbody>
                     {arrivals.length === 0 ? (
-                        <tr><td colSpan="4" style={{ padding: '15px', textAlign: 'center', color: '#888' }}>No buses in the next hour.</td></tr>
+                        <tr><td style={{ padding: '15px', textAlign: 'center', color: '#888' }}>No buses in the next hour.</td></tr>
                     ) : (
                         arrivals.map((arr, i) => {
-                            const now = new Date();
-                            const [h, m] = arr.arrival_time.split(':');
-                            const busTime = new Date();
-                            busTime.setHours(h, m, 0);
-                            const diff = Math.floor((busTime - now) / 60000);
-                            const timeDisplay = diff >= 0 ? `${diff}m` : 'Now';
-
                             const routeInfo = routes.find(r => r.short_name === arr.route_short_name || r.route_short_name === arr.route_short_name);
                             const rColor = routeInfo ? (routeInfo.color || routeInfo.route_color) : '4834d4';
                             const badgeColor = rColor.startsWith('#') ? rColor : `#${rColor}`;
-
                             return (
                                 <tr key={i} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                                    <td style={{ padding: '10px 4px', color: '#fff', fontWeight: 'bold' }}>
-                                        {arr.arrival_time.slice(0, 5)}
-                                    </td>
-                                    <td style={{ padding: '10px 4px', fontWeight: '900', color: '#fff' }}>{timeDisplay}</td>
+                                    <td style={{ padding: '10px 4px', color: '#fff', fontWeight: 'bold' }}>{arr.arrival_time.slice(0, 5)}</td>
                                     <td style={{ padding: '10px 4px' }}>
-                                        <span
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                if (routeInfo) onSelectRoute(routeInfo);
-                                            }}
-                                            style={{
-                                                backgroundColor: badgeColor,
-                                                padding: '4px 8px',
-                                                borderRadius: '6px',
-                                                border: `1px solid rgba(255,255,255,0.2)`,
-                                                color: '#fff',
-                                                cursor: routeInfo ? 'pointer' : 'default',
-                                                fontSize: '0.8rem',
-                                                fontWeight: '900',
-                                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                                            }}
-                                        >
-                                            {arr.route_short_name}
-                                        </span>
+                                        <span style={{ backgroundColor: badgeColor, padding: '4px 8px', borderRadius: '6px', color: '#fff', fontSize: '0.8rem', fontWeight: '900' }}>{arr.route_short_name}</span>
                                     </td>
                                     <td style={{ padding: '10px 4px', color: '#bbb' }}>{arr.trip_headsign}</td>
                                 </tr>
@@ -267,9 +192,9 @@ const TimetablePopup = ({ stop, routes, onSelectRoute, favorites, onToggleFavori
             </table>
         </div>
     );
-};
+});
 
-// Helper: Determine contrast color (black or white) for a given background hex
+// Helper: Determine contrast color
 const getContrastYIQ = (hexcolor) => {
     if (!hexcolor) return 'white';
     const hex = hexcolor.replace('#', '');
@@ -277,19 +202,15 @@ const getContrastYIQ = (hexcolor) => {
     const g = parseInt(hex.substr(2, 2), 16);
     const b = parseInt(hex.substr(4, 2), 16);
     const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
-    return (yiq >= 128) ? 'black' : 'white';
+    // Lower threshold to favor black text for more colors (especially yellows/pinks)
+    return (yiq >= 150) ? 'black' : 'white';
 };
 
-// Icon Cache to prevent redundant divIcon creation
 const iconCache = new Map();
 
-// Custom Bus Icon Generator (Balloon Label + Rotated Bus)
 const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
-    // Quantize bearing to 22.5-degree steps (16 directions) to massively reduce cache size and re-mounts
     const qBearing = Math.round((bearing || 0) / 22.5) * 22.5;
-    const scale = 0.9; // Fixed scale for performance
     const textColor = getContrastYIQ(color);
-
     const key = `${routeShortName}_${qBearing}_${color}_${textColor}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
@@ -300,15 +221,10 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
                 <div class="balloon-label" style="background-color: ${color}; color: ${textColor};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
-                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
-                        <!-- Bus Chassis -->
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(0.9)">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px;">
                         <rect x="5" y="5" width="40" height="90" rx="10" fill="${color}" stroke="white" stroke-width="4" />
-                        <!-- Front Windshield -->
                         <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                        <!-- Roof Details -->
-                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                        <!-- Headlights -->
                         <circle cx="15" cy="10" r="3" fill="#fffb00" />
                         <circle cx="35" cy="10" r="3" fill="#fffb00" />
                     </svg>
@@ -321,19 +237,10 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
     });
 
     iconCache.set(key, icon);
-    // Limit cache size
-    if (iconCache.size > 1000) {
-        const firstKey = iconCache.keys().next().value;
-        iconCache.delete(firstKey);
-    }
-
     return icon;
 };
 
-// Memoized Bus Marker Component to prevent re-renders unless data changes
-const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsign, agency, isFirstLoad, isNew, onVehicleClick, t, rawVehicle }) => {
-    const routeInfo = useMemo(() => null, []);
-
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle }) => {
     const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
     const vTextColor = getContrastYIQ(vColor);
 
@@ -341,37 +248,15 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
         <Marker
             position={[lat, lon]}
             icon={createBusIcon(shortName, bearing, vColor)}
-            eventHandlers={{
-                click: () => {
-                    if (onVehicleClick) onVehicleClick(rawVehicle);
-                }
-            }}
+            eventHandlers={{ click: () => onVehicleClick?.(rawVehicle) }}
         >
             <Popup className="bus-popup" minWidth={200}>
                 <div style={{ textAlign: 'center', minWidth: '180px', padding: '5px' }}>
-                    <div style={{
-                        backgroundColor: vColor,
-                        color: vTextColor,
-                        padding: '10px 18px',
-                        borderRadius: '25px',
-                        display: 'inline-block',
-                        fontSize: '1.3rem',
-                        fontWeight: '900',
-                        marginBottom: '12px',
-                        boxShadow: '0 3px 8px rgba(0,0,0,0.3)',
-                        border: '2px solid rgba(255,255,255,0.2)'
-                    }}>
-                        {shortName || '?'}
-                    </div>
-                    <div style={{ fontSize: '1.2rem', fontWeight: '900', marginBottom: '8px', color: '#fff', letterSpacing: '-0.5px' }}>
-                        {headsign || 'Bus Route'}
-                    </div>
-                    <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '14px' }}>
-                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>ID:</strong> <span style={{ fontFamily: 'monospace', color: '#fff' }}>{id}</span></div>
-                        <div style={{ marginBottom: '8px' }}><strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>Operator:</strong> <span style={{ color: '#fff' }}>{agency || 'CPT'}</span></div>
-                        <div style={{ marginBottom: '6px', color: '#4834d4' }}>
-                            <strong style={{ color: '#aaa', fontSize: '0.7rem', textTransform: 'uppercase' }}>{t?.speed || 'Speed'}:</strong> {(speed ? (speed * 3.6).toFixed(1) : '0.0')} km/h
-                        </div>
+                    <div style={{ backgroundColor: vColor, color: vTextColor, padding: '10px 18px', borderRadius: '25px', display: 'inline-block', fontSize: '1.3rem', fontWeight: '900', marginBottom: '12px' }}>{shortName}</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fff' }}>{headsign}</div>
+                    <div style={{ textAlign: 'left', fontSize: '0.85rem', marginTop: '14px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+                        <div><strong>ID:</strong> {id}</div>
+                        <div><strong>Operator:</strong> {agency}</div>
                     </div>
                 </div>
             </Popup>
@@ -379,229 +264,92 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, speed, headsi
     );
 });
 
-const MapEvents = ({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen }) => {
+const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen }) => {
     useMapEvents({
-        movestart: () => {
-            if (map?._container) map._container.classList.add('map-moving');
-        },
         moveend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
-            if (map?._container) map._container.classList.remove('map-moving');
-        },
-        zoomstart: () => {
-            if (map?._container) map._container.classList.add('map-moving');
         },
         zoomend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
-            if (map?._container) map._container.classList.remove('map-moving');
         },
-        popupclose: (e) => {
-            if (e.popup.options.className === 'bus-popup') {
-                if (onSelectRoute) onSelectRoute(null);
-            }
+        popupclose: () => {
             if (selectedStopId) setSelectedStopId(null);
         },
         click: () => {
-            // Close sidebar on mobile when clicking anywhere on the map
-            if (typeof window !== 'undefined' && window.innerWidth < 768 && setIsOpen) {
-                setIsOpen(false);
-            }
+            if (typeof window !== 'undefined' && window.innerWidth < 768 && setIsOpen) setIsOpen(false);
         }
     });
 
-    // Auto-Zoom and Stop Selection logic
     useEffect(() => {
         if (!map) return;
-
-        // Selection 0: Specific Stop (Favorites/Direct)
         if (selectedStopId) {
             const stop = stops.find(s => s.stop_id === selectedStopId);
-            if (stop) {
-                map.flyTo([stop.lat, stop.lon], 17, { animate: true, duration: 1.5 });
-                // We don't manually open popup here because Marker will handle it if we have a state
-            }
-            return;
-        }
-
-        // Priority 1: Selected Plan (specific points)
-        if (selectedPlan) {
-            const points = [
-                [selectedPlan.from.lat, selectedPlan.from.lon],
-                [selectedPlan.to.lat, selectedPlan.to.lon]
-            ];
+            if (stop) map.flyTo([stop.lat, stop.lon], 17, { animate: true, duration: 1.5 });
+        } else if (selectedPlan) {
+            const points = [[selectedPlan.from.lat, selectedPlan.from.lon], [selectedPlan.to.lat, selectedPlan.to.lon]];
             if (selectedPlan.hub) points.push([selectedPlan.hub.lat, selectedPlan.hub.lon]);
-
             map.fitBounds(points, { padding: [100, 100], animate: true, maxZoom: 16 });
-            return;
-        }
-
-        // Priority 2: Route Shapes
-        if (shapes && shapes.length > 0) {
-            const allPoints = shapes.flat();
-            if (allPoints.length > 0) {
-                map.fitBounds(allPoints, { padding: [70, 70], animate: true, maxZoom: 15 });
-            }
+        } else if (shapes?.length > 0) {
+            map.fitBounds(shapes.flat(), { padding: [70, 70], animate: true, maxZoom: 15 });
         }
     }, [shapes, selectedPlan, selectedStopId, map, stops]);
 
     return null;
-};
+});
 
 export default function BusMap({
     stops, shapes, routes, vehicles, selectedPlan, selectedStopId, setSelectedStopId, onSelectRoute, routeColor, onVehicleClick,
-    showToast, showStops, setShowStops, isSatellite, setIsSatellite, isOpen, setIsOpen,
-    favorites, onToggleFavorite
+    showStops, setShowStops, isSatellite, setIsSatellite, setIsOpen, favorites, onToggleFavorite
 }) {
     const mapRef = useRef(null);
     const { t } = useLanguage();
-    const [locLoading, setLocLoading] = useState(false);
-    const [isFirstLoad, setIsFirstLoad] = useState(true);
-    const seenVehicles = useRef(new Set());
-
-    // Manage visible stops for performance
     const [visibleStops, setVisibleStops] = useState([]);
     const [mapZoom, setMapZoom] = useState(10);
     const [userLoc, setUserLoc] = useState(null);
 
-
-    // 1. Map Events Handling Logic (Stops only, Vehicles are handled directly)
     const updateVisibleStops = useCallback(() => {
         if (!mapRef.current) return;
         const m = mapRef.current;
-        const bounds = m.getBounds();
-        const zoom = m.getZoom();
-        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
-        const buffer = isMobile ? 0.05 : 0.15;
-        const paddedBounds = bounds.pad(buffer);
-
-        // Filter stops only
-        if (showStops && (zoom >= 15 || selectedStopId) && Array.isArray(stops)) {
-            const filteredStops = stops.filter(s =>
-                s && s.lat !== undefined && s.lon !== undefined &&
-                paddedBounds.contains([s.lat, s.lon])
-            );
-            setVisibleStops(filteredStops);
+        if (showStops && (m.getZoom() >= 15 || selectedStopId) && Array.isArray(stops)) {
+            const bounds = m.getBounds().pad(0.1);
+            setVisibleStops(stops.filter(s => s && s.lat !== undefined && bounds.contains([s.lat, s.lon])));
         } else {
             setVisibleStops([]);
         }
     }, [showStops, stops, selectedStopId]);
 
-    // Update visibility when source data or settings change
-    useEffect(() => {
-        updateVisibleStops(mapRef.current);
-    }, [showStops, stops, updateVisibleStops]);
+    useEffect(() => { updateVisibleStops(); }, [showStops, stops, updateVisibleStops]);
 
-    // Trigger update on vehicles change for "seen" logic and first load removal
-    useEffect(() => {
-        if (Array.isArray(vehicles) && vehicles.length > 0 && isFirstLoad) {
-            vehicles.forEach(v => seenVehicles.current.add(v.id || v.vehicle_id));
-            setIsFirstLoad(false);
-        }
-    }, [vehicles, isFirstLoad]);
+    const vehicleMarkers = useMemo(() => vehicles?.map((v, i) => (
+        <BusMarker
+            key={`bus-${v.id || v.vehicle_id || i}`}
+            id={v.id || v.vehicle_id}
+            lat={v.lt || v.lat}
+            lon={v.ln || v.lon}
+            bearing={v.b !== undefined ? v.b : v.bearing}
+            shortName={v.sn || v.route_short_name}
+            color={v.c}
+            headsign={v.h}
+            agency={v.ag}
+            onVehicleClick={onVehicleClick}
+            rawVehicle={v}
+        />
+    )) || [], [vehicles, onVehicleClick]);
 
-    const geoInProgress = useRef(false);
-    const userLocRef = useRef(null);
-    const pendingErrorTimeout = useRef(null);
-
-    // Geolocation - Strict iOS Compliance
-    useEffect(() => {
-        const btn = document.getElementById('my-location-btn');
-        if (!btn) return;
-
-        const handleLocClick = (e) => {
-            e.preventDefault();
-            if (geoInProgress.current) return;
-            if (!navigator.geolocation) {
-                if (showToast) showToast("Geolocation is not supported by your browser");
-                return;
-            }
-
-            setLocLoading(true);
-            geoInProgress.current = true;
-
-            if (pendingErrorTimeout.current) {
-                clearTimeout(pendingErrorTimeout.current);
-                pendingErrorTimeout.current = null;
-            }
-
-            navigator.geolocation.getCurrentPosition(
-                (pos) => {
-                    const { latitude, longitude } = pos.coords;
-                    if (pendingErrorTimeout.current) {
-                        clearTimeout(pendingErrorTimeout.current);
-                        pendingErrorTimeout.current = null;
-                    }
-
-                    setUserLoc([latitude, longitude]);
-                    userLocRef.current = [latitude, longitude];
-                    setLocLoading(false);
-                    geoInProgress.current = false;
-                    setShowStops(true);
-                    if (mapRef.current) mapRef.current.setView([latitude, longitude], 15, { animate: true });
-                },
-                (err) => {
-                    setLocLoading(false);
-                    geoInProgress.current = false;
-                    if (userLocRef.current) return;
-                    if (err.code === 1) {
-                        pendingErrorTimeout.current = setTimeout(() => {
-                            if (!userLocRef.current && showToast) {
-                                showToast("Location access denied. Check browser/OS settings.");
-                            }
-                        }, 1000);
-                    } else if (err.code === 3) {
-                        console.warn("Location timeout.");
-                    } else {
-                        if (showToast) showToast("Could not find location. Try again.");
-                    }
-                },
-                { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
-            );
-        };
-
-        btn.addEventListener('click', handleLocClick);
-        return () => {
-            btn.removeEventListener('click', handleLocClick);
-            if (pendingErrorTimeout.current) clearTimeout(pendingErrorTimeout.current);
-        };
-    }, [showToast]);
+    const routePolyline = useMemo(() => shapes?.length > 0 && (
+        <Polyline positions={shapes} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
+    ), [shapes, routeColor]);
 
     return (
         <div style={{ position: 'relative', height: '100%', width: '100%' }}>
-            {/* Desktop Map Controls (hidden via CSS on mobile, but kept in DOM for functional triggers) */}
-            <div className="map-controls-container" style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t.streetView : t.satelliteView}>
-                    <span>{isSatellite ? '🏙️' : '🛰️'}</span>
-                </button>
-                <button onClick={() => setShowStops(!showStops)} className={`stops-toggle-btn ${showStops ? 'active' : ''}`} title={showStops ? t.hideStops : t.showStops}>
-                    <span>{showStops ? '✕' : '🚏'}</span>
-                </button>
-                <button id="my-location-btn" className="stops-toggle-btn" title={t.myLocation}>
-                    <span>{locLoading ? '⌛' : '🎯'}</span>
-                </button>
-                <button
-                    onClick={() => {
-                        if (confirm("Reboot site and refresh all data?")) {
-                            window.location.reload(true);
-                        }
-                    }}
-                    className="stops-toggle-btn"
-                    title="Reboot"
-                >
-                    <span>🔄</span>
-                </button>
-            </div>
-
             <MapContainer
                 center={[35.1264, 33.4299]}
                 zoom={9}
                 minZoom={8}
                 maxBounds={[[32.5, 30.0], [36.5, 37.0]]}
-                maxBoundsViscosity={1.0}
-                style={{ height: '100%', width: '100%' }}
+                style={{ height: '100%', width: '100%', background: '#000' }}
                 zoomControl={false}
                 ref={mapRef}
                 preferCanvas={true}
@@ -620,121 +368,24 @@ export default function BusMap({
                     stops={stops}
                 />
 
-                {isSatellite ? (
-                    <>
-                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" />
-                        <TileLayer url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}" />
-                    </>
-                ) : (
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                        url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                        maxZoom={20}
-                    />
-                )}
-
-                {shapes && shapes.length > 0 && shapes.map((shape, index) => (
-                    <Polyline key={`shape-${index}`} positions={shape} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
-                ))}
-
-                {showStops && mapZoom < 15 && !selectedStopId && (
-                    <div className="zoom-hint-pill" style={{ borderColor: 'rgba(255,0,51,0.3)' }}>
-                        {t.zoomInToSeeStops || 'Zoom in to see stops'}
-                    </div>
-                )}
+                <TileLayer url={isSatellite ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} />
+                {routePolyline}
 
                 {showStops && (mapZoom >= 15 || selectedStopId) && visibleStops.map((stop) => (
-                    <Marker
-                        key={`stop-${stop.stop_id}`}
-                        position={[stop.lat, stop.lon]}
-                        icon={stopIcon}
-                        eventHandlers={{
-                            add: (e) => {
-                                if (selectedStopId === stop.stop_id) {
-                                    e.target.openPopup();
-                                }
-                            }
-                        }}
-                    >
+                    <Marker key={`stop-${stop.stop_id}`} position={[stop.lat, stop.lon]} icon={stopIcon}>
                         <Popup minWidth={300}>
-                            <TimetablePopup 
-                                stop={stop} 
-                                routes={routes || []} 
-                                onSelectRoute={onSelectRoute} 
-                                favorites={favorites}
-                                onToggleFavorite={onToggleFavorite}
-                            />
+                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} favorites={favorites} onToggleFavorite={onToggleFavorite} />
                         </Popup>
                     </Marker>
                 ))}
 
-                {/* Optimized Memoized Bus Markers */}
-                {vehicles && vehicles.length > 0 && vehicles.map((v, i) => {
-                    const vId = v.id || v.vehicle_id;
-                    const vLat = v.lt || v.lat;
-                    const vLon = v.ln || v.lon;
-                    if (vLat === undefined || vLon === undefined) return null;
-
-                    return (
-                        <BusMarker
-                            key={`bus-${vId || i}`}
-                            id={vId}
-                            lat={vLat}
-                            lon={vLon}
-                            bearing={v.b !== undefined ? v.b : v.bearing}
-                            shortName={v.sn || v.route_short_name}
-                            color={v.c}
-                            speed={v.s}
-                            headsign={v.h}
-                            agency={v.ag}
-                            onVehicleClick={onVehicleClick}
-                            rawVehicle={v}
-                        />
-                    );
-                })}
-
-                {userLoc && (
-                    <Marker position={userLoc} icon={userLocationIcon} zIndexOffset={1000}>
-                        <Popup><div>You are here</div></Popup>
-                    </Marker>
-                )}
+                {vehicleMarkers}
 
                 {selectedPlan && (
                     <>
-                        {/* START POINT */}
-                        <Marker position={[selectedPlan.from.lat, selectedPlan.from.lon]} icon={planStartIcon} zIndexOffset={2000}>
-                            <Popup className="plan-popup">
-                                <div style={{ textAlign: 'center' }}>
-                                    <strong style={{ color: '#ff0033' }}>START HERE</strong><br />
-                                    {selectedPlan.from.name}<br />
-                                    Ride: <b>{selectedPlan.type === 'transfer' ? selectedPlan.route1.short_name : selectedPlan.route.short_name}</b>
-                                </div>
-                            </Popup>
-                        </Marker>
-
-                        {/* TRANSFER HUB */}
-                        {selectedPlan.type === 'transfer' && (
-                            <Marker position={[selectedPlan.hub.lat, selectedPlan.hub.lon]} icon={planHubIcon} zIndexOffset={2000}>
-                                <Popup className="plan-popup">
-                                    <div style={{ textAlign: 'center' }}>
-                                        <strong style={{ color: '#e056fd' }}>CHANGE BUS</strong><br />
-                                        {selectedPlan.hub.name}<br />
-                                        Wait for: <b>{selectedPlan.route2.short_name}</b>
-                                    </div>
-                                </Popup>
-                            </Marker>
-                        )}
-
-                        {/* END POINT */}
-                        <Marker position={[selectedPlan.to.lat, selectedPlan.to.lon]} icon={planEndIcon} zIndexOffset={2000}>
-                            <Popup className="plan-popup">
-                                <div style={{ textAlign: 'center' }}>
-                                    <strong style={{ color: '#ff0033' }}>DESTINATION</strong><br />
-                                    {selectedPlan.to.name}<br />
-                                    Exit here.
-                                </div>
-                            </Popup>
-                        </Marker>
+                        <Marker position={[selectedPlan.from.lat, selectedPlan.from.lon]} icon={planStartIcon} />
+                        {selectedPlan.type === 'transfer' && <Marker position={[selectedPlan.hub.lat, selectedPlan.hub.lon]} icon={planHubIcon} />}
+                        <Marker position={[selectedPlan.to.lat, selectedPlan.to.lon]} icon={planEndIcon} />
                     </>
                 )}
             </MapContainer>
