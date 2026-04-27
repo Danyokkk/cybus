@@ -208,10 +208,9 @@ const getContrastYIQ = (hexcolor) => {
 
 const iconCache = new Map();
 
-const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
-    const qBearing = Math.round((bearing || 0) / 22.5) * 22.5;
+const createBusIcon = (routeShortName, color = '#44bd32') => {
     const textColor = getContrastYIQ(color);
-    const key = `${routeShortName}_${qBearing}_${color}_${textColor}`;
+    const key = `${routeShortName}_${color}_${textColor}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
@@ -221,33 +220,25 @@ const createBusIcon = (routeShortName, bearing = 0, color = '#44bd32') => {
                 <div class="balloon-label" style="background-color: ${color}; color: ${textColor};">
                     ${routeShortName || '?'}
                 </div>
-                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(0.9)">
-                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px;">
-                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${color}" stroke="white" stroke-width="4" />
-                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
-                    </svg>
-                </div>
             </div>
         `,
-        iconSize: [40, 60],
-        iconAnchor: [20, 50],
-        popupAnchor: [0, -50]
+        iconSize: [40, 30],
+        iconAnchor: [20, 15],
+        popupAnchor: [0, -15]
     });
 
     iconCache.set(key, icon);
     return icon;
 };
 
-const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle }) => {
+const BusMarker = memo(({ id, lat, lon, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle }) => {
     const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
     const vTextColor = getContrastYIQ(vColor);
 
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, bearing, vColor)}
+            icon={createBusIcon(shortName, vColor)}
             eventHandlers={{ click: () => onVehicleClick?.(rawVehicle) }}
         >
             <Popup className="bus-popup" minWidth={200}>
@@ -328,7 +319,6 @@ export default function BusMap({
             id={v.id || v.vehicle_id}
             lat={v.lt || v.lat}
             lon={v.ln || v.lon}
-            bearing={v.b !== undefined ? v.b : v.bearing}
             shortName={v.sn || v.route_short_name}
             color={v.c}
             headsign={v.h}
