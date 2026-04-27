@@ -78,9 +78,9 @@ const stopIcon = L.divIcon({
 // User Location Icon
 const userLocationIcon = L.divIcon({
     className: 'custom-user-location-icon',
-    html: '<div style="background: #ff0033; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 15px rgba(255, 0, 51, 0.6); animation: sonar 2s infinite;"></div>',
-    iconSize: [24, 24],
-    iconAnchor: [12, 12]
+    html: '<div class="user-loc-dot"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8]
 });
 
 const planStartIcon = L.divIcon({
@@ -305,6 +305,22 @@ const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSele
     return null;
 });
 
+const AutoPopupMarker = ({ stop, icon, isSelected, children }) => {
+    const markerRef = useRef(null);
+    useEffect(() => {
+        if (isSelected && markerRef.current) {
+            markerRef.current.openPopup();
+        }
+    }, [isSelected]);
+    return (
+        <Marker position={[stop.lat, stop.lon]} icon={icon} ref={markerRef}>
+            <Popup minWidth={300}>
+                {children}
+            </Popup>
+        </Marker>
+    );
+};
+
 export default function BusMap({
     stops, shapes, routes, vehicles, selectedPlan, selectedStopId, setSelectedStopId, onSelectRoute, routeColor, onVehicleClick,
     showStops, setShowStops, isSatellite, setIsSatellite, setIsOpen, favorites, onToggleFavorite
@@ -400,21 +416,15 @@ export default function BusMap({
                 {routePolyline}
 
                 {showStops && (mapZoom >= 15 || selectedStopId) && visibleStops.map((stop) => (
-                    <Marker key={`stop-${stop.stop_id}`} position={[stop.lat, stop.lon]} icon={stopIcon}>
-                        <Popup minWidth={300}>
-                            <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} favorites={favorites} onToggleFavorite={onToggleFavorite} />
-                        </Popup>
-                    </Marker>
+                    <AutoPopupMarker key={`stop-${stop.stop_id}`} stop={stop} icon={stopIcon} isSelected={selectedStopId === stop.stop_id}>
+                        <TimetablePopup stop={stop} routes={routes || []} onSelectRoute={onSelectRoute} favorites={favorites} onToggleFavorite={onToggleFavorite} />
+                    </AutoPopupMarker>
                 ))}
 
                 {userLoc && (
-                    <CircleMarker 
-                        center={userLoc} 
-                        radius={8} 
-                        pathOptions={{ color: 'white', fillColor: 'var(--nebula-accent)', fillOpacity: 1, weight: 3 }}
-                    >
+                    <Marker position={userLoc} icon={userLocationIcon}>
                         <Popup>📍 You are here</Popup>
-                    </CircleMarker>
+                    </Marker>
                 )}
 
                 {vehicleMarkers}
