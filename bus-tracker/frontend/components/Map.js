@@ -218,30 +218,69 @@ const iconCache = new Map();
 
 const createBusIcon = (routeShortName, color = '#44bd32', bearing = 0) => {
     const textColor = getContrastYIQ(color);
-    const qBearing = Math.round((bearing || 0) / 22.5) * 22.5; // quantize to 16 directions to optimize cache
+    // Use a bit more precision for rotation but still quantize to avoid memory bloat
+    const qBearing = Math.round((bearing || 0) / 5) * 5; 
     const key = `${routeShortName}_${color}_${textColor}_${qBearing}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
-            <div class="balloon-bus-marker" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; height: 60px;">
-                <!-- Rotating Arrow Wrapper -->
-                <div style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; transform: rotate(${qBearing}deg); pointer-events: none; display: flex; justify-content: center;">
-                    <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid ${color}; margin-top: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></div>
+            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px;">
+                <!-- Directional Arrow (Thin Grey) -->
+                <div style="position: absolute; width: 100%; height: 100%; transform: rotate(${qBearing}deg); pointer-events: none; display: flex; justify-content: center;">
+                    <div style="position: absolute; top: 10px;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.8;">
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <polyline points="7 9 12 4 17 9"></polyline>
+                        </svg>
+                    </div>
                 </div>
-                <!-- Bus Pill -->
-                <div class="bus-mini-pill" style="background-color: ${color}; color: ${textColor}; position: relative; z-index: 2; display: flex; align-items: center; padding: 4px 10px; border-radius: 20px; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.5); white-space: nowrap;">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 4px; flex-shrink: 0;">
-                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-                    </svg>
-                    <span style="font-weight: 900; font-size: 0.9rem; line-height: 1;">${routeShortName || '?'}</span>
+
+                <!-- Main Label Body (White Pill) -->
+                <div style="
+                    background: white; 
+                    border-radius: 12px; 
+                    display: flex; 
+                    align-items: center; 
+                    padding: 3px 3px 3px 12px; 
+                    border: 2px solid rgba(0,0,0,0.05);
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+                    position: relative;
+                    z-index: 2;
+                    min-width: 50px;
+                ">
+                    <!-- Route Number (Colored) -->
+                    <span style="
+                        color: ${color}; 
+                        font-weight: 900; 
+                        font-size: 1.1rem; 
+                        margin-right: 8px;
+                        font-family: 'Outfit', sans-serif;
+                    ">${routeShortName || '?'}</span>
+
+                    <!-- Bus Icon Circle -->
+                    <div style="
+                        background-color: ${color}; 
+                        width: 30px; 
+                        height: 30px; 
+                        border-radius: 50%; 
+                        display: flex; 
+                        align-items: center; 
+                        justify-content: center; 
+                        color: white;
+                        box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+                    ">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                            <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+                        </svg>
+                    </div>
                 </div>
             </div>
         `,
-        iconSize: [60, 60],
-        iconAnchor: [30, 30],
-        popupAnchor: [0, -30]
+        iconSize: [100, 100],
+        iconAnchor: [50, 50],
+        popupAnchor: [0, -25]
     });
 
     iconCache.set(key, icon);
