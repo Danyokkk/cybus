@@ -216,85 +216,54 @@ const getContrastYIQ = (hexcolor) => {
 
 const iconCache = new Map();
 
-const createBusIcon = (routeShortName, color = '#44bd32', bearing = 0) => {
-    const textColor = getContrastYIQ(color);
-    // Use a bit more precision for rotation but still quantize to avoid memory bloat
-    const qBearing = Math.round((bearing || 0) / 5) * 5; 
-    const key = `${routeShortName}_${color}_${textColor}_${qBearing}`;
+const createBusIcon = (routeShortName, color = '#44bd32', bearing = 0, zoom = 15) => {
+    // Quantize bearing to 10-degree steps to reduce cache size and re-mounts
+    const qBearing = Math.round((bearing || 0) / 10) * 10;
+    // Dynamic scale to keep buses "readable" even when zoomed out
+    const scale = zoom < 12 ? 0.7 : zoom < 14 ? 0.85 : 1.0;
+
+    const key = `${routeShortName}_${qBearing}_${color}_${scale}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
-            <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px;">
-                <!-- Directional Arrow (Thin Grey) -->
-                <div style="position: absolute; width: 100%; height: 100%; transform: rotate(${qBearing}deg); pointer-events: none; display: flex; justify-content: center;">
-                    <div style="position: absolute; top: 10px;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="opacity: 0.8;">
-                            <line x1="12" y1="20" x2="12" y2="4"></line>
-                            <polyline points="7 9 12 4 17 9"></polyline>
-                        </svg>
-                    </div>
+            <div class="balloon-bus-marker">
+                <div class="balloon-label" style="background-color: ${color};">
+                    ${routeShortName || '?'}
                 </div>
-
-                <!-- Main Label Body (White Pill) -->
-                <div style="
-                    background: white; 
-                    border-radius: 12px; 
-                    display: flex; 
-                    align-items: center; 
-                    padding: 3px 3px 3px 12px; 
-                    border: 2px solid rgba(0,0,0,0.05);
-                    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-                    position: relative;
-                    z-index: 2;
-                    min-width: 50px;
-                ">
-                    <!-- Route Number (Colored) -->
-                    <span style="
-                        color: ${color}; 
-                        font-weight: 900; 
-                        font-size: 1.1rem; 
-                        margin-right: 8px;
-                        font-family: 'Outfit', sans-serif;
-                    ">${routeShortName || '?'}</span>
-
-                    <!-- Bus Icon Circle -->
-                    <div style="
-                        background-color: ${color}; 
-                        width: 30px; 
-                        height: 30px; 
-                        border-radius: 50%; 
-                        display: flex; 
-                        align-items: center; 
-                        justify-content: center; 
-                        color: white;
-                        box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
-                    ">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
-                            <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
-                        </svg>
-                    </div>
+                <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
+                        <!-- Bus Chassis -->
+                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${color}" stroke="white" stroke-width="4" />
+                        <!-- Front Windshield -->
+                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
+                        <!-- Roof Details -->
+                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
+                        <!-- Headlights -->
+                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
+                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                    </svg>
                 </div>
             </div>
         `,
-        iconSize: [100, 100],
-        iconAnchor: [50, 50],
-        popupAnchor: [0, -25]
+        iconSize: [40, 60],
+        iconAnchor: [20, 50],
+        popupAnchor: [0, -50]
     });
 
     iconCache.set(key, icon);
     return icon;
 };
 
-const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle }) => {
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle, zoom }) => {
     const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
     const vTextColor = getContrastYIQ(vColor);
 
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, vColor, bearing)}
+            icon={createBusIcon(shortName, vColor, bearing, zoom)}
             eventHandlers={{ click: () => onVehicleClick?.(rawVehicle) }}
         >
             <Popup className="bus-popup" minWidth={200}>
@@ -414,8 +383,9 @@ export default function BusMap({
             agency={v.ag}
             onVehicleClick={onVehicleClick}
             rawVehicle={v}
+            zoom={mapZoom}
         />
-    )) || [], [vehicles, onVehicleClick]);
+    )) || [], [vehicles, onVehicleClick, mapZoom]);
 
     const routePolyline = useMemo(() => shapes?.length > 0 && (
         <Polyline positions={shapes} pathOptions={{ color: routeColor ? (routeColor.startsWith('#') ? routeColor : '#' + routeColor) : '#0070f3', weight: 6, opacity: 0.9 }} />
