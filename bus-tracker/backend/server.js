@@ -363,7 +363,7 @@ async function loadData() {
     setTimeout(async () => {
       await fetchData();
       scheduleFetch();
-    }, 10000);
+    }, 5000);
   };
   scheduleFetch();
 

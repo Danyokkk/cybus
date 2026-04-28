@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Sidebar from '../components/Sidebar';
 import { useLanguage } from '../context/LanguageContext';
+import { io } from 'socket.io-client';
 
 // Dynamic import for BusMap component
 const BusMap = dynamic(() => import('../components/Map'), {
@@ -82,7 +83,6 @@ export default function Home() {
   // 1. Fetch initial data (Parallelized with Caching)
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
       try {
         const cachedStops = localStorage.getItem('cybus_stops');
         const cachedRoutes = localStorage.getItem('cybus_routes');
@@ -125,35 +125,37 @@ export default function Home() {
     fetchData();
   }, []);
 
-  // 2. Direct Polling for vehicles (Render Server) - Replaced WebSocket
+  // 2. WebSocket Real-time Updates (Socket.io)
   useEffect(() => {
-    let intervalId;
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://cybus.onrender.com';
+    const socket = io(apiUrl, {
+      transports: ['websocket', 'polling'],
+      reconnectionDelayMax: 10000,
+    });
 
-    const fetchVehicles = async () => {
-      try {
-        const res = await fetch(`${apiUrl}/api/v2/vehicles`);
-        if (!res.ok) throw new Error('Refresh failed');
-        const data = await res.json();
-        
-        // Map compact format to objects with legacy property support for Leaflet Map
-        const mapped = data.map(v => ({
-            id: v[0], r: v[1], lt: v[2], ln: v[3], b: v[4], sn: v[5], c: v[6], h: v[7],
-            vehicle_id: v[0], route_id: v[1], lat: v[2], lon: v[3], bearing: v[4], route_short_name: v[5], color: v[6], headsign: v[7]
-        }));
+    socket.on('connect', () => {
+      console.log('>>> Connected to Real-time Feed');
+      setIsConnected(true);
+    });
 
-        setVehicles(mapped);
-        setIsConnected(true);
-        if (loading) setLoading(false);
-      } catch (err) {
-        console.warn('Real-time update failed, retrying...', err.message);
-        setIsConnected(false);
-      }
+    socket.on('vehiclePositions', (data) => {
+      if (!Array.isArray(data)) return;
+      
+      const mapped = data.map(v => ({
+          id: v.id, r: v.r, lt: v.lt, ln: v.ln, b: v.b, sn: v.sn, c: v.c, h: v.h,
+          vehicle_id: v.id, route_id: v.r, lat: v.lt, lon: v.ln, bearing: v.b, route_short_name: v.sn, color: v.c, headsign: v.h
+      }));
+
+      setVehicles(mapped);
+      setLoading(false);
+    });
+
+    socket.on('disconnect', () => setIsConnected(false));
+    socket.on('error', (err) => console.error('Socket Error:', err));
+
+    return () => {
+      socket.disconnect();
     };
-
-    fetchVehicles();
-    intervalId = setInterval(fetchVehicles, 5000); 
-    return () => clearInterval(intervalId);
   }, []);
 
   // Auto-close sidebar on mobile after route selection
