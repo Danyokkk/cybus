@@ -479,6 +479,104 @@ html, body {
   background: rgba(0,0,0,0.1);
 }
 
+/* Settings Drawer */
+.settings-drawer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px);
+  border-top: 1px solid var(--glass-border);
+  border-radius: 35px 35px 0 0;
+  padding: 20px;
+  z-index: 10001;
+  color: white;
+  transform: translateY(0);
+  animation: slideUp 0.3s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.settings-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 900;
+}
+
+.settings-header .close-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: white;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.setting-card {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 15px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+.setting-card .icon {
+  font-size: 1.5rem;
+}
+
+.setting-card .text strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 5px;
+}
+
+.setting-card .text p {
+  margin: 0;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.lang-group {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.lang-group button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.lang-group button.active {
+  background: var(--nebula-accent);
+  border-color: var(--nebula-accent);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
 .daan1k-credit {
   font-size: 0.7rem;
   opacity: 0.4;

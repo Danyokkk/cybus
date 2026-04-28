@@ -216,16 +216,22 @@ const getContrastYIQ = (hexcolor) => {
 
 const iconCache = new Map();
 
-const createBusIcon = (routeShortName, color = '#44bd32') => {
+const createBusIcon = (routeShortName, color = '#44bd32', bearing = 0) => {
     const textColor = getContrastYIQ(color);
-    const key = `${routeShortName}_${color}_${textColor}`;
+    const qBearing = Math.round((bearing || 0) / 22.5) * 22.5; // quantize to 16 directions to optimize cache
+    const key = `${routeShortName}_${color}_${textColor}_${qBearing}`;
     if (iconCache.has(key)) return iconCache.get(key);
 
     const icon = L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
-            <div class="balloon-bus-marker">
-                <div class="bus-mini-pill" style="background-color: ${color}; color: ${textColor};">
+            <div class="balloon-bus-marker" style="position: relative;">
+                <div style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; transform: rotate(${qBearing}deg); pointer-events: none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" style="position: absolute; top: -14px; left: 50%; transform: translateX(-50%); fill: ${color}; stroke: white; stroke-width: 2px;">
+                        <path d="M12 2L22 20L12 16L2 20L12 2Z" />
+                    </svg>
+                </div>
+                <div class="bus-mini-pill" style="background-color: ${color}; color: ${textColor}; position: relative; z-index: 2;">
                     <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 4px;">
                         <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
                     </svg>
@@ -242,14 +248,14 @@ const createBusIcon = (routeShortName, color = '#44bd32') => {
     return icon;
 };
 
-const BusMarker = memo(({ id, lat, lon, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle }) => {
+const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, headsign, agency, onVehicleClick, t, rawVehicle }) => {
     const vColor = color ? (color.startsWith('#') ? color : '#' + color) : '#44bd32';
     const vTextColor = getContrastYIQ(vColor);
 
     return (
         <Marker
             position={[lat, lon]}
-            icon={createBusIcon(shortName, vColor)}
+            icon={createBusIcon(shortName, vColor, bearing)}
             eventHandlers={{ click: () => onVehicleClick?.(rawVehicle) }}
         >
             <Popup className="bus-popup" minWidth={200}>
@@ -283,8 +289,14 @@ const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSele
             if (typeof window !== 'undefined' && window.innerWidth < 768 && setIsOpen) setIsOpen(false);
         },
         locationfound: (e) => {
-            if (setUserLoc) setUserLoc(e.latlng);
-            if (setShowStops) setShowStops(true);
+            const { lat, lng } = e.latlng;
+            // Cyprus approximate bounding box
+            if (lat >= 34.5 && lat <= 35.8 && lng >= 32.0 && lng <= 34.6) {
+                if (setUserLoc) setUserLoc(e.latlng);
+                if (setShowStops) setShowStops(true);
+            } else {
+                alert("Location is outside Cyprus or not precise.");
+            }
         }
     });
 
@@ -355,6 +367,7 @@ export default function BusMap({
             id={v.id || v.vehicle_id}
             lat={v.lt || v.lat}
             lon={v.ln || v.lon}
+            bearing={v.b !== undefined ? v.b : v.bearing}
             shortName={v.sn || v.route_short_name}
             color={v.c}
             headsign={v.h}
