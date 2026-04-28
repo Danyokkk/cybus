@@ -382,8 +382,12 @@ html, body {
 
 /* Bus Markers - Premium Balloon Design */
 .custom-bus-marker-container {
-  transition: transform 1s linear !important;
   z-index: 1000 !important;
+  will-change: transform;
+}
+
+.rotated-bus-wrapper {
+  will-change: transform;
 }
 
 .map-interacting .custom-bus-marker-container {
@@ -412,7 +416,6 @@ html, body {
 
 .rotated-bus-wrapper {
   transition: transform 0.5s ease-out;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
 
 .bus-mini-pill {

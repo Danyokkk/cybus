@@ -233,16 +233,11 @@ const createBusIcon = (routeShortName, color = '#44bd32', bearing = 0, zoom = 15
                     ${routeShortName || '?'}
                 </div>
                 <div class="rotated-bus-wrapper" style="transform: rotate(${(qBearing || 0)}deg) scale(${scale})">
-                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 32px; filter: drop-shadow(0 1.5px 3px rgba(0,0,0,0.4));">
-                        <!-- Bus Chassis -->
-                        <rect x="5" y="5" width="40" height="90" rx="10" fill="${color}" stroke="white" stroke-width="4" />
-                        <!-- Front Windshield -->
-                        <path d="M10 15 Q25 10 40 15 L40 30 Q25 35 10 30 Z" fill="rgba(0,0,0,0.8)" />
-                        <!-- Roof Details -->
-                        <rect x="15" y="45" width="20" height="25" rx="3" fill="rgba(255,255,255,0.2)" />
-                        <!-- Headlights -->
-                        <circle cx="15" cy="10" r="3" fill="#fffb00" />
-                        <circle cx="35" cy="10" r="3" fill="#fffb00" />
+                    <svg viewBox="0 0 50 100" xmlns="http://www.w3.org/2000/svg" style="width: 14px; height: 28px;">
+                        <rect x="5" y="5" width="40" height="90" rx="12" fill="${color}" stroke="white" stroke-width="4" />
+                        <rect x="10" y="15" width="30" height="15" rx="2" fill="rgba(0,0,0,0.8)" />
+                        <circle cx="15" cy="10" r="4" fill="#fffb00" />
+                        <circle cx="35" cy="10" r="4" fill="#fffb00" />
                     </svg>
                 </div>
             </div>
