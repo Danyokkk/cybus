@@ -1,68 +1,71 @@
-<div align="center">
+# 🚌 CyBus - Live Cyprus Bus Tracker
 
-# 🚌 CYPRUS BUS V2
-### 🔴 THE RED HACKER EDITION 🔴
-
-[![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
-[![Leaflet](https://img.shields.io/badge/Leaflet-199903?style=for-the-badge&logo=leaflet&logoColor=white)](https://leafletjs.com/)
-[![Express.js](https://img.shields.io/badge/Express.js-404d59?style=for-the-badge&logo=express&logoColor=white)](https://expressjs.com/)
-[![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
+CyBus is a high-performance, real-time bus tracking application designed for the people of Cyprus. Built with **Next.js**, **Express**, and **Socket.io**, it provides seamless tracking, route planning, and arrival timetables with a premium, mobile-first interface.
 
 ---
 
-###  🚀 Real-time Cyprus Bus Tracking with Premium Performance
+## 🚀 Key Features
 
-CyBus is a high-performance web application designed to track public transportation across Cyprus in real-time. Built with a focus on **speed**, **reliability**, and a bold **"Red Hacker"** aesthetic.
-
-[**Explore the Demo »**](https://cyfinal.vercel.app/)
-
----
-
-</div>
-
-## ✨ Key Features
-
-- 📍 **Real-time Tracking**: Live GPS positions of buses synced every 10 seconds.
-- 🎨 **Premium UI**: Ultra-bold design featuring **Montserrat 900** and a striking hacker aesthetic.
-- ⚡ **Auto-Stable Engine**: Built-in self-pinger and daily GTFS auto-reload for 24/7 uptime.
-- 📱 **Mobile Optimized**: High-performance map rendering using Canvas technology.
-- 🚏 **Stop Discovery**: Interactive bus stops with live arrival timetables.
-- 🛰️ **Hybrid Views**: Switch between Satellite and Street views seamlessly.
-- 🌑 **Glassmorphism**: Sleek, transparent UI components with dynamic blur effects.
+- **📍 Real-time Tracking**: Live locations of all public buses in Cyprus (EMEL, CPT, OSYPA, OSEA, etc.) via GTFS-Realtime.
+- **🧭 Smart Route Planner**: Find the best connection between any two points in Cyprus, including transfers.
+- **⏰ Live Timetables**: Precise arrival predictions for every bus stop on the island.
+- **🗺️ Interactive Map**: Optimized for performance with smooth bus movement and smart viewport filtering.
+- **📱 PWA Ready**: Installable on iOS and Android for a native app experience.
+- **🌍 Multi-language**: Support for English, Russian, and Greek.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠 Technology Stack
 
-- **Frontend**: [Next.js](https://nextjs.org/) (React), [Leaflet](https://leafletjs.com/) (Maps), [Canvas API](https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API).
-- **Backend**: [Node.js](https://nodejs.org/), [Express](https://expressjs.com/), [GTFS-Realtime](https://gtfs.org/realtime/).
-- **Styling**: [CSS3 Vanilla](https://developer.mozilla.org/en-US/docs/Web/CSS) with custom theming.
-- **Data**: GTFS Feed processing & Real-time protocol buffers.
-
----
-
-## 👨‍💻 Creator
-
-<div align="left">
-  <img src="https://github.com/Danyokkk.png" width="100px;" style="border-radius:50%;" alt="Danylo Sakhno"/>
-  <br/>
-  <b>Danylo Sakhno (@Danyokkk)</b>
-</div>
-
-I'm a developer focused on creating fast, beautiful, and functional web applications.
+- **Frontend**: Next.js 15, Leaflet, React Leaflet, Socket.io Client.
+- **Backend**: Node.js, Express, Socket.io Server, GTFS Realtime Bindings.
+- **Optimization**: Compression, Helmet, Rate Limiting, Memoization, and Viewport Filtering.
+- **Deployment**: Optimized for Render (Backend) and Vercel (Frontend).
 
 ---
 
-## 💬 Let's Connect!
+## 📦 Getting Started
 
-Have questions, suggestions, or just want to chat? Reach out to me:
+### Prerequisites
+- Node.js 18+
+- npm or yarn
 
-[![Telegram Agent](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/daqxn)
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Danyokkk/cybus.git
+   cd cybus
+   ```
+
+2. **Backend Setup**:
+   ```bash
+   cd bus-tracker/backend
+   npm install
+   npm start
+   ```
+
+3. **Frontend Setup**:
+   ```bash
+   cd ../frontend
+   npm install
+   npm run dev
+   ```
+
+4. **Environment Variables**:
+   Create a `.env.local` in `bus-tracker/frontend`:
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:3001
+   ```
 
 ---
 
-<div align="center">
-  <p align="center">
-    Made with ❤️ for Cyprus 🇨🇾
-  </p>
-</div>
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 👨‍💻 Author
+
+Created by **daan1k**. Developed with passion for the Cyprus tech community.

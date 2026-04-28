@@ -5,6 +5,9 @@ const csv = require('csv-parser');
 const path = require('path');
 const axios = require('axios');
 const GtfsRealtimeBindings = require('gtfs-realtime-bindings');
+const compression = require('compression');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const http = require('http');
@@ -21,8 +24,21 @@ const PORT = process.env.PORT || 3001;
 
 console.log("--- CYPRUS BUS V2 by daan1k (HYPER-OPTIMIZED) ---");
 
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP if it interferes with Leaflet tiles
+}));
+app.use(compression());
 app.use(cors());
 app.use(express.json());
+
+// --- Rate Limiting ---
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', limiter);
 
 // --- Global Data Stores ---
 let stops = [];
@@ -639,6 +655,12 @@ app.get('/api/plan-route', (req, res) => {
   }
 
   res.json(finalResults.slice(0, 5));
+});
+
+// --- Global Error Handler ---
+app.use((err, req, res, next) => {
+  console.error('!!! Unhandled Error:', err.stack);
+  res.status(500).json({ error: 'Internal Server Error' });
 });
 
 server.listen(PORT, () => console.log(`Backend running on port ${PORT} (WebSocket Ready)`));

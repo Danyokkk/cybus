@@ -134,7 +134,6 @@ export default function Home() {
     });
 
     socket.on('connect', () => {
-      console.log('>>> Connected to Real-time Feed');
       setIsConnected(true);
     });
 
@@ -151,7 +150,7 @@ export default function Home() {
     });
 
     socket.on('disconnect', () => setIsConnected(false));
-    socket.on('error', (err) => console.error('Socket Error:', err));
+    socket.on('error', () => setIsConnected(false));
 
     return () => {
       socket.disconnect();
