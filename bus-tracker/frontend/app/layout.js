@@ -15,6 +15,11 @@ export const metadata = {
     siteName: 'CyBus',
     type: 'website',
   },
+  icons: {
+    icon: '/icon-96.png',
+    shortcut: '/favicon.png',
+    apple: '/icon-96.png',
+  },
 };
 
 export const viewport = {
