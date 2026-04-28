@@ -382,6 +382,7 @@ html, body {
 
 /* Bus Markers - Premium Balloon Design */
 .custom-bus-marker-container {
+  transition: transform 0.5s linear !important;
   z-index: 1000 !important;
   will-change: transform;
 }
