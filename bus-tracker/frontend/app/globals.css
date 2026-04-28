@@ -386,6 +386,10 @@ html, body {
   z-index: 1000 !important;
 }
 
+.map-interacting .custom-bus-marker-container {
+  transition: none !important;
+}
+
 .balloon-bus-marker {
   display: flex;
   flex-direction: column;

@@ -280,7 +280,7 @@ const BusMarker = memo(({ id, lat, lon, bearing, shortName, color, headsign, age
     );
 });
 
-const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen, setUserLoc, setShowStops }) => {
+const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSelectRoute, selectedPlan, selectedStopId, setSelectedStopId, stops, setIsOpen, setUserLoc, setShowStops, setIsInteracting }) => {
     useMapEvents({
         moveend: () => {
             setMapZoom(map.getZoom());
@@ -289,6 +289,16 @@ const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSele
         zoomend: () => {
             setMapZoom(map.getZoom());
             updateVisibleElements();
+            setIsInteracting(false);
+        },
+        movestart: () => {
+            setIsInteracting(true);
+        },
+        moveend: () => {
+            setIsInteracting(false);
+        },
+        zoomstart: () => {
+            setIsInteracting(true);
         },
         popupclose: () => {
             if (selectedStopId) setSelectedStopId(null);
@@ -351,6 +361,7 @@ export default function BusMap({
     const [visibleStops, setVisibleStops] = useState([]);
     const [mapZoom, setMapZoom] = useState(10);
     const [userLoc, setUserLoc] = useState(null);
+    const [isInteracting, setIsInteracting] = useState(false);
 
     const updateVisibleStops = useCallback(() => {
         if (!mapRef.current) return;
@@ -392,7 +403,7 @@ export default function BusMap({
     ), [shapes, routeColor]);
 
     return (
-        <div style={{ position: 'relative', height: '100%', width: '100%' }}>
+        <div style={{ position: 'relative', height: '100%', width: '100%' }} className={isInteracting ? 'map-interacting' : ''}>
             {/* Desktop Map Controls */}
             <div className="map-controls-container" style={{ position: 'absolute', top: '100px', right: '25px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <button onClick={() => setIsSatellite(!isSatellite)} className="stops-toggle-btn" title={isSatellite ? t?.streetView || 'Street View' : t?.satelliteView || 'Satellite View'}>
@@ -433,6 +444,7 @@ export default function BusMap({
                     stops={stops}
                     setUserLoc={setUserLoc}
                     setShowStops={setShowStops}
+                    setIsInteracting={setIsInteracting}
                 />
 
                 <TileLayer url={isSatellite ? "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"} />
