@@ -225,37 +225,23 @@ const createBusIcon = (routeShortName, color = '#44bd32', bearing = 0) => {
     const icon = L.divIcon({
         className: 'custom-bus-marker-container',
         html: `
-            <div style="position: relative; width: 38px; height: 38px;">
-                <!-- Teardrop directional background -->
-                <div style="
-                    position: absolute;
-                    width: 100%; height: 100%;
-                    background-color: ${color};
-                    border-radius: 50% 50% 50% 4px;
-                    transform: rotate(${qBearing + 135}deg);
-                    border: 2px solid rgba(255,255,255,0.8);
-                    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-                "></div>
-                
-                <!-- Unrotated text container -->
-                <div style="
-                    position: absolute;
-                    width: 100%; height: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: ${textColor};
-                    font-weight: 900;
-                    font-size: 0.95rem;
-                    z-index: 2;
-                ">
-                    ${routeShortName || '?'}
+            <div class="balloon-bus-marker" style="position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 60px; height: 60px;">
+                <!-- Rotating Arrow Wrapper -->
+                <div style="position: absolute; width: 100%; height: 100%; top: 0; left: 0; transform: rotate(${qBearing}deg); pointer-events: none; display: flex; justify-content: center;">
+                    <div style="width: 0; height: 0; border-left: 7px solid transparent; border-right: 7px solid transparent; border-bottom: 12px solid ${color}; margin-top: 4px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));"></div>
+                </div>
+                <!-- Bus Pill -->
+                <div class="bus-mini-pill" style="background-color: ${color}; color: ${textColor}; position: relative; z-index: 2; display: flex; align-items: center; padding: 4px 10px; border-radius: 20px; border: 2px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.5); white-space: nowrap;">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style="margin-right: 4px; flex-shrink: 0;">
+                        <path d="M4 16c0 .88.39 1.67 1 2.22V20c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h8v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4v10zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zm1.5-6H6V6h12v5z"/>
+                    </svg>
+                    <span style="font-weight: 900; font-size: 0.9rem; line-height: 1;">${routeShortName || '?'}</span>
                 </div>
             </div>
         `,
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
-        popupAnchor: [0, -20]
+        iconSize: [60, 60],
+        iconAnchor: [30, 30],
+        popupAnchor: [0, -30]
     });
 
     iconCache.set(key, icon);
@@ -298,6 +284,7 @@ const MapEvents = memo(({ map, setMapZoom, updateVisibleElements, shapes, onSele
         },
         popupclose: () => {
             if (selectedStopId) setSelectedStopId(null);
+            if (onSelectRoute) onSelectRoute(null);
         },
         click: () => {
             if (typeof window !== 'undefined' && window.innerWidth < 768 && setIsOpen) setIsOpen(false);
